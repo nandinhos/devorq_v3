@@ -301,8 +301,12 @@ devorq::cmd_sync() {
             ;;
         pull)
             devorq::info "Sincronizando lessons do HUB..."
-            source "${DEVORQ_LIB}/vps.sh" 2>/dev/null || true
-            vps::sync_pull 2>/dev/null || devorq::warn "sync pull: HUB offline"
+            export DEVORQ_PROJECT_ROOT="${PWD}"
+            if [ -f "${DEVORQ_ROOT}/scripts/sync-pull.py" ]; then
+                python3 "${DEVORQ_ROOT}/scripts/sync-pull.py" 2>&1 || devorq::warn "sync pull: falha"
+            else
+                devorq::warn "scripts/sync-pull.py não encontrado"
+            fi
             ;;
         *)
             devorq::error "Uso: devorq sync push|pull"
