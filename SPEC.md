@@ -117,20 +117,22 @@ Cada gate é verde ou vermelho. Vermelho = para e corrige.
 
 ## 5. Fases de Desenvolvimento
 
-### Fase 1 — Core Funcional
-**Meta:** CLI bash puro funcionando offline.
-- [ ] `bin/devorq` source-based, comandos principais
-- [ ] `lib/lessons.sh` (capture/search/validate/apply, jq fallback)
-- [ ] `lib/gates.sh` (7 gates)
-- [ ] `lib/compact.sh` (handoff JSON, jq fallback)
-- [ ] `lib/vps.sh` (SSH mux check)
-- [ ] `devorq init`, `devorq help`, `devorq version`
-- [ ] `devorq lessons capture`, `devorq lessons search`
-- [ ] `devorq gate {1-7}`, `devorq compact`, `devorq vps check`
-- [ ] jq 1.7.1 binary estático em ~/bin/jq
-- [ ] Documentação INSTALL.md, TROUBLESHOOTING.md
+## 5. Fases de Desenvolvimento
 
-### Fase 2 — HUB Remoto (dev-memory-laravel)
+### Fase 1 — Core Funcional ✅
+**Meta:** CLI bash puro funcionando offline.
+- [x] `bin/devorq` source-based, comandos principais
+- [x] `lib/lessons.sh` (capture/search/validate/apply, jq fallback)
+- [x] `lib/gates.sh` (7 gates)
+- [x] `lib/compact.sh` (handoff JSON, jq fallback)
+- [x] `lib/vps.sh` (SSH mux check)
+- [x] `devorq init`, `devorq help`, `devorq version`
+- [x] `devorq lessons capture`, `devorq lessons search`
+- [x] `devorq gate {1-7}`, `devorq compact`, `devorq vps check`
+- [x] jq 1.7.1 binary estático em ~/bin/jq
+- [x] Documentação INSTALL.md, TROUBLESHOOTING.md
+
+### Fase 2 — HUB Remoto (dev-memory-laravel) ✅
 **Meta:** Integração com DEV-MEMORY (Laravel + PostgreSQL).
 
 #### Fase 2a — PostgreSQL Schema ✅
@@ -138,46 +140,44 @@ Cada gate é verde ou vermelho. Vermelho = para e corrige.
 - [x] 4 tabelas criadas (lessons, memories, sessions, handoffs)
 - [x] pgvector 0.8.2 confirmado
 
-#### Fase 2b — DevorqHubService + Sync
-- [ ] `DevorqHubService.php` (sincroniza .devorq/state ↔ devorq.*)
-- [ ] Migrations para tabelas `devorq.*` no dev-memory-laravel
-- [ ] Pages/routes (DevorqLessons, DevorqDashboard, DevorqSearch)
-- [ ] Scripts bash de sync (vps-sync-lessons, vps-sync-memories)
-- [ ] Indexes (pgvector HNSW, FTS5 bm25)
+#### Fase 2b — DevorqHubService + Sync ✅
+- [x] `DevorqHubService.php` (sincroniza .devorq/state ↔ devorq.*)
+- [x] Migrations para tabelas `devorq.*` no dev-memory-laravel
+- [x] Pages/routes (DevorqLessons, DevorqDashboard, DevorqSearch)
+- [x] Scripts bash de sync (vps-sync-lessons, vps-sync-memories)
+- [x] Indexes (pgvector HNSW, FTS5 bm25)
 
-#### Fase 2c — Auto-Sync
-- [ ] `devorq sync push` (envia lessons locais → HUB)
-- [ ] `devorq sync pull` (recebe lessons do HUB → local)
-- [ ] `devorq hub status` (mostra status da sincronização)
+#### Fase 2c — Auto-Sync ✅
+- [x] `devorq sync push` (envia lessons locais → HUB)
+- [x] `devorq sync pull` (recebe lessons do HUB → local)
+- [x] `devorq hub status` (mostra status da sincronização)
 
-### Fase 3 — Context-Mode
+### Fase 3 — Context-Mode ✅
 **Meta:** Compressão de contexto token-aware.
+- [x] `lib/context.sh` (ctx_lint, ctx_stats, ctx_pack, ctx_merge)
+- [x] GATE-3 atualizada para usar ctx_stats
+- [x] `devorq context` integrado com lib/compact.sh
+- [x] EXTRAS.md (documentação completa)
 
-- [ ] `lib/context.sh` (ctx_lint, ctx_stats, ctx_pack, ctx_merge)
-- [ ] GATE-3 atualizada para usar ctx_stats
-- [ ] `devorq context` integrado com lib/compact.sh
-
-### Fase 4 — Context7 Integration
+### Fase 4 — Context7 Integration ✅
 **Meta:** Wrapper para consulta de documentação oficial.
+- [x] `lib/context7.sh` (ctx7_search, ctx7_resolve, ctx7_compare)
+- [x] GATE-6 atualizada
+- [x] Fallback quando Context7 API não disponível
 
-- [ ] `lib/context7.sh` (ctx7_search, ctx7_resolve, ctx7_compare)
-- [ ] GATE-6 atualizada
-- [ ] Fallback quando Context7 API não disponível
-
-### Fase 5 — Systematic Debugging Skill
+### Fase 5 — Systematic Debugging Skill ✅
 **Meta:** Resposta automática a panes via skill integrada.
+- [x] `devorq debug` (invoca systematic-debugging workflow)
+- [x] `lib/debug.sh` (debug::check, devorq::debug 4-phase workflow)
+- [x] GATE-7 implementada com debug::check passivo
 
-- [ ] `devorq debug` (invoca systematic-debugging workflow)
-- [ ] `lib/debug.sh` (diagnose, identify, fix, verify loop)
-- [ ] GATE-7 implementada
-
-### Fase 6 — Documentação Completa
+### Fase 6 — Documentação Completa 🔄
 **Meta:** Docs profissionais e testadas.
 
-- [ ] `README.md` (visão, quick start, filosofia)
-- [ ] `EXTRAS.md` (Context-Mode, Context7, Superpowers, HUB)
+- [x] `README.md` (visão, quick start, filosofia)
+- [x] `EXTRAS.md` (Context-Mode, Context7, Superpowers, HUB)
 - [ ] `CONTRIBUTING.md` (como contribuir, padrões, commit semântico)
-- [ ] SPEC atualizada para refletir implementação real
+- [x] SPEC atualizada para refletir implementação real
 
 ### Fase 7 — Self-Building (Meta-Circular)
 **Meta:** Usar o DEVORQ para construir o DEVORQ.
@@ -290,10 +290,10 @@ devorq vps check
 FASE 1  ████████████████████ 100% ✅ (core bash + gates + lessons)
 FASE 2a ████████████████████ 100% ✅ (PostgreSQL schema devorq.*)
 FASE 2b ████████████████████ 100% ✅ (sync-push/pull Python scripts)
-FASE 3  ██████████████░░░░░░░  80% 🔧 (lib/context.sh ✅, falta EXTRAS.md)
-FASE 4  ████████████░░░░░░░░  90% 🔧 (lib/context7.sh ✅, falta EXTRAS.md)
-FASE 5  ░░░░░░░░░░░░░░░░░░░░  0%
-FASE 6  ████████████░░░░░░░░  60% 🔧 (README+INSTALL+TROUBLESHOOTING ✅)
+FASE 3  ████████████████████ 100% ✅ (lib/context.sh ✅, EXTRAS.md ✅)
+FASE 4  ████████████████████ 100% ✅ (lib/context7.sh ✅, EXTRAS.md ✅)
+FASE 5  ████████████████████ 100% ✅ (lib/debug.sh ✅, devorq debug ✅)
+FASE 6  ████████░░░░░░░░░░░░  40% 🔧 (README+INSTALL+EXTRAS ✅, falta CONTRIBUTING.md)
 FASE 7  ░░░░░░░░░░░░░░░░░░░░  0%
 FASE 8  ░░░░░░░░░░░░░░░░░░░░  0%
 ```
@@ -301,11 +301,17 @@ FASE 8  ░░░░░░░░░░░░░░░░░░░░  0%
 ### Implementado
 
 **Fase 1:**
-- `bin/devorq` (CLI source-based, 12 comandos)
+- `bin/devorq` (CLI source-based, 13 comandos)
 - `lib/lessons.sh` (capture/search/validate/apply, jq fallback)
 - `lib/gates.sh` (7 gates bloqueantes)
 - `lib/compact.sh` (handoff JSON)
 - `lib/vps.sh` (SSH mux check)
+- `lib/context.sh` (ctx_lint, ctx_stats, ctx_pack, ctx_merge, ctx_set, ctx_clear)
+- `lib/context7.sh` (ctx7_check, ctx7_search, ctx7_resolve, ctx7_compare)
+- `lib/debug.sh` (debug::check, devorq::debug, debug::trace, debug::recent_changes)
+- `devorq context` expandido com subcommands (lint|stats|pack|merge|set|clear)
+- `devorq debug [erro]` — workflow interativo 4-phase
+- `devorq build` — executa todos os gates + testes (Fase 6)
 
 **Fase 2a:**
 - Schema `devorq` no VPS PostgreSQL (srv163217:6985)

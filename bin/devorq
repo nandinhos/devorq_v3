@@ -43,6 +43,7 @@ devorq::info()  { echo "[DEVORQ] $*"; }
 devorq::success() { echo "[OK] $*"; }
 devorq::warn()  { echo "[!] $*"; }
 devorq::error() { echo "[ERROR] $*" >&2; exit 1; }
+devorq::fail() { echo "[FAIL] $*"; }
 
 # ============================================================
 # HELP
@@ -73,6 +74,7 @@ COMANDOS:
   sync pull                  Receber lessons ← HUB
   vps check                  Testar conexão com VPS HUB
   debug [erro]               Workflow debug sistemático (4 fases)
+  build                      Executa devorq test + gates 1-7 (Self-Building)
 
   version                    Versão instalada
   upgrade                    Atualizar DEVORQ
@@ -360,6 +362,45 @@ devorq::cmd_debug() {
     fi
 }
 
+devorq::cmd_build() {
+    devorq::info "═══ DEVORQ Self-Build ═══"
+    devorq::info "Executando teste + gates 1-7 no repositório DEVORQ..."
+    echo ""
+
+    # Self-build sempre opera no repo DEVORQ, não no projeto atual
+    local original_pwd="$PWD"
+    cd "${DEVORQ_ROOT}"
+
+    # Etapa 1: teste de estrutura
+    devorq::info "── Etapa 1: devorq test ──"
+    if ! devorq::cmd_test; then
+        devorq::warn "devorq test falhou"
+    fi
+    echo ""
+
+    # Etapa 2: todos os gates
+    local failed=0
+    for gate in 1 2 3 4 5 6 7; do
+        devorq::info "── Etapa 2: Gate $gate ──"
+        if ! devorq::cmd_gate "$gate"; then
+            devorq::fail "Gate $gate falhou"
+            ((failed++))
+        fi
+    done
+
+    cd "$original_pwd"
+
+    echo ""
+    devorq::info "═══ Resultado ═══"
+    if [ $failed -eq 0 ]; then
+        devorq::success "Build OK — 7/7 gates verdes"
+        devorq::info "Sistema pronto para self-building"
+        return 0
+    else
+        devorq::error "$failed gate(s) falhou(aram)"
+    fi
+}
+
 # ============================================================
 # MAIN DISPATCH
 # ============================================================
@@ -381,6 +422,7 @@ main() {
         vps)       shift; devorq::cmd_vps "$@" ;;
         skills)    shift; devorq::cmd_skills "$@" ;;
         debug)     devorq::cmd_debug "$@" ;;
+        build)     devorq::cmd_build ;;
         version)   devorq::cmd_version ;;
         upgrade)   devorq::cmd_upgrade ;;
         uninstall) devorq::cmd_uninstall ;;
