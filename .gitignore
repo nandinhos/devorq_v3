@@ -1,0 +1,21 @@
+# extras with credentials
+.devorq/extras/sync_config.json
+
+# Dependencies
+node_modules/
+package.json
+package-lock.json
+
+# Session summaries (ephemeral)
+.devorq/state/sessions/
+
+# Snapshot files — generated per-command, never commit
+.devorq/state/pre_tool_snapshot.json
+.devorq/.devorq/state/pre_tool_snapshot.json
+
+# Nested .devorq directory (artifact from init, not real structure)
+.devorq/.devorq/
+
+# Build artifacts
+*.log
+.DS_Store
