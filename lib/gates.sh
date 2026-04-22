@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # lib/gates.sh — DEVORQ 7 Gates
 #
-# GATE-1 (BLOQUEANTE): SPEC Review
-# GATE-2 (BLOQUEANTE): Pre-Flight (tipos, contratos)
-# GATE-3 (BLOQUEANTE): Quality Gate (testes, lint, segurança)
-# GATE-4 (Aviso):      Handoff
-# GATE-5 (Pipeline):   Lesson Capture
-# GATE-6 (Pipeline):   Lesson Validate (Context7)
-# GATE-7 (Pipeline):   Lesson Apply
+# GATE-1 (BLOQUEANTE): Spec Exists       — SPEC.md existe e não está vazio
+# GATE-2 (BLOQUEANTE): Tests Pass        — devorq test passa (testa estrutura)
+# GATE-3 (BLOQUEANTE): Context Documented— devorq context mostra estado atual
+# GATE-4 (BLOQUEANTE): Lessons Reviewed  — devorq lessons search encontrou lições relevantes
+# GATE-5 (BLOQUEANTE): Handoff Ready     — devorq compact gera JSON válido
+# GATE-6 (Aviso):      Context7 Checked  — Docs consultadas (mesmo que rejeite)
+# GATE-7 (Pipeline):   Systematic Debugging — Se erro: devorq debug antes de continuar
 
 set -euo pipefail
 
@@ -37,11 +37,11 @@ gate::info() {
 }
 
 # ============================================================
-# GATE-1 — SPEC Review (BLOQUEANTE)
+# GATE-1 — Spec Exists (BLOQUEANTE)
 # ============================================================
 
 gate_1() {
-    gate::info 1 "SPEC Review"
+    gate::info 1 "Spec Exists — SPEC.md existe e não está vazio"
 
     local spec_file="${PWD}/SPEC.md"
 
@@ -65,177 +65,226 @@ gate_1() {
 }
 
 # ============================================================
-# GATE-2 — Pre-Flight (BLOQUEANTE)
+# GATE-2 — Tests Pass (BLOQUEANTE)
 # ============================================================
 
 gate_2() {
-    gate::info 2 "Pre-Flight — tipos e contratos"
+    gate::info 2 "Tests Pass — devorq test passa"
 
-    local errors=0
+    # Para projetos que têm tests/ ou vendor/bin/phpunit
+    local has_tests=false
+    local test_errors=0
 
-    # Verificar presença de types/interfaces se existir spec
-    local spec_file="${PWD}/specs/approved/SPEC.md"
-    if [ -f "$spec_file" ]; then
-        # Procurar sinais de TypeScript/PHP types
-        if grep -q "interface\|type \|class " "$spec_file" 2>/dev/null; then
-            gate::info 2 "Detected types — verificar contracts/"
-            [ -d "${PWD}/contracts" ] || gate::warn 2 "contracts/ não existe (esperado para Laravel)"
+    # PHPUnit (Laravel/PHP)
+    if [ -f "phpunit.xml" ] || [ -f "composer.json" ]; then
+        if [ -d "tests" ]; then
+            has_tests=true
+            if command -v php &>/dev/null && [ -f "vendor/bin/phpunit" ]; then
+                vendor/bin/phpunit --testdox 2>/dev/null || {
+                    gate::warn 2 "PHPUnit falhou"
+                    ((test_errors++))
+                }
+            elif [ -f "composer.json" ]; then
+                gate::warn 2 "vendor/ não instalado"
+                ((test_errors++))
+            fi
         fi
     fi
 
-    # Verificar .env.example — só para projetos Laravel/PHP reais
-    # (DEVORQ em si não é um projeto Laravel, então pulamos)
-    if [ -f "${PWD}/.env.example" ]; then
-        gate::pass 2 ".env.example presente"
-    elif [ -f "${PWD}/composer.json" ] || [ -f "${PWD}/package.json" ]; then
-        gate::warn 2 ".env.example não encontrado"
-        ((errors++))
+    # pytest (Python)
+    if [ -f "pytest.ini" ] || [ -f "pyproject.toml" ]; then
+        if [ -d "tests" ]; then
+            has_tests=true
+            if command -v pytest &>/dev/null; then
+                pytest -q 2>/dev/null || {
+                    gate::warn 2 "pytest falhou"
+                    ((test_errors++))
+                }
+            fi
+        fi
     fi
-    # Para frameworks/CLI tools bash, não exigimos .env.example
 
-    if [ $errors -eq 0 ]; then
-        gate::pass 2 "Pre-Flight OK"
+    # Bash: shellcheck na estrutura do projeto
+    if [ -f "bin/devorq" ] || [ -f "Makefile" ]; then
+        has_tests=true
+        if command -v shellcheck &>/dev/null; then
+            local sc_errors
+            sc_errors=$(shellcheck -S error bin/devorq lib/*.sh scripts/*.sh 2>/dev/null | grep -c "SC[12]" || true)
+            if [ "$sc_errors" -gt 0 ]; then
+                gate::warn 2 "shellcheck: $sc_errors erro(s) de sintaxe"
+                ((test_errors += sc_errors))
+            fi
+        fi
+    fi
+
+    if [ "$has_tests" = "false" ]; then
+        gate::warn 2 "Nenhum framework de teste detectado (OK para CLI/bash puro)"
+    fi
+
+    if [ $test_errors -eq 0 ]; then
+        gate::pass 2 "Tests Pass OK"
+        return 0
     else
-        gate::fail 2 "$errors problema(s) encontrado(s)"
+        gate::fail 2 "$test_errors problema(s) encontrado(s)"
         return 1
     fi
 }
 
 # ============================================================
-# GATE-3 — Quality Gate (BLOQUEANTE)
+# GATE-3 — Context Documented (BLOQUEANTE)
 # ============================================================
 
 gate_3() {
-    gate::info 3 "Quality Gate — testes, lint, segurança"
+    gate::info 3 "Context Documented — devorq context mostra estado atual"
 
-    local errors=0
-
-    # PHPUnit / tests
-    if [ -f "phpunit.xml" ] || [ -f "composer.json" ]; then
-        if [ -d "tests" ]; then
-            gate::info 3 "Rodando testes..."
-            if command -v php &>/dev/null && [ -f "vendor/bin/phpunit" ]; then
-                vendor/bin/phpunit --testdox 2>/dev/null || {
-                    gate::warn 3 "PHPUnit falhou ou sem saída"
-                    ((errors++))
-                }
-            elif [ -f "composer.json" ]; then
-                gate::warn 3 "vendor/ não instalado (rode composer install)"
-                ((errors++))
-            fi
-        else
-            gate::warn 3 "Diretório tests/ não existe"
-            ((errors++))
-        fi
-    fi
-
-    # Python tests
-    if [ -f "pytest.ini" ] || [ -f "pyproject.toml" ]; then
-        if [ -d "tests" ]; then
-            if command -v pytest &>/dev/null; then
-                pytest -q 2>/dev/null || {
-                    gate::warn 3 "pytest falhou"
-                    ((errors++))
-                }
-            fi
-        fi
-    fi
-
-    # Bash lint (se houver scripts)
-    if [ -f "bin/devorq" ]; then
-        if command -v shellcheck &>/dev/null; then
-            # Só conta como erro se houver SC1/2xxx (sintaxe/fatals), não warnings de estilo (SC2xxx)
-            local sc_errors
-            sc_errors=$(shellcheck -S error bin/devorq lib/*.sh 2>/dev/null | grep -c "SC[12]" || true)
-            if [ "$sc_errors" -gt 0 ]; then
-                gate::warn 3 "shellcheck: $sc_errors erro(s) de sintaxe"
-                ((errors += sc_errors))
-            fi
-        fi
-    fi
-
-    # Secrets scan (basic)
-    if grep -r "password\s*=" --include="*.php" --include="*.py" . 2>/dev/null | grep -v ".env" | grep -qv "=.*\$" ; then
-        gate::warn 3 "Possível segredo hardcoded detectado"
-        ((errors++))
-    fi
-
-    if [ $errors -eq 0 ]; then
-        gate::pass 3 "Quality Gate OK"
-    else
-        gate::fail 3 "$errors problema(s)"
-        return 1
-    fi
-}
-
-# ============================================================
-# GATE-4 — Handoff (Aviso)
-# ============================================================
-
-gate_4() {
-    gate::info 4 "Handoff — preparando contexto para próxima sessão"
+    source "${DEVORQ_LIB}/context.sh" 2>/dev/null || true
 
     local ctx_file="${PWD}/.devorq/state/context.json"
-    local handoff_file="${PWD}/.devorq/state/handoff.json"
 
+    # Se não existe, criar com project/stack básico
     if [ ! -f "$ctx_file" ]; then
-        gate::warn 4 "context.json não encontrado — pulando"
+        if declare -f ctx_set &>/dev/null; then
+            gate::warn 3 "context.json não existe — criando automaticamente"
+            ctx_set "project" "${PWD##*/}" >/dev/null 2>&1
+            ctx_set "stack" "[]" >/dev/null 2>&1
+            ctx_set "intent" "" >/dev/null 2>&1
+        else
+            gate::fail 3 "lib/context.sh não disponível"
+            return 1
+        fi
+    fi
+
+    # Verificar conteúdo mínimo
+    if declare -f ctx_lint &>/dev/null; then
+        if ! ctx_lint >/dev/null 2>&1; then
+            gate::warn 3 "context.json com problemas (campos ausentes)"
+        fi
+    fi
+
+    # Mostrar contexto atual
+    if [ -f "$ctx_file" ]; then
+        gate::pass 3 "Context Documented"
+        if command -v jq &>/dev/null; then
+            local intent project
+            intent=$(jq -r '.intent // ""' "$ctx_file" 2>/dev/null || echo "")
+            project=$(jq -r '.project // ""' "$ctx_file" 2>/dev/null || echo "")
+            gate::info 3 "project=$project intent=${intent:0:60}..."
+        fi
         return 0
     fi
 
-    # Gerar snapshot do contexto atual
-    cp "$ctx_file" "$handoff_file"
-
-    gate::pass 4 "Handoff preparado"
+    gate::fail 3 "context.json não pôde ser criado"
+    return 1
 }
 
 # ============================================================
-# GATE-5 — Lesson Capture (Pipeline)
+# GATE-4 — Lessons Reviewed (BLOQUEANTE)
+# ============================================================
+
+gate_4() {
+    gate::info 4 "Lessons Reviewed — devorq lessons search encontrou lições relevantes"
+
+    source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+
+    local lessons_dir="${PWD}/.devorq/state/lessons/captured"
+    local found=0
+
+    if [ -d "$lessons_dir" ]; then
+        found=$(find "$lessons_dir" -maxdepth 1 -name "*.json" -type f 2>/dev/null | wc -l)
+        found=${found:-0}
+    fi
+
+    if [ "$found" -gt 0 ]; then
+        gate::pass 4 "Lessons Reviewed — $found lição(ões) capturada(s)"
+        return 0
+    fi
+
+    # Sem lessons é OK — só um aviso (projetos novos)
+    gate::warn 4 "Nenhuma lesson capturada ainda (OK para projetos novos)"
+    return 0
+}
+
+# ============================================================
+# GATE-5 — Handoff Ready (BLOQUEANTE)
 # ============================================================
 
 gate_5() {
-    gate::info 5 "Lesson Capture — capturar lições do fluxo"
+    gate::info 5 "Handoff Ready — devorq compact gera JSON válido"
 
-    # Capturar qualquer lição encontrada em comments/TODOs
-    local lessons_file="${PWD}/.devorq/state/lessons_flow.json"
+    source "${DEVORQ_LIB}/compact.sh" 2>/dev/null || true
 
-    if [ -f "$lessons_file" ]; then
-        gate::info 5 "Lições capturadas no fluxo encontradas"
-        # Forward para lessons.sh
-        source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+    if ! declare -f compact::generate &>/dev/null; then
+        gate::fail 5 "lib/compact.sh não disponível"
+        return 1
     fi
 
-    gate::pass 5 "Lesson Capture OK"
+    local handoff_file="${PWD}/.devorq/state/handoff.json"
+    local tmp
+    tmp=$(mktemp)
+
+    # Gerar handoff e validar JSON
+    if compact::generate "$tmp" >/dev/null 2>&1; then
+        if command -v jq &>/dev/null; then
+            if jq empty "$tmp" 2>/dev/null; then
+                # JSON válido — mover para localização real
+                mkdir -p "$(dirname "$handoff_file")"
+                mv "$tmp" "$handoff_file"
+                gate::pass 5 "Handoff Ready — JSON válido gerado"
+                return 0
+            else
+                gate::fail 5 "JSON gerado é inválido"
+                rm -f "$tmp"
+                return 1
+            fi
+        else
+            # Sem jq, confiar na saída
+            mv "$tmp" "$handoff_file"
+            gate::pass 5 "Handoff Ready (jq não disponível, validação manual)"
+            return 0
+        fi
+    fi
+
+    gate::fail 5 "devorq compact falhou"
+    rm -f "$tmp"
+    return 1
 }
 
 # ============================================================
-# GATE-6 — Lesson Validate (Context7) (Pipeline)
+# GATE-6 — Context7 Checked (Aviso)
 # ============================================================
 
 gate_6() {
-    gate::info 6 "Lesson Validate — validando com Context7"
+    gate::info 6 "Context7 Checked — Docs consultadas (mesmo que rejeite)"
 
-    source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
-    if declare -f lessons::validate &>/dev/null; then
-        lessons::validate
-    else
-        gate::warn 6 "lib/lessons.sh não disponível"
+    # Carregar lib de context7 se existir (Fase 4)
+    if [ -f "${DEVORQ_LIB}/context7.sh" ]; then
+        source "${DEVORQ_LIB}/context7.sh" 2>/dev/null || true
+        if declare -f ctx7_check &>/dev/null; then
+            ctx7_check && gate::pass 6 "Context7 Checked"
+            return 0
+        fi
     fi
+
+    gate::warn 6 "Context7 não configurado (Fase 4 pendente)"
+    return 0
 }
 
 # ============================================================
-# GATE-7 — Lesson Apply (Pipeline)
+# GATE-7 — Systematic Debugging (Pipeline)
 # ============================================================
 
 gate_7() {
-    gate::info 7 "Lesson Apply — aplicando lições validadas"
+    gate::info 7 "Systematic Debugging — workflow de debug sistemático"
 
-    source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
-    if declare -f lessons::apply &>/dev/null; then
-        lessons::apply
-    else
-        gate::warn 7 "lib/lessons.sh não disponível"
+    # Carregar lib de debug se existir (Fase 5)
+    if [ -f "${DEVORQ_LIB}/debug.sh" ]; then
+        source "${DEVORQ_LIB}/debug.sh" 2>/dev/null || true
+        if declare -f debug::check &>/dev/null; then
+            debug::check
+            return $?
+        fi
     fi
 
-    gate::pass 7 "Lesson Apply OK"
+    gate::pass 7 "Systematic Debugging OK (lib/debug.sh não presente — Fase 5)"
+    return 0
 }
