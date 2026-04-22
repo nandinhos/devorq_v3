@@ -139,40 +139,81 @@ lessons::validate() {
         return 0
     fi
 
-    # Encontrar lições não-validadas
-    local unvalidated
-    unvalidated=$(find "$dir" -name "*.json" -exec test '!' -f "{}.validated" \; -print 2>/dev/null || true)
-
-    if [ -z "$unvalidated" ]; then
-        echo "Todas as lições já foram validadas."
-        return 0
-    fi
-
     # Verificar se Context7 está disponível
-    if ! command -v ctx_execute &>/dev/null && [ -z "${CONTEXT7_API_KEY:-}" ]; then
+    if [ -z "${OPENAI_API_KEY:-}" ] && [ ! -f "${DEVORQ_CONFIG:-${HOME}/.devorq/config}" ]; then
         echo -e "${YELLOW}[!]${RESET} Context7 não configurado — valide manualmente"
         return 0
     fi
 
+    # Carregar lib/context7.sh para usar ctx7_resolve
+    local ctx7_lib="${DEVORQ_DIR:-.}"/lib/context7.sh
+    if [ -f "$ctx7_lib" ]; then
+        # shellcheck source=/dev/null
+        source "$ctx7_lib"
+    fi
+
     echo -e "${CYAN}[GATE-6]${RESET} Validando lições com Context7..."
 
+    # Encontrar lições não-validadas
+    local validated_count=0
+    local skipped_count=0
     for f in "$dir"/*.json; do
         [ -f "$f" ] || continue
-        local id title
+
+        # Pula se já validada
+        if command -v jq &>/dev/null; then
+            local already_validated
+            already_validated=$(jq -r '.validated // false' "$f" 2>/dev/null)
+            [ "$already_validated" = "true" ] && continue
+        fi
+
+        local id title problem
         id=$(basename "$f" .json)
         if command -v jq &>/dev/null; then
             title=$(jq -r '.title' "$f" 2>/dev/null)
+            problem=$(jq -r '.problem' "$f" 2>/dev/null)
         else
             title=$(grep '"title"' "$f" | cut -d'"' -f4 || echo "???")
+            problem=$(grep '"problem"' "$f" | cut -d'"' -f4 || echo "")
         fi
-        echo -e "  ${YELLOW}~${RESET} ${title} (Context7 validation — TODO)"
+
+        # Valida com Context7 — tenta resolver pelo stack/title
+        local stack
         if command -v jq &>/dev/null; then
-            jq '.validated = true' "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+            stack=$(jq -r '.stack // "bash"' "$f" 2>/dev/null)
         else
-            sed 's/"validated": false/"validated": true/' "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+            stack=$(grep '"stack"' "$f" | cut -d'"' -f4 || echo "bash")
+        fi
+
+        local validated=false
+        if declare -f ctx7_resolve &>/dev/null; then
+            # Tenta validar via Context7 com stack + problem como query
+            local ctx_result
+            if ctx_result=$(ctx7_resolve "$stack" "$problem" 2>&1); then
+                if [ -n "$ctx_result" ] && ! echo "$ctx_result" | grep -qi "error\|warn\|sem resposta"; then
+                    validated=true
+                fi
+            fi
+        fi
+
+        if [ "$validated" = "true" ]; then
+            echo -e "  ${GREEN}[✓]${RESET} $title (Context7 OK)"
+            local ts
+            ts=$(date +%Y-%m-%dT%H:%M:%S)
+            if command -v jq &>/dev/null; then
+                jq --arg ts "$ts" '.validated = true | .validated_at = $ts' "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+            else
+                sed 's/"validated": false/"validated": true/' "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+            fi
+            ((validated_count++)) || true
+        else
+            echo -e "  ${YELLOW}[~]${RESET} $title (Context7 indisponível — pula)"
+            ((skipped_count++)) || true
         fi
     done
 
+    echo ""
+    echo "Validadas: $validated_count | Puladas: $skipped_count"
 }
 
 # ============================================================
@@ -211,12 +252,24 @@ lessons::apply() {
 
 lessons::sync_vps() {
     local file="$1"
-    local vps_host="${DEVORQ_VPS_HOST:-}"
+    local vps_host="${DEVORQ_VPS_HOST:-187.108.197.199}"
+    local vps_port="${DEVORQ_VPS_PORT:-6985}"
+    local vps_user="${DEVORQ_VPS_USER:-root}"
+    local mux_sock="${DEVORQ_MUX_SOCK:-/tmp/devorq-ssh-mux}"
 
-    [ -z "$vps_host" ] && return 1
+    [ ! -f "$file" ] && echo "[ERROR] Arquivo não encontrado: $file" && return 1
 
-    # TODO: usar SSH mux do lib/sync.sh
-    # scp "$file" "${vps_host}:/tmp/" 2>/dev/null || true
+    # Carrega lib/vps.sh se disponível para usar SSH mux
+    local mux_lib="${DEVORQ_DIR:-.}"/lib/vps.sh
+    if [ -f "$mux_lib" ]; then
+        # shellcheck source=/dev/null
+        source "$mux_lib"
+        vps::exec "mkdir -p ~/.devorq/lessons && cat > ~/.devorq/lessons/$(basename "$file")" < "$file"
+    else
+        # Fallback: scp direto
+        scp -P "$vps_port" -o "ControlPath=$mux_sock" "$file" "${vps_user}@${vps_host}:~/.devorq/lessons/" 2>/dev/null || \
+        scp -P "$vps_port" "$file" "${vps_user}@${vps_host}:/tmp/" 2>/dev/null || true
+    fi
 }
 
 # ============================================================
