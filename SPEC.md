@@ -287,17 +287,46 @@ devorq vps check
 ## 10. Status Atual
 
 ```
-FASE 1  ░░░░░░░░░░░░░░░░░░░░  0%
-FASE 2a ████████████████████ 100% ✅
-FASE 2b ░░░░░░░░░░░░░░░░░░░░  0%
+FASE 1  ████████████████████ 100% ✅ (core bash + gates + lessons)
+FASE 2a ████████████████████ 100% ✅ (PostgreSQL schema devorq.*)
+FASE 2b ████░░░░░░░░░░░░░░░░  20% 🔧 (sync-push/pull ✅, falta DevorqHubService)
 FASE 3  ░░░░░░░░░░░░░░░░░░░░  0%
 FASE 4  ░░░░░░░░░░░░░░░░░░░░  0%
 FASE 5  ░░░░░░░░░░░░░░░░░░░░  0%
-FASE 6  ░░░░░░░░░░░░░░░░░░░░  0%
+FASE 6  ████████░░░░░░░░░░░░  40% 🔧 (README+INSTALL+TROUBLESHOOTING ✅)
 FASE 7  ░░░░░░░░░░░░░░░░░░░░  0%
 FASE 8  ░░░░░░░░░░░░░░░░░░░░  0%
 ```
 
+### Implementado
+
+**Fase 1:**
+- `bin/devorq` (CLI source-based, 12 comandos)
+- `lib/lessons.sh` (capture/search/validate/apply, jq fallback)
+- `lib/gates.sh` (7 gates bloqueantes)
+- `lib/compact.sh` (handoff JSON)
+- `lib/vps.sh` (SSH mux check)
+
+**Fase 2a:**
+- Schema `devorq` no VPS PostgreSQL (srv163217:6985)
+- Tabelas: `lessons`, `memories`, `sessions`, `handoffs`
+- pgvector 0.8.2 ativo com ivfflat index
+- Colunas reais `devorq.lessons`: id, title, content, tags[], stack, project, embedding, source, validated_at, metadata(jsonb)
+
+**Fase 2b:**
+- `scripts/sync-push.py` ✅ — local -> HUB com escape json.dumps
+- `scripts/sync-pull.py` ✅ — HUB -> local (downloaded/)
+
+**Fase 6:**
+- `README.md` ✅
+- `INSTALL.md` ✅
+- `TROUBLESHOOTING.md` ✅
+
+### Pendente
+
+- `lib/vps.sh` — sync_pull/bash版本 abandonado (agora usa sync-pull.py)
+- `SPEC.md` — atualizar com status real
+
 **Repo:** https://github.com/nandinhos/devorq_v3
-**Última atualização:** 2026-04-22 01:25 BRT
-**Versão:** 3.2.0
+**Última atualização:** 2026-04-22 02:45 BRT
+**Versão:** 3.2.1
