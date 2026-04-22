@@ -147,9 +147,13 @@ devorq::cmd_flow() {
     devorq::log "Intent: ${intent}"
     devorq::log "Executando gates 1-7..."
 
+    local failed=0
     for gate in 1 2 3 4 5 6 7; do
         devorq::info "--- GATE ${gate} ---"
-        devorq::cmd_gate "$gate" || devorq::error "Gate ${gate} falhou"
+        # Sem || aqui — set -e do gates.sh não propaga pro caller
+        if ! devorq::cmd_gate "$gate" 2>&1; then
+            devorq::error "Gate ${gate} falhou"
+        fi
     done
 
     devorq::success "Flow completo!"
@@ -166,7 +170,9 @@ devorq::cmd_gate() {
     fi
 
     source "$lib_gate"
-    "gate_${gate_num}"
+    # Captura exit code explicitamente — evita conflito com set -e
+    "gate_${gate_num}"; local rv=$?
+    return $rv
 }
 
 devorq::cmd_lessons() {
@@ -287,9 +293,19 @@ devorq::cmd_version() {
 
 devorq::cmd_upgrade() {
     devorq::info "Atualizando DEVORQ..."
+    local current_version
+    current_version=$(cat "${DEVORQ_ROOT}/.devorq/version" 2>/dev/null || echo "desconhecida")
+    devorq::info "Versão atual: $current_version"
+
     if [ -d "${DEVORQ_ROOT}/.git" ]; then
         git -C "${DEVORQ_ROOT}" pull || devorq::error "Git pull falhou"
-        devorq::success "Atualizado para $(cat "${DEVORQ_ROOT}/.devorq/version")"
+        local new_version
+        new_version=$(cat "${DEVORQ_ROOT}/.devorq/version" 2>/dev/null || echo "desconhecida")
+        devorq::success "Atualizado: $current_version -> $new_version"
+
+        # Re-roda build para confirmar integridade
+        devorq::info "Executando devorq build para validar..."
+        devorq::cmd_build
     else
         devorq::error "Não é um clone git — use install.sh"
     fi
@@ -349,8 +365,15 @@ devorq::cmd_uninstall() {
     devorq::warn "Remover DEVORQ de ${DEVORQ_ROOT}?"
     devorq::info "Ctrl+C para cancelar, Enter para confirmar"
     read -r
+
+    # Preserva .devorq/ (versão e config do framework — não remove)
+    if [ -d "${DEVORQ_ROOT}/.devorq" ]; then
+        devorq::info "Preservando .devorq/ (version, config)..."
+    fi
+
     rm -rf "${DEVORQ_ROOT}"
     devorq::success "Removido de ${DEVORQ_ROOT}"
+    devorq::info "Execute 'rm -f ~/bin/devorq' para remover o symlink"
 }
 
 devorq::cmd_debug() {

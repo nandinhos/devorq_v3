@@ -171,7 +171,7 @@ Cada gate é verde ou vermelho. Vermelho = para e corrige.
 - [x] `lib/debug.sh` (debug::check, devorq::debug 4-phase workflow)
 - [x] GATE-7 implementada com debug::check passivo
 
-### Fase 6 — Documentação Completa 🔄
+### Fase 6 — Documentação Completa ✅
 **Meta:** Docs profissionais e testadas.
 
 - [x] `README.md` (visão, quick start, filosofia)
@@ -293,9 +293,9 @@ FASE 2b ████████████████████ 100% ✅ (s
 FASE 3  ████████████████████ 100% ✅ (lib/context.sh ✅, EXTRAS.md ✅)
 FASE 4  ████████████████████ 100% ✅ (lib/context7.sh ✅, EXTRAS.md ✅)
 FASE 5  ████████████████████ 100% ✅ (lib/debug.sh ✅, devorq debug ✅)
-FASE 6  ████████░░░░░░░░░░░░  40% 🔧 (README+INSTALL+EXTRAS ✅, falta CONTRIBUTING.md)
-FASE 7  ░░░░░░░░░░░░░░░░░░░░  0%
-FASE 8  ░░░░░░░░░░░░░░░░░░░░  0%
+FASE 6  ████████████████████ 100% ✅ (README+INSTALL+EXTRAS ✅, falta CONTRIBUTING.md)
+FASE 7  ░░░░░░░░░░░░░░░░░░░░   0% 🔧 (upgrade|uninstall|skill)
+FASE 8  ░░░░░░░░░░░░░░░░░░░░   0%
 ```
 
 ### Implementado
