@@ -14,7 +14,7 @@ PG_DB="${DEVORQ_PG_DB:-hermes_study}"
 PG_USER="${DEVORQ_PG_USER:-hermes_study}"
 PG_PORT="${DEVORQ_PG_PORT:-5433}"
 
-MUX_SOCK="${HOME}/.ssh/sockets/vps-hub"
+MUX_SOCK="${DEVORQ_MUX_SOCK:-/tmp/devorq-ssh-mux}"
 
 # ============================================================
 # check — Testa conexão com VPS HUB
@@ -77,7 +77,11 @@ vps::pg_exec() {
     local sql="$*"
     [ -z "$sql" ] && echo "Uso: vps::pg_exec <sql>" && return 1
 
-    vps::exec "docker exec hermesstudy_postgres psql -U ${PG_USER} -d ${PG_DB} -c '${sql}'"
+    # Usa printf %q para escapar correctamente
+    local escaped
+    escaped=$(printf '%s' "$sql" | sed "s/'/'\"'\"'/g")
+
+    vps::exec "docker exec hermesstudy_postgres psql -U ${PG_USER} -d ${PG_DB} -c '${escaped}'"
 }
 
 # ============================================================
@@ -101,6 +105,8 @@ vps::sync_push() {
         return 0
     fi
 
+    mkdir -p "$(dirname "$MUX_SOCK")"
+
     echo "[VPS] Sincronizando lessons → HUB..."
     local count=$(ls "$lessons_dir"/*.json 2>/dev/null | wc -l)
     echo "[VPS] $count lesson(s) encontrada(s)"
@@ -108,20 +114,39 @@ vps::sync_push() {
     for f in "$lessons_dir"/*.json; do
         [ -f "$f" ] || continue
 
-        local title=$(cat "$f" | grep -o "\"title\"[[:space:]]*:[[:space:]]*\"[^\"]*" | head -1 | cut -d'"' -f4)
-        local problem=$(cat "$f" | grep -o "\"problem\"[[:space:]]*:[[:space:]]*\"[^\"]*" | head -1 | cut -d'"' -f4)
-        local solution=$(cat "$f" | grep -o "\"solution\"[[:space:]]*:[[:space:]]*\"[^\"]*" | head -1 | cut -d'"' -f4)
-        local tags=$(cat "$f" | grep -o "\"tags\"[[:space:]]*:[[:space:]]*\[[^\]]*\]" | head -1)
-        local stack=$(cat "$f" | grep -o "\"stack\"[[:space:]]*:[[:space:]]*\[[^\]]*\]" | head -1)
-        local project=$(cat "$f" | grep -o "\"project\"[[:space:]]*:[[:space:]]*\"[^\"]*" | head -1 | cut -d'"' -f4)
+        local title problem solution tags stack project
+        if command -v jq &>/dev/null; then
+            title=$(jq -r '.title' "$f" 2>/dev/null || echo "")
+            problem=$(jq -r '.problem' "$f" 2>/dev/null || echo "")
+            solution=$(jq -r '.solution' "$f" 2>/dev/null || echo "")
+            tags=$(jq -c '.tags // []' "$f" 2>/dev/null || echo "[]")
+            stack=$(jq -c '.stack // []' "$f" 2>/dev/null || echo "[]")
+            project=$(jq -r '.project // "devorq_v3"' "$f" 2>/dev/null || echo "devorq_v3")
+        else
+            # Fallback grep
+            title=$(grep -o "\"title\"[[:space:]]*:[[:space:]]*\"[^\"]*" "$f" | head -1 | sed 's/.*: "//;s/"$//')
+            problem=$(grep -o "\"problem\"[[:space:]]*:[[:space:]]*\"[^\"]*" "$f" | head -1 | sed 's/.*: "//;s/"$//')
+            solution=$(grep -o "\"solution\"[[:space:]]*:[[:space:]]*\"[^\"]*" "$f" | head -1 | sed 's/.*: "//;s/"$//')
+            tags="[]"; stack="[]"; project="devorq_v3"
+        fi
 
         # Escape simples para SQL
         title="${title//\'/\'\'}"
         problem="${problem//\'/\'\'}"
         solution="${solution//\'/\'\'}"
         project="${project:-devorq_v3}"
+        stack="${stack:-unknown}"
+        tags="${tags:-[]}"
 
-        local sql="INSERT INTO devorq.lessons (title, problem, solution, tags, stack, project, created_at) VALUES ('${title}', '${problem}', '${solution}', ARRAY[]::text[], ARRAY[]::text[], '${project}', now()) ON CONFLICT DO NOTHING;"
+        # Garante que stack é string SQL válida
+        stack="'${stack}'"
+        tags="'${tags}'"
+
+        # Escape via Python (confiável para SQL)
+        content="Problem: ${problem} | Solution: ${solution}"
+        escaped_content=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read().rstrip('\n'))[1:-1])" <<< "$content")
+
+        local sql="INSERT INTO devorq.lessons (title, content, tags, stack, project, created_at) VALUES ('${title}', E'${escaped_content}', '${tags}', '${stack}', '${project}', now())"
 
         if vps::pg_exec "$sql" >/dev/null 2>&1; then
             echo "[OK] $title"

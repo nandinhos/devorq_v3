@@ -292,13 +292,17 @@ devorq::cmd_sync() {
     case "$sub" in
         push)
             devorq::info "Sincronizando lessons para HUB..."
-            source "${DEVORQ_LIB}/vps.sh" 2>/dev/null || true
-            vps::sync_push 2>/dev/null || devorq::warn "sync push: lib/vps.sh não disponível ou HUB offline"
+            export DEVORQ_PROJECT_ROOT="${PWD}"
+            if [ -f "${DEVORQ_ROOT}/scripts/sync-push.py" ]; then
+                python3 "${DEVORQ_ROOT}/scripts/sync-push.py" 2>&1 || devorq::warn "sync push: falha"
+            else
+                devorq::warn "scripts/sync-push.py não encontrado"
+            fi
             ;;
         pull)
             devorq::info "Sincronizando lessons do HUB..."
             source "${DEVORQ_LIB}/vps.sh" 2>/dev/null || true
-            vps::sync_pull 2>/dev/null || devorq::warn "sync pull: lib/vps.sh não disponível ou HUB offline"
+            vps::sync_pull 2>/dev/null || devorq::warn "sync pull: HUB offline"
             ;;
         *)
             devorq::error "Uso: devorq sync push|pull"
