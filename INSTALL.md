@@ -1,60 +1,214 @@
-# Instalação
+# Instalação — DEVORQ v3
+
+> Guia completo de instalação para Linux, macOS, WSL, e containers Docker.
+
+**Versão:** 3.2.1
+
+---
 
 ## Requisitos
 
-- Bash 5+
-- Git
-- jq (instalado automaticamente se necessário)
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Bash 5+           • Linux/macOS/WSL nativos                │
+│  Git               • Para clone e updates                  │
+│  jq 1.7+           • Opcional (binary estático incluso)   │
+│  SSH               • Opcional (para conexão HUB)          │
+└─────────────────────────────────────────────────────────────┘
+```
 
-## Instalação padrão
+---
+
+## Instalação Padrão (Clone)
 
 ```bash
-# Clonar o repositório
+# 1. Clonar repositório
 git clone https://github.com/nandinhos/devorq_v3.git ~/devorq
 
-# Adicionar ao PATH (adicione no ~/.bashrc ou ~/.zshrc)
-export PATH="$HOME/devorq/bin:$PATH"
+# 2. Adicionar ao PATH (adicione no ~/.bashrc ou ~/.zshrc)
+echo 'export PATH="$HOME/devorq/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
 
-# Verificar instalação
+# 3. Verificar instalação
+devorq version
+
+# 4. Testar
+devorq test
+```
+
+---
+
+## Instalação Rápida (Sem Clone)
+
+```bash
+# Baixa e instala bin/devorq diretamente
+curl -fsSL https://raw.githubusercontent.com/nandinhos/devorq_v3/main/bin/devorq \
+  -o ~/bin/devorq
+chmod +x ~/bin/devorq
+
+# Verificar
 devorq version
 ```
 
-## Instalação rápida (sem clone)
+> **Nota:** Certifique-se que `~/bin` está no PATH. Adicione se necessário:
+> `export PATH="$HOME/bin:$PATH"`
+
+---
+
+## jq (Se Não Tiver)
+
+DEVORQ funciona com ou sem `jq`. Com `jq` as saídas são mais limpas.
 
 ```bash
-# Copiar bin/devorq para ~/bin
-curl -fsSL https://raw.githubusercontent.com/nandinhos/devorq_v3/main/bin/devorq -o ~/bin/devorq
-chmod +x ~/bin/devorq
-```
-
-## jq (se não tiver)
-
-Se `jq` não estiver disponível, o DEVORQ baixa automaticamente:
-
-```bash
-curl -L https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux64 -o ~/bin/jq
+# Instalar jq binary estático (funciona em qualquer lugar, mesmo sem apt)
+curl -L https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux64 \
+  -o ~/bin/jq
 chmod +x ~/bin/jq
+
+# Verificar
+~/bin/jq --version
 ```
 
-Isso funciona mesmo em containers Docker sem apt-get.
+**Funciona em:** Docker rootless, containers sem apt-get, sistemas sem permissões de root.
 
-## Pós-instalação
+---
+
+## Pós-Instalação
 
 ```bash
 # Inicializar em qualquer projeto
 cd /projects/meu-projeto
 devorq init
 
+# Verificar estrutura
+devorq test
+
 # Testar gates
 devorq gate 1
 devorq gate 2
+devorq gate 3
 ```
+
+---
+
+## Instalação no WSL
+
+```bash
+# Same steps — funciona nativamente no WSL
+git clone https://github.com/nandinhos/devorq_v3.git ~/devorq
+echo 'export PATH="$HOME/devorq/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+devorq version
+```
+
+---
+
+## Instalação no Docker / Container
+
+```bash
+# 1. No Dockerfile ou entrypoint
+RUN curl -fsSL https://raw.githubusercontent.com/nandinhos/devorq_v3/main/bin/devorq \
+  -o /usr/local/bin/devorq && chmod +x /usr/local/bin/devorq
+
+# 2. jq binary estático
+RUN curl -L https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux64 \
+  -o /usr/local/bin/jq && chmod +x /usr/local/bin/jq
+```
+
+---
+
+## Configuração Opcional — Context7 API
+
+Para usar Context7 (consulta de documentação oficial):
+
+```bash
+# Via env (sessão atual)
+export OPENAI_API_KEY=sk-***
+
+# Via config file (persistente)
+mkdir -p ~/.devorq
+echo "OPENAI_API_KEY=sk-***" >> ~/.devorq/config
+```
+
+> **GATE-6 funciona sem Context7** — apenas mostra warning, nunca bloqueia.
+
+---
+
+## Configuração Opcional — VPS HUB
+
+Para sincronizar lições com o HUB remoto:
+
+```bash
+# Via env
+export DEVORQ_VPS_HOST=187.108.197.199
+export DEVORQ_VPS_PORT=6985
+export DEVORQ_VPS_USER=root
+
+# Via config file
+cat >> ~/.devorq/config << 'EOF'
+DEVORQ_VPS_HOST=187.108.197.199
+DEVORQ_VPS_PORT=6985
+DEVORQ_VPS_USER=root
+DEVORQ_PG_DB=hermes_study
+DEVORQ_PG_USER=hermes_study
+DEVORQ_PG_PORT=5433
+EOF
+
+# Testar conexão
+devorq vps check
+```
+
+---
+
+## Verificação Final
+
+```bash
+# Versão
+devorq version
+
+# Teste de estrutura
+devorq test
+
+# Help
+devorq help
+
+# Gates
+devorq gate 1 && devorq gate 2 && devorq gate 3
+
+# Workflow completo (opcional)
+devorq flow "primeiro uso do devorq"
+```
+
+---
 
 ## Desinstalação
 
 ```bash
+# Via comando (preserva lessons)
 devorq uninstall
-# ou manualmente:
-rm -rf ~/.devorq
-rm ~/bin/devorq
+
+# Ou manualmente:
+rm -rf ~/.devorq        # estado local (lições perdidas)
+rm ~/bin/devorq         # ou ~/.local/bin/devorq
+
+# Remover do PATH (edit ~/.bashrc)
+# Remover linha: export PATH="$HOME/devorq/bin:$PATH"
 ```
+
+> **Nota:** `devorq uninstall` preserva `.devorq/state/lessons/` antes de remover.
+
+---
+
+## Troubleshooting de Instalação
+
+| Sintoma | Solução |
+|---------|---------|
+| `devorq: command not found` | `export PATH="$HOME/devorq/bin:$PATH"` |
+| `Permission denied` | `chmod +x ~/devorq/bin/devorq` |
+| `bash: devorq: No such file` | Verificar se PATH contém diretório correto: `echo $PATH` |
+| jq errors | `curl -L .../jq-linux64 -o ~/bin/jq && chmod +x ~/bin/jq` |
+
+---
+
+**Versão:** 3.2.1
+**Repo:** https://github.com/nandinhos/devorq_v3
