@@ -25,7 +25,7 @@ set -euo pipefail
 # BOOTSTRAP
 # ============================================================
 
-DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
 DEVORQ_VERSION="3.2.0"
 
@@ -72,6 +72,7 @@ COMANDOS:
   sync push                  Enviar lessons → HUB
   sync pull                  Receber lessons ← HUB
   vps check                  Testar conexão com VPS HUB
+  debug [erro]               Workflow debug sistemático (4 fases)
 
   version                    Versão instalada
   upgrade                    Atualizar DEVORQ
@@ -350,6 +351,15 @@ devorq::cmd_uninstall() {
     devorq::success "Removido de ${DEVORQ_ROOT}"
 }
 
+devorq::cmd_debug() {
+    source "${DEVORQ_LIB}/debug.sh" 2>/dev/null || true
+    if declare -f devorq::debug &>/dev/null; then
+        devorq::debug "${1:-}"
+    else
+        devorq::warn "lib/debug.sh não disponível"
+    fi
+}
+
 # ============================================================
 # MAIN DISPATCH
 # ============================================================
@@ -370,6 +380,7 @@ main() {
         sync)      shift; devorq::cmd_sync "$@" ;;
         vps)       shift; devorq::cmd_vps "$@" ;;
         skills)    shift; devorq::cmd_skills "$@" ;;
+        debug)     devorq::cmd_debug "$@" ;;
         version)   devorq::cmd_version ;;
         upgrade)   devorq::cmd_upgrade ;;
         uninstall) devorq::cmd_uninstall ;;
