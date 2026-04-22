@@ -289,11 +289,11 @@ devorq vps check
 ```
 FASE 1  ████████████████████ 100% ✅ (core bash + gates + lessons)
 FASE 2a ████████████████████ 100% ✅ (PostgreSQL schema devorq.*)
-FASE 2b ████░░░░░░░░░░░░░░░░  20% 🔧 (sync-push/pull ✅, falta DevorqHubService)
-FASE 3  ░░░░░░░░░░░░░░░░░░░░  0%
+FASE 2b ████████████████████ 100% ✅ (sync-push/pull Python scripts)
+FASE 3  ████████░░░░░░░░░░░░  60% 🔧 (lib/context.sh ✅, falta SPEC.md update)
 FASE 4  ░░░░░░░░░░░░░░░░░░░░  0%
 FASE 5  ░░░░░░░░░░░░░░░░░░░░  0%
-FASE 6  ████████░░░░░░░░░░░░  40% 🔧 (README+INSTALL+TROUBLESHOOTING ✅)
+FASE 6  ████████░░░░░░░░░░░░  60% 🔧 (README+INSTALL+TROUBLESHOOTING ✅)
 FASE 7  ░░░░░░░░░░░░░░░░░░░░  0%
 FASE 8  ░░░░░░░░░░░░░░░░░░░░  0%
 ```
@@ -316,6 +316,11 @@ FASE 8  ░░░░░░░░░░░░░░░░░░░░  0%
 **Fase 2b:**
 - `scripts/sync-push.py` ✅ — local -> HUB com escape json.dumps
 - `scripts/sync-pull.py` ✅ — HUB -> local (downloaded/)
+- `lib/vps.sh` ✅ — funções bash sync_push/sync_pull removidas (Python scripts)
+
+**Fase 3:**
+- `lib/context.sh` ✅ — ctx_lint, ctx_stats, ctx_pack, ctx_merge, ctx_set, ctx_clear
+- `devorq context` expandido com subcommands (lint|stats|pack|merge|set|clear)
 
 **Fase 6:**
 - `README.md` ✅
@@ -324,7 +329,8 @@ FASE 8  ░░░░░░░░░░░░░░░░░░░░  0%
 
 ### Pendente
 
-- `lib/vps.sh` ✅ — funções bash sync_push/sync_pull removidas (Python scripts)
+- Nenhum item pendente — todas as pendências anteriores resolvidas
+
 **Repo:** https://github.com/nandinhos/devorq_v3
 **Última atualização:** 2026-04-22 02:45 BRT
 **Versão:** 3.2.1
