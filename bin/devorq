@@ -75,6 +75,7 @@ COMANDOS:
   vps check                  Testar conexão com VPS HUB
   debug [erro]               Workflow debug sistemático (4 fases)
   build                      Executa devorq test + gates 1-7 (Self-Building)
+  stats                      Mostra estatísticas de uso (lessons, gates, contexto)
 
   version                    Versão instalada
   upgrade                    Atualizar DEVORQ
@@ -424,6 +425,21 @@ devorq::cmd_build() {
     fi
 }
 
+devorq::cmd_stats() {
+    # Stats sempre opera no repo DEVORQ (como build)
+    local original_pwd="$PWD"
+    cd "${DEVORQ_ROOT}"
+
+    source "${DEVORQ_LIB}/stats.sh" 2>/dev/null || true
+    if declare -f stats::summary &>/dev/null; then
+        stats::summary
+    else
+        devorq::warn "lib/stats.sh não disponível"
+    fi
+
+    cd "$original_pwd"
+}
+
 # ============================================================
 # MAIN DISPATCH
 # ============================================================
@@ -446,6 +462,7 @@ main() {
         skills)    shift; devorq::cmd_skills "$@" ;;
         debug)     devorq::cmd_debug "$@" ;;
         build)     devorq::cmd_build ;;
+        stats)     devorq::cmd_stats ;;
         version)   devorq::cmd_version ;;
         upgrade)   devorq::cmd_upgrade ;;
         uninstall) devorq::cmd_uninstall ;;

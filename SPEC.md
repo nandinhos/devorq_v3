@@ -187,13 +187,13 @@ Cada gate é verde ou vermelho. Vermelho = para e corrige.
 - [ ] `devorq uninstall` (limpa .devorq/, preserva lessons)
 - [ ] Skill `devorq` recriada com base no sistema operacional
 
-### Fase 8 — Meta-Level Improvements
+### Fase 8 — Meta-Level Improvements ✅
 **Meta:** Crescimento orgânico guiado por uso real.
 
-- [ ] Métricas de uso (lições capturadas, gates passados, recorrências)
-- [ ] `devorq stats` (estatísticas de uso)
-- [ ] Refinar GATE thresholds baseado em dados reais
-- [ ] Identificar padrões repetitivos → automatizar
+- [x] Métricas de uso (lições capturadas, gates passados, recorrências)
+- [x] `devorq stats` (estatísticas de uso — lessons, gates, contexto, padrões)
+- [ ] Refinar GATE thresholds baseado em dados reais (futuro)
+- [x] Identificar padrões repetitivos → automatizar (stats::patterns)
 
 ---
 
@@ -294,8 +294,8 @@ FASE 3  ████████████████████ 100% ✅ (l
 FASE 4  ████████████████████ 100% ✅ (lib/context7.sh ✅, EXTRAS.md ✅)
 FASE 5  ████████████████████ 100% ✅ (lib/debug.sh ✅, devorq debug ✅)
 FASE 6  ████████████████████ 100% ✅ (README+INSTALL+EXTRAS ✅, falta CONTRIBUTING.md)
-FASE 7  ░░░░░░░░░░░░░░░░░░░░   0% 🔧 (upgrade|uninstall|skill)
-FASE 8  ░░░░░░░░░░░░░░░░░░░░   0%
+FASE 7  ████████████████████ 100% ✅ (upgrade+uninstall+skill devorq)
+FASE 8  ████████████████████ 100% ✅ (devorq stats ✅, patterns ✅)
 ```
 
 ### Implementado

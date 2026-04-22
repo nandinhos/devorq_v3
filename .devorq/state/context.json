@@ -1,5 +1,10 @@
 {
   "project": "devorq_v3",
   "stack": "[]",
-  "intent": ""
+  "intent": "",
+  "stats": {
+    "lessons_count": 0,
+    "gates_total": 7,
+    "last_stats_update": "2026-04-22T07:51:17Z"
+  }
 }
