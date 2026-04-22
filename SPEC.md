@@ -324,9 +324,7 @@ FASE 8  ░░░░░░░░░░░░░░░░░░░░  0%
 
 ### Pendente
 
-- `lib/vps.sh` — sync_pull/bash版本 abandonado (agora usa sync-pull.py)
-- `SPEC.md` — atualizar com status real
-
+- `lib/vps.sh` ✅ — funções bash sync_push/sync_pull removidas (Python scripts)
 **Repo:** https://github.com/nandinhos/devorq_v3
 **Última atualização:** 2026-04-22 02:45 BRT
 **Versão:** 3.2.1

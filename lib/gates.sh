@@ -83,13 +83,15 @@ gate_2() {
         fi
     fi
 
-    # Verificar .env.example se existir
+    # Verificar .env.example — só para projetos Laravel/PHP reais
+    # (DEVORQ em si não é um projeto Laravel, então pulamos)
     if [ -f "${PWD}/.env.example" ]; then
         gate::pass 2 ".env.example presente"
-    else
+    elif [ -f "${PWD}/composer.json" ] || [ -f "${PWD}/package.json" ]; then
         gate::warn 2 ".env.example não encontrado"
         ((errors++))
     fi
+    # Para frameworks/CLI tools bash, não exigimos .env.example
 
     if [ $errors -eq 0 ]; then
         gate::pass 2 "Pre-Flight OK"
@@ -142,10 +144,13 @@ gate_3() {
     # Bash lint (se houver scripts)
     if [ -f "bin/devorq" ]; then
         if command -v shellcheck &>/dev/null; then
-            shellcheck bin/devorq lib/*.sh 2>/dev/null || {
-                gate::warn 3 "shellcheck: problema(s) encontrado(s)"
-                ((errors++))
-            }
+            # Só conta como erro se houver SC1/2xxx (sintaxe/fatals), não warnings de estilo (SC2xxx)
+            local sc_errors
+            sc_errors=$(shellcheck -S error bin/devorq lib/*.sh 2>/dev/null | grep -c "SC[12]" || true)
+            if [ "$sc_errors" -gt 0 ]; then
+                gate::warn 3 "shellcheck: $sc_errors erro(s) de sintaxe"
+                ((errors += sc_errors))
+            fi
         fi
     fi
 

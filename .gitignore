@@ -19,3 +19,4 @@ package-lock.json
 # Build artifacts
 *.log
 .DS_Store
+.devorq/state/lessons/downloaded/
