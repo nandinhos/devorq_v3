@@ -256,16 +256,27 @@ gate_5() {
 gate_6() {
     gate::info 6 "Context7 Checked — Docs consultadas (mesmo que rejeite)"
 
-    # Carregar lib de context7 se existir (Fase 4)
     if [ -f "${DEVORQ_LIB}/context7.sh" ]; then
         source "${DEVORQ_LIB}/context7.sh" 2>/dev/null || true
         if declare -f ctx7_check &>/dev/null; then
-            ctx7_check && gate::pass 6 "Context7 Checked"
+            # Captura output e exit code — set -e não pode interferir
+            local ctx7_output rv
+            set +e
+            ctx7_output=$(ctx7_check 2>&1)
+            rv=$?
+            set -e
+            # Imprime output da ctx7_check
+            [ -n "$ctx7_output" ] && echo "$ctx7_output"
+            if [ $rv -eq 0 ]; then
+                gate::pass 6 "Context7 Checked"
+            else
+                gate::warn 6 "Context7 não configurado (sem API key ou API offline)"
+            fi
             return 0
         fi
     fi
 
-    gate::warn 6 "Context7 não configurado (Fase 4 pendente)"
+    gate::warn 6 "Context7 não configurado (lib não encontrada)"
     return 0
 }
 
