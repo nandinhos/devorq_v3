@@ -290,10 +290,10 @@ devorq vps check
 FASE 1  ████████████████████ 100% ✅ (core bash + gates + lessons)
 FASE 2a ████████████████████ 100% ✅ (PostgreSQL schema devorq.*)
 FASE 2b ████████████████████ 100% ✅ (sync-push/pull Python scripts)
-FASE 3  ████████░░░░░░░░░░░░  60% 🔧 (lib/context.sh ✅, falta SPEC.md update)
-FASE 4  ░░░░░░░░░░░░░░░░░░░░  0%
+FASE 3  ██████████████░░░░░░░  80% 🔧 (lib/context.sh ✅, falta EXTRAS.md)
+FASE 4  ████████████░░░░░░░░  90% 🔧 (lib/context7.sh ✅, falta EXTRAS.md)
 FASE 5  ░░░░░░░░░░░░░░░░░░░░  0%
-FASE 6  ████████░░░░░░░░░░░░  60% 🔧 (README+INSTALL+TROUBLESHOOTING ✅)
+FASE 6  ████████████░░░░░░░░  60% 🔧 (README+INSTALL+TROUBLESHOOTING ✅)
 FASE 7  ░░░░░░░░░░░░░░░░░░░░  0%
 FASE 8  ░░░░░░░░░░░░░░░░░░░░  0%
 ```
@@ -318,9 +318,15 @@ FASE 8  ░░░░░░░░░░░░░░░░░░░░  0%
 - `scripts/sync-pull.py` ✅ — HUB -> local (downloaded/)
 - `lib/vps.sh` ✅ — funções bash sync_push/sync_pull removidas (Python scripts)
 
-**Fase 3:**
+**Fase 3 — Context-Mode:**
 - `lib/context.sh` ✅ — ctx_lint, ctx_stats, ctx_pack, ctx_merge, ctx_set, ctx_clear
 - `devorq context` expandido com subcommands (lint|stats|pack|merge|set|clear)
+- GATE-3 agora auto-cria context.json e valida com ctx_lint
+
+**Fase 4 — Context7:**
+- `lib/context7.sh` ✅ — ctx7_check, ctx7_search, ctx7_resolve, ctx7_compare
+- GATE-6 integrado com ctx7_check
+- Fallback: avisa sobre API key missing, nunca bloqueia
 
 **Fase 6:**
 - `README.md` ✅
