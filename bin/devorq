@@ -6,30 +6,28 @@
 #
 # Uso:
 #   devorq init                    Inicializar projeto
-#   devorq flow "<intent>"         Workflow completo
-#   devorq gate [1-7]              Executar gate
-#   devorq lessons capture "<t>" "<p>" "<s>"  Capturar lição
-#   devorq lessons search "<q>"    Buscar lições
+#   devorq test                   Testar estrutura
+#   devorq gate [1-7]             Executar gate
+#   devorq lessons capture       Capturar lição
+#   devorq lessons search "<q>"  Buscar lições
 #   devorq lessons validate       Validar com Context7
-#   devorq context                 Mostrar contexto atual
-#   devorq compact                 Gerar handoff
-#   devorq vps check               Testar conexão VPS
-#   devorq version                 Versão
-#   devorq upgrade                 Atualizar
-#   devorq uninstall               Remover
+#   devorq context                Mostrar contexto atual
+#   devorq compact                Gerar handoff
+#   devorq sync push|pull         Sincronizar com HUB
+#   devorq vps check              Testar conexão VPS
+#   devorq version                Versão
+#   devorq upgrade                Atualizar
+#   devorq uninstall              Remover
 
 set -euo pipefail
 
 # ============================================================
-# BOOTSTRAP — descobrir onde está o ~/.devorq/
+# BOOTSTRAP
 # ============================================================
 
-# Se este script está em ~/.devorq/bin/devorq
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-
-# Garantir que lib/ está no PATH de sourcing
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION=$(cat "${DEVORQ_ROOT}/.devorq/version" 2>/dev/null || echo "unknown")
+DEVORQ_VERSION="3.2.0"
 
 # jq no ~/bin (instalado via curl sem root)
 if [ -d "${HOME}/bin" ] && [[ ":$PATH:" != *":${HOME}/bin:"* ]]; then
@@ -37,25 +35,14 @@ if [ -d "${HOME}/bin" ] && [[ ":$PATH:" != *":${HOME}/bin:"* ]]; then
 fi
 
 # ============================================================
-# COLORS
+# LOGGING (sem cores — compatibilidade máxima)
 # ============================================================
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-RESET='\033[0m'
-
-# ============================================================
-# LOGGING
-# ============================================================
-
-devorq::log() { echo -e "${CYAN}[DEVORQ]${RESET} $*"; }
-devorq::info() { echo -e "${CYAN}[DEVORQ]${RESET} $*"; }
-devorq::success() { echo -e "${GREEN}[✓]${RESET} $*"; }
-devorq::warn() { echo -e "${YELLOW}[!]${RESET} $*"; }
-devorq::error() { echo -e "${RED}[✗]${RESET} $*" >&2; exit 1; }
+devorq::log()   { echo "[DEVORQ] $*"; }
+devorq::info()  { echo "[DEVORQ] $*"; }
+devorq::success() { echo "[OK] $*"; }
+devorq::warn()  { echo "[!] $*"; }
+devorq::error() { echo "[ERROR] $*" >&2; exit 1; }
 
 # ============================================================
 # HELP
@@ -63,42 +50,42 @@ devorq::error() { echo -e "${RED}[✗]${RESET} $*" >&2; exit 1; }
 
 devorq::help() {
     cat << EOF
-${BOLD}DEVORQ v${DEVORQ_VERSION}${RESET} — Framework Agêntico de Desenvolvimento
+DEVORQ v${DEVORQ_VERSION} — Framework bash puro para metodologia de desenvolvimento sistemático
 
-${BOLD}USO:${RESET}
+USO:
   devorq <comando> [opções]
 
-${BOLD}COMANDOS:${RESET}
+COMANDOS:
   init                       Inicializar .devorq/ no projeto
+  test                       Testar estrutura do projeto
   flow "<intent>"           Workflow completo (gates 1-7)
   gate [1-7]                Executar gate específico
 
   lessons capture "<t>" "<p>" "<s>"
                              Capturar lição aprendida
-  lessons search "<q>"       Buscar lições no HUB
-  lessons validate          Validar lição com Context7
+  lessons search "<q>"      Buscar lições locais
+  lessons validate           Validar lição com Context7
 
-  context                   Mostrar contexto atual
-  compact                   Gerar handoff para próxima sessão
+  context                    Mostrar contexto atual
+  compact                    Gerar handoff para próxima sessão
 
-  vps check                 Testar conexão com VPS HUB
-  skills list              Listar skills disponíveis
-  skills load <name>        Carregar skill na sessão
+  sync push                  Enviar lessons → HUB
+  sync pull                  Receber lessons ← HUB
+  vps check                  Testar conexão com VPS HUB
 
-  version                   Versão instalada
-  upgrade                   Atualizar DEVORQ
-  uninstall                 Remover instalação global
+  version                    Versão instalada
+  upgrade                    Atualizar DEVORQ
+  uninstall                  Remover instalação global
 
-${BOLD}OPÇÕES:${RESET}
+OPÇÕES:
   -h, --help                Este help
   -v, --verbose             Modo debug
-  -y, --yes                 Confirmar tudo (não-interativo)
 
-${BOLD}EXEMPLOS:${RESET}
+EXEMPLOS:
   devorq init
-  devorq flow "criar API de usuários"
-  devorq gate 3
-  devorq lessons capture "use jq not python" "json" "bash"
+  devorq test
+  devorq gate 1
+  devorq lessons capture "jq install" "no apt-get" "curl binary to ~/bin"
   devorq vps check
 
 EOF
@@ -118,7 +105,7 @@ devorq::cmd_init() {
         return 0
     fi
 
-    mkdir -p "$devorq_dir/state"
+    mkdir -p "$devorq_dir/state/lessons/captured"
     mkdir -p "$devorq_dir/skills"
     mkdir -p "$devorq_dir/rules"
 
@@ -127,16 +114,24 @@ devorq::cmd_init() {
         cp "${DEVORQ_ROOT}/.devorq/commit_convention.json" "$devorq_dir/"
     fi
 
-    cat > "$devorq_dir/state/context.json" << 'EOF'
+    cat > "$devorq_dir/state/context.json" << 'EOFC'
 {
   "project": "",
   "stack": [],
   "intent": "",
-  "session": "",
   "gates_completed": [],
   "last_updated": ""
 }
-EOF
+EOFC
+
+    cat > "$devorq_dir/state/session.json" << 'EOFS'
+{
+  "started_at": "",
+  "ended_at": "",
+  "handoff_id": null,
+  "summary": ""
+}
+EOFS
 
     devorq::success "Inicializado .devorq/ em ${project_root}"
     devorq::info "Edite .devorq/state/context.json com project, stack e intent"
@@ -241,15 +236,13 @@ devorq::cmd_skills() {
     local sub="${1:-list}"
     case "$sub" in
         list)
-            devorq::info "Skills disponíveis:"
-            ls "${DEVORQ_ROOT}/.devorq/skills/" 2>/dev/null | while read s; do
-                echo "  - $s"
-            done || echo "  (nenhuma skill global)"
+            devorq::info "Skills disponíveis: systemic-debugging, github-code-review, github-pr-workflow, plan, subagent-driven-development, test-driven-development"
+            devorq::info "Use 'devorq skills load <name>' no Hermes Agent para carregar"
             ;;
         load)
             local name="${2:-}"
             [ -z "$name" ] && devorq::error "Uso: devorq skills load <name>"
-            skill_view "$name" 2>/dev/null || devorq::error "Skill '$name' não encontrada"
+            devorq::info "Skills são carregadas via Hermes Agent — não diretamente via CLI bash"
             ;;
         *)
             devorq::error "Uso: devorq skills list|load <name>"
@@ -271,6 +264,48 @@ devorq::cmd_upgrade() {
     fi
 }
 
+devorq::cmd_test() {
+    devorq::info "Testando estrutura..."
+    local errors=0
+
+    # Testa sintaxe
+    bash -n "${DEVORQ_ROOT}/bin/devorq" 2>/dev/null || { devorq::warn "bin/devorq: syntax error"; errors=$((errors+1)); }
+    for f in "${DEVORQ_LIB}"/*.sh; do
+        bash -n "$f" 2>/dev/null || { devorq::warn "$f: syntax error"; errors=$((errors+1)); }
+    done
+
+    # Testa libs que existem
+    [ -f "${DEVORQ_LIB}/lessons.sh" ] || { devorq::warn "lib/lessons.sh: not found"; errors=$((errors+1)); }
+    [ -f "${DEVORQ_LIB}/gates.sh" ] || { devorq::warn "lib/gates.sh: not found"; errors=$((errors+1)); }
+    [ -f "${DEVORQ_LIB}/compact.sh" ] || { devorq::warn "lib/compact.sh: not found"; errors=$((errors+1)); }
+    [ -f "${DEVORQ_LIB}/vps.sh" ] || { devorq::warn "lib/vps.sh: not found"; errors=$((errors+1)); }
+
+    if [ $errors -eq 0 ]; then
+        devorq::success "Estrutura OK (devorq v${DEVORQ_VERSION})"
+    else
+        devorq::error "$errors erro(s) encontrado(s)"
+    fi
+}
+
+devorq::cmd_sync() {
+    local sub="${1:-}"
+    case "$sub" in
+        push)
+            devorq::info "Sincronizando lessons para HUB..."
+            source "${DEVORQ_LIB}/vps.sh" 2>/dev/null || true
+            vps::sync_push 2>/dev/null || devorq::warn "sync push: lib/vps.sh não disponível ou HUB offline"
+            ;;
+        pull)
+            devorq::info "Sincronizando lessons do HUB..."
+            source "${DEVORQ_LIB}/vps.sh" 2>/dev/null || true
+            vps::sync_pull 2>/dev/null || devorq::warn "sync pull: lib/vps.sh não disponível ou HUB offline"
+            ;;
+        *)
+            devorq::error "Uso: devorq sync push|pull"
+            ;;
+    esac
+}
+
 devorq::cmd_uninstall() {
     devorq::warn "Remover DEVORQ de ${DEVORQ_ROOT}?"
     devorq::info "Ctrl+C para cancelar, Enter para confirmar"
@@ -289,13 +324,14 @@ main() {
     case "$cmd" in
         -h|--help) devorq::help ;;
         -v|--verbose) set -x; shift; main "$@" ;;
-        -y|--yes) export DEVORQ_YES=1; shift; main "$@" ;;
         init)      shift; devorq::cmd_init "$@" ;;
+        test)      devorq::cmd_test ;;
         flow)      shift; devorq::cmd_flow "$@" ;;
         gate)      shift; devorq::cmd_gate "$@" ;;
         lessons)   shift; devorq::cmd_lessons "$@" ;;
         context)   devorq::cmd_context ;;
         compact)   devorq::cmd_compact ;;
+        sync)      shift; devorq::cmd_sync "$@" ;;
         vps)       shift; devorq::cmd_vps "$@" ;;
         skills)    shift; devorq::cmd_skills "$@" ;;
         version)   devorq::cmd_version ;;

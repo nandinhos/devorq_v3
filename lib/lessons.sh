@@ -9,6 +9,9 @@
 
 set -euo pipefail
 
+# Cores (sem ANSI — compatibilidade máxima)
+GREEN='' CYAN='' RED='' YELLOW='' RESET='' BOLD=''
+
 DEVORQ_LESSONS_DIR="${DEVORQ_LESSONS_DIR:-${PWD}/.devorq/state/lessons}"
 DEVORQ_HUB_HOST="${DEVORQ_HUB_HOST:-}"
 DEVORQ_HUB_PORT="${DEVORQ_HUB_PORT:-5432}"

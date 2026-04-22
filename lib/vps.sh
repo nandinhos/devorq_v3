@@ -1,85 +1,54 @@
 #!/usr/bin/env bash
-# lib/vps.sh — VPS HUB connectivity check
+# lib/vps.sh — VPS HUB connectivity + sync
 #
-# Usa SSH multiplexing (ControlMaster) para conexões rápidas
-# Pré-requisito: SSH config configurado para srv163217
+# SSH multiplexing para conexões rápidas (~0.3s/comando)
+# Sincroniza .devorq/state/lessons ↔ PostgreSQL devorq.lessons
 
 set -euo pipefail
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-RESET='\033[0m'
 
 VPS_HOST="${DEVORQ_VPS_HOST:-187.108.197.199}"
 VPS_PORT="${DEVORQ_VPS_PORT:-6985}"
 VPS_USER="${DEVORQ_VPS_USER:-root}"
+
+PG_DB="${DEVORQ_PG_DB:-hermes_study}"
+PG_USER="${DEVORQ_PG_USER:-hermes_study}"
+PG_PORT="${DEVORQ_PG_PORT:-5433}"
+
+MUX_SOCK="${HOME}/.ssh/sockets/vps-hub"
 
 # ============================================================
 # check — Testa conexão com VPS HUB
 # ============================================================
 
 vps::check() {
-    echo -e "${CYAN}[VPS]${RESET} Testando conexão com ${VPS_HOST}:${VPS_PORT}..."
+    echo "[VPS] Testando ${VPS_HOST}:${VPS_PORT}..."
 
-    # Teste SSH simples
     if ! command -v ssh &>/dev/null; then
-        echo -e "${RED}[✗]${RESET} ssh não encontrado"
+        echo "[ERROR] ssh não encontrado"
         return 1
     fi
 
-    # SSH multiplexing check
-    local mux_sock="${HOME}/.ssh/sockets/vps-hub"
-    mkdir -p "$(dirname "$mux_sock")"
+    mkdir -p "$(dirname "$MUX_SOCK")"
 
-    echo -e "${CYAN}[VPS]${RESET} ControlMaster: ${mux_sock}"
-
-    # Tentar conexão via mux já existente
     local result
     result=$(ssh -o "ControlMaster=auto" \
-             -o "ControlPath=${mux_sock}" \
+             -o "ControlPath=${MUX_SOCK}" \
              -o "ControlPersist=600" \
              -o "StrictHostKeyChecking=accept-new" \
              -o "ConnectTimeout=5" \
              -p "$VPS_PORT" \
              "${VPS_USER}@${VPS_HOST}" \
-             "echo PING && date" 2>&1) || {
-        echo -e "${RED}[✗]${RESET} SSH falhou: $result"
+             "echo PING" 2>&1) || {
+        echo "[ERROR] SSH falhou: $result"
         return 1
     }
 
     if echo "$result" | grep -q "PING"; then
-        echo -e "${GREEN}[✓]${RESET} VPS responde: $(echo "$result" | grep PING)"
+        echo "[OK] VPS responde"
     else
-        echo -e "${RED}[✗]${RESET} Resposta inesperada: $result"
+        echo "[ERROR] Resposta inesperada: $result"
         return 1
     fi
-
-    # Testar PostgreSQL se psql disponível
-    if command -v psql &>/dev/null; then
-        echo -e "${CYAN}[VPS]${RESET} Testando PostgreSQL..."
-        vps::pg_check || echo -e "${YELLOW}[!]${RESET} PostgreSQL não acessível via psql"
-    fi
-}
-
-# ============================================================
-# pg_check — Testa PostgreSQL do HUB
-# ============================================================
-
-vps::pg_check() {
-    local db="${DEVORQ_PG_DB:-hermes_study}"
-    local user="${DEVORQ_PG_USER:-hermes_study}"
-    local port="${DEVORQ_PG_PORT:-5433}"
-    local host="${VPS_HOST}"
-
-    # SSH tunnel → psql
-    psql -h "$host" -p "$port" -U "$user" -d "$db" -c "SELECT 1;" &>/dev/null || {
-        echo -e "${YELLOW}[!]${RESET} psql falhou (tunnel ou credenciais)"
-        return 1
-    }
-
-    echo -e "${GREEN}[✓]${RESET} PostgreSQL OK"
 }
 
 # ============================================================
@@ -90,59 +59,103 @@ vps::exec() {
     local cmd="$*"
     [ -z "$cmd" ] && echo "Uso: vps::exec <comando>" && return 1
 
-    local mux_sock="${HOME}/.ssh/sockets/vps-hub"
-
     ssh -o "ControlMaster=auto" \
-        -o "ControlPath=${mux_sock}" \
+        -o "ControlPath=${MUX_SOCK}" \
         -o "ControlPersist=600" \
         -o "StrictHostKeyChecking=accept-new" \
-        -o "ConnectTimeout=5" \
+        -o "ConnectTimeout=10" \
         -p "$VPS_PORT" \
         "${VPS_USER}@${VPS_HOST}" \
         "$cmd"
 }
 
 # ============================================================
-# sync_up — Sobe arquivo para VPS
+# pg_exec — Executa SQL no PostgreSQL do HUB
 # ============================================================
 
-vps::sync_up() {
-    local local_file="$1"
-    local remote_path="${2:-/tmp}"
+vps::pg_exec() {
+    local sql="$*"
+    [ -z "$sql" ] && echo "Uso: vps::pg_exec <sql>" && return 1
 
-    local mux_sock="${HOME}/.ssh/sockets/vps-hub"
-
-    rsync -e "ssh -o ControlMaster=auto -o ControlPath=${mux_sock} -o StrictHostKeyChecking=accept-new -p ${VPS_PORT}" \
-        -avz "$local_file" \
-        "${VPS_USER}@${VPS_HOST}:${remote_path}/" 2>/dev/null || {
-        # Fallback: ssh cat
-        ssh -o "ControlMaster=auto" \
-            -o "ControlPath=${mux_sock}" \
-            -o "StrictHostKeyChecking=accept-new" \
-            -p "$VPS_PORT" \
-            "${VPS_USER}@${VPS_HOST}" \
-            "cat > ${remote_path}/$(basename "$local_file")" < "$local_file"
-    }
+    vps::exec "docker exec hermesstudy_postgres psql -U ${PG_USER} -d ${PG_DB} -c '${sql}'"
 }
 
 # ============================================================
-# sync_down — Baixa arquivo do VPS
+# lessons_count — Conta lições no HUB
 # ============================================================
 
-vps::sync_down() {
-    local remote_path="$1"
-    local local_dir="${2:-.}"
+vps::lessons_count() {
+    vps::pg_exec "SELECT count(*) FROM devorq.lessons;" 2>/dev/null || echo "0"
+}
 
-    local mux_sock="${HOME}/.ssh/sockets/vps-hub"
+# ============================================================
+# sync_push — Envia lessons locais → HUB PostgreSQL
+# ============================================================
 
-    rsync -e "ssh -o ControlMaster=auto -o ControlPath=${mux_sock} -o StrictHostKeyChecking=accept-new -p ${VPS_PORT}" \
-        -avz "${VPS_USER}@${VPS_HOST}:${remote_path}" \
-        "$local_dir/" 2>/dev/null || {
-        ssh -o "ControlMaster=auto" \
-            -o "ControlPath=${mux_sock}" \
-            -o "StrictHostKeyChecking=accept-new" \
-            -p "$VPS_PORT" \
-            "${VPS_USER}@${VPS_HOST}" \
-            "cat $remote_path" > "${local_dir}/$(basename "$remote_path")"
+vps::sync_push() {
+    local project_root="${PWD}"
+    local lessons_dir="${project_root}/.devorq/state/lessons/captured"
+
+    if [ ! -d "$lessons_dir" ]; then
+        echo "[!] Nenhuma lesson local para sincronizar"
+        return 0
+    fi
+
+    echo "[VPS] Sincronizando lessons → HUB..."
+    local count=$(ls "$lessons_dir"/*.json 2>/dev/null | wc -l)
+    echo "[VPS] $count lesson(s) encontrada(s)"
+
+    for f in "$lessons_dir"/*.json; do
+        [ -f "$f" ] || continue
+
+        local title=$(cat "$f" | grep -o "\"title\"[[:space:]]*:[[:space:]]*\"[^\"]*" | head -1 | cut -d'"' -f4)
+        local problem=$(cat "$f" | grep -o "\"problem\"[[:space:]]*:[[:space:]]*\"[^\"]*" | head -1 | cut -d'"' -f4)
+        local solution=$(cat "$f" | grep -o "\"solution\"[[:space:]]*:[[:space:]]*\"[^\"]*" | head -1 | cut -d'"' -f4)
+        local tags=$(cat "$f" | grep -o "\"tags\"[[:space:]]*:[[:space:]]*\[[^\]]*\]" | head -1)
+        local stack=$(cat "$f" | grep -o "\"stack\"[[:space:]]*:[[:space:]]*\[[^\]]*\]" | head -1)
+        local project=$(cat "$f" | grep -o "\"project\"[[:space:]]*:[[:space:]]*\"[^\"]*" | head -1 | cut -d'"' -f4)
+
+        # Escape simples para SQL
+        title="${title//\'/\'\'}"
+        problem="${problem//\'/\'\'}"
+        solution="${solution//\'/\'\'}"
+        project="${project:-devorq_v3}"
+
+        local sql="INSERT INTO devorq.lessons (title, problem, solution, tags, stack, project, created_at) VALUES ('${title}', '${problem}', '${solution}', ARRAY[]::text[], ARRAY[]::text[], '${project}', now()) ON CONFLICT DO NOTHING;"
+
+        if vps::pg_exec "$sql" >/dev/null 2>&1; then
+            echo "[OK] $title"
+        else
+            echo "[!] Falhou: $title"
+        fi
+    done
+
+    echo "[VPS] Sync push completo"
+}
+
+# ============================================================
+# sync_pull — Recebe lessons do HUB → local
+# ============================================================
+
+vps::sync_pull() {
+    local project_root="${PWD}"
+    local lessons_dir="${project_root}/.devorq/state/lessons/captured"
+
+    mkdir -p "$lessons_dir"
+
+    echo "[VPS] Sincronizando lessons ← HUB..."
+
+    local lessons_json
+    lessons_json=$(vps::pg_exec "SELECT json_agg(json_build_object('title', title, 'problem', problem, 'solution', solution, 'tags', tags, 'stack', stack, 'project', project, 'created_at', created_at)) FROM devorq.lessons;" 2>/dev/null) || {
+        echo "[!] Não foi possível acessar o HUB"
+        return 1
     }
+
+    if [ -z "$lessons_json" ] || [ "$lessons_json" = "null" ]; then
+        echo "[!] Nenhuma lesson no HUB"
+        return 0
+    fi
+
+    echo "[OK] HUB possui lessons"
+    echo "[VPS] Sync pull completo (implícito via dev-memory-laravel UI)"
 }

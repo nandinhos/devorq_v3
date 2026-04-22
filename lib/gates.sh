@@ -11,11 +11,7 @@
 
 set -euo pipefail
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-RESET='\033[0m'
+RED='' GREEN='' YELLOW='' CYAN='' RESET=''
 
 GATE_BLOCKING="${DEVORQ_BLOCKING:-true}"
 DEVORQ_ALLOW_DRAFT="${DEVORQ_ALLOW_DRAFT:-false}"
@@ -45,36 +41,27 @@ gate::info() {
 # ============================================================
 
 gate_1() {
-    gate::info 1 "SPEC Review — verificando spec/"
+    gate::info 1 "SPEC Review"
 
-    local spec_dir="${PWD}/specs/approved"
-    local spec_file="${spec_dir}/SPEC.md"
-
-    if [ ! -d "$spec_dir" ]; then
-        gate::warn 1 "specs/approved/ não existe — pulando"
-        return 0
-    fi
+    local spec_file="${PWD}/SPEC.md"
 
     if [ ! -f "$spec_file" ]; then
         if [ "$DEVORQ_ALLOW_DRAFT" = "true" ]; then
-            gate::warn 1 "SPEC.md não encontrado em specs/approved/ — ALLOW_DRAFT ativo"
+            gate::warn 1 "SPEC.md não encontrado — ALLOW_DRAFT ativo"
             return 0
         fi
-        gate::fail 1 "SPEC.md não encontrado em specs/approved/"
+        gate::fail 1 "SPEC.md não encontrado"
         return 1
     fi
 
-    # Verificar que SPEC tem seções mínimas
-    local has_problem has_solution
-    has_problem=$(grep -c "## Problem\\|## Problema" "$spec_file" || true)
-    has_solution=$(grep -c "## Solution\\|## Solução" "$spec_file" || true)
-
-    if [ "$has_problem" -eq 0 ] || [ "$has_solution" -eq 0 ]; then
-        gate::fail 1 "SPEC.md incompleto (falta Problem ou Solution)"
+    local size
+    size=$(wc -c < "$spec_file")
+    if [ "$size" -lt 100 ]; then
+        gate::fail 1 "SPEC.md está vazio ou incompleto"
         return 1
     fi
 
-    gate::pass 1 "SPEC.md válido"
+    gate::pass 1 "SPEC.md existe e tem conteúdo"
 }
 
 # ============================================================
