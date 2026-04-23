@@ -73,6 +73,7 @@ COMANDOS:
   sync push                  Enviar lessons → HUB
   sync pull                  Receber lessons ← HUB
   vps check                  Testar conexão com VPS HUB
+  context7 install           Instalar Context7 (cli|mcp|api)
   debug [erro]               Workflow debug sistemático (4 fases)
   build                      Executa devorq test + gates 1-7 (Self-Building)
   stats                      Mostra estatísticas de uso (lessons, gates, contexto)
@@ -270,6 +271,46 @@ devorq::cmd_vps() {
     esac
 }
 
+devorq::cmd_context7() {
+    local sub="${1:-help}"
+    case "$sub" in
+        install)
+            source "${DEVORQ_LIB}/context7.sh" 2>/dev/null || true
+            if declare -f ctx7_install &>/dev/null; then
+                ctx7_install "${2:-}"
+            else
+                devorq::error "lib/context7.sh não disponível"
+            fi
+            ;;
+        detect)
+            source "${DEVORQ_LIB}/context7.sh" 2>/dev/null || true
+            if declare -f ctx7_detect &>/dev/null; then
+                local method; method=$(ctx7_detect)
+                devorq::info "Método disponível: $method"
+            else
+                devorq::error "lib/context7.sh não disponível"
+            fi
+            ;;
+        check)
+            source "${DEVORQ_LIB}/context7.sh" 2>/dev/null || true
+            if declare -f ctx7_check &>/dev/null; then
+                ctx7_check
+            else
+                devorq::error "lib/context7.sh não disponível"
+            fi
+            ;;
+        help|--help|-h|"")
+            devorq::info "Uso: devorq context7 install|detect|check"
+            devorq::info "  install    Instalar Context7 (cli|mcp|api)"
+            devorq::info "  detect     Detectar método disponível"
+            devorq::info "  check      Testar Context7"
+            ;;
+        *)
+            devorq::error "Uso: devorq context7 install|detect|check"
+            ;;
+    esac
+}
+
 devorq::cmd_skills() {
     local sub="${1:-list}"
     case "$sub" in
@@ -459,6 +500,7 @@ main() {
         compact)   devorq::cmd_compact ;;
         sync)      shift; devorq::cmd_sync "$@" ;;
         vps)       shift; devorq::cmd_vps "$@" ;;
+        context7)  shift; devorq::cmd_context7 "$@" ;;
         skills)    shift; devorq::cmd_skills "$@" ;;
         debug)     devorq::cmd_debug "$@" ;;
         build)     devorq::cmd_build ;;
