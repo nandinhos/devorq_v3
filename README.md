@@ -3,7 +3,7 @@
 > **Framework bash puro** para metodologia de desenvolvimento sistemático.
 > Captura lições aprendidas, impõe gates bloqueantes, gera handoffs consistentes.
 
-**Versão:** 3.2.1 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
+**Versão:** 3.3.0 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
 
 ---
 
@@ -19,20 +19,6 @@ Sessão longa → contexto saturado → próximo agente perde informações
 - **Gates bloqueantes** — nada avança sem verificação
 - **Lições aprendidas** — nunca mais o mesmo erro
 - **Handoffs consistentes** — próximo agente começa onde você parou
-
----
-
-## Stack
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        DEVORQ CORE                          │
-│                   100% Bash Puro — Zero Deps                 │
-├─────────────────────────────────────────────────────────────┤
-│  bash 5+         │  jq 1.7+ (static binary)                │
-│  git             │  SSH (conexão HUB)                      │
-└─────────────────────────────────────────────────────────────┘
-```
 
 ---
 
@@ -82,7 +68,38 @@ devorq sync push
 
 ---
 
-## Fluxo de Trabalho
+## Modos de Implementação
+
+O DEVORQ oferece **2 modos** para executar o workflow:
+
+### Modo AUTO 🤖 (story-by-story)
+Implementação autônoma story por story via `delegate_task`. Recomendado para features grandes/médias.
+
+```
+ Usuario                    Sistema
+    │                          │
+    │ "vamos implementar X"    │
+    │─────────────────────────►│
+    │                          │ [1] mode-selector.sh detecta intent
+    │                          │ [2] Branching: AUTO
+    │                          │ [3] Loop: story-by-story via delegate_task
+    │                          │     ┌─ prd-from-spec.sh → prd.json
+    │                          │     ├─ check-story.sh → G-1..G-7
+    │                          │     └─ devorq-auto skill
+    │                          │
+    │◄─────────────────────────│
+    │    [n stories completadas]
+```
+
+### Modo CLASSIC 📝 (gates 1-7 manuais)
+Fluxo tradicional gates 1-7 manual. Recomendado para tasks pequenas/rápidas.
+
+### AUTO[N] 🚀 (limitado)
+Executa até N stories, depois pausa para review.
+
+---
+
+## Fluxo de Trabalho (Modo CLASSIC)
 
 ```
 [NOVO PROJETO / NOVA SESSÃO]
@@ -159,6 +176,29 @@ devorq sync push
 
 ---
 
+## Skills do Ecossistema DEVORQ
+
+O framework é composto por skills independentes que se integram ao longo do workflow:
+
+```
+devorq_v3/
+├── skills/
+│   ├── devorq/                 # Core — gates 1-7 + comandos CLI
+│   ├── devorq-mode/            # Seletor interativo AUTO/CLASSIC/AUTO[N]
+│   ├── devorq-auto/            # Loop autônomo story-by-story
+│   └── devorq-code-review/     # Review multi-agente ultra thorough
+└── lib/                        # Bibliotecas bash compartilhadas
+```
+
+| Skill | Descrição |
+|-------|-----------|
+| **devorq** | Core framework — gates, lessons, context, compact, debug |
+| **devorq-mode** | Seletor interativo — detecta intent e pergunta modo |
+| **devorq-auto** | Ralph-style — loop autônomo story-by-story via delegate_task |
+| **devorq-code-review** | UltraReview — multi-agent review com gates de aprovação |
+
+---
+
 ## Comandos
 
 ### Inicialização
@@ -231,6 +271,12 @@ DEVORQ CORE (bash puro — /projects/devorq_v3)
 │   ├── sync-push.py            # Sincroniza local → HUB PostgreSQL
 │   └── sync-pull.py            # Sincroniza HUB PostgreSQL → local
 │
+├── skills/
+│   ├── devorq/                 # Core skill (gates + lessons)
+│   ├── devorq-mode/            # Interactive mode selector
+│   ├── devorq-auto/            # Autonomous story loop
+│   └── devorq-code-review/    # Multi-agent code review
+│
 ├── .devorq/                    # Estado local (NÃO COMMITEAR)
 │   ├── state/
 │   │   ├── context.json        # Contexto do projeto atual
@@ -259,8 +305,8 @@ Repositório separado: **dev-memory-laravel**
 │   .devorq/state/     │                            │   PostgreSQL          │
 │   lessons/           │                            │   ┌───────────────┐  │
 │                      │                            │   │ devorq.lessons│  │
-│                      │                            │   │ devorq.memories│ │
-│                      │                            │   │ devorq.sessions│ │
+│                      │                            │   │ devorq.memories│ │ 
+│                      │                            │   │ devorq.sessions│ │ 
 │                      │                            │   └───────────────┘  │
 │                      │                            │                       │
 │                      │                            │   dev-memory-laravel │
@@ -311,12 +357,12 @@ docker exec hermesstudy_postgres psql -U hermes_study -d hermes_study
 type(scope): description
 
 Types:    feat | fix | docs | style | refactor | test | chore
-Scopes:   core | lessons | gates | compact | vps | hub | context | debug | docs
+Scopes:   core | lessons | gates | compact | vps | hub | context | debug | docs | skills
 ```
 
 **Exemplo:**
 ```
-fix(lessons): implement SSH mux sync and Context7 validation real
+feat(skills): add devorq-mode — interactive AUTO/CLASSIC/AUTO[N] selector
 ```
 
 ---
@@ -333,6 +379,7 @@ FASE 5  ████████████████████  100%  ✅ 
 FASE 6  ████████████████████  100%  ✅  Documentação (README+INSTALL+EXTRAS)
 FASE 7  ████████████████████  100%  ✅  Self-building (build+upgrade+uninstall)
 FASE 8  ████████████████████  100%  ✅  Meta-stats (devorq stats)
+FASE 9  ████████████████████  100%  ✅  Skills ecosystem (devorq-auto, devorq-code-review, devorq-mode)
 ```
 
 **Zero pendências.**
