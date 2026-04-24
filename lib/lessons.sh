@@ -273,6 +273,349 @@ lessons::sync_vps() {
 }
 
 # ============================================================
+# _infer_skill — Infer skill path por tags
+#   $1 = path do arquivo JSON
+#   Return: skill name (ex: "laravel", "docker", "learned-lesson")
+# ============================================================
+
+lessons::_infer_skill() {
+    local file="$1"
+    local tags=""
+    local stack=""
+
+    if command -v jq &>/dev/null; then
+        tags=$(jq -r '.tags | join(",")' "$file" 2>/dev/null || echo "")
+        stack=$(jq -r '.stack // ""' "$file" 2>/dev/null || echo "")
+    fi
+
+    # Mapa de tags que correspondem a skills existentes
+    local skill_map="laravel,docker,postgres,mysql,git,nginx,filament,postgres,docker-compose,git"
+
+    IFS=',' read -ra TAG_ARR <<< "$tags"
+    for tag in "${TAG_ARR[@]}"; do
+        # Trim whitespace
+        tag=$(echo "$tag" | xargs)
+        [[ -n "$tag" ]] && [[ ",$skill_map," = *",$tag,"* ]] && {
+            echo "$tag"
+            return 0
+        }
+    done
+
+    # Fallback: campo stack
+    if [[ -n "$stack" ]] && [[ ",$skill_map," = *",$stack,"* ]]; then
+        echo "$stack"
+        return 0
+    fi
+
+    # Fallback final
+    echo "learned-lesson"
+}
+
+# ============================================================
+# approve — Marca lição como aprovada
+#   $1 = lesson id (sem .json)
+#   $2 = skill name opcional (inferred se vazio)
+#   $3 = auto mode (true/false)
+# ============================================================
+
+lessons::approve() {
+    local id="${1:-}"
+    local skill_name="${2:-}"
+    local auto="${3:-false}"
+    local dir="${DEVORQ_LESSONS_DIR}/captured"
+    local file="${dir}/${id}.json"
+
+    # Validar que existe
+    [ ! -f "$file" ] && echo "[ERROR] Lição não encontrada: $id" && return 1
+
+    # Verificar se foi validada
+    if command -v jq &>/dev/null; then
+        local validated
+        validated=$(jq -r '.validated // false' "$file")
+        [ "$validated" != "true" ] && echo "[ERROR] Lição precisa ser validada primeiro (Context7)" && return 1
+    fi
+
+    # Verificar se já approved
+    if command -v jq &>/dev/null; then
+        local already_approved
+        already_approved=$(jq -r '.approved // false' "$file")
+        [ "$already_approved" = "true" ] && echo "[INFO] Já aprovada: $id" && return 0
+    fi
+
+    # Inferir skill se não informada
+    if [ -z "$skill_name" ]; then
+        skill_name=$(lessons::_infer_skill "$file")
+    fi
+
+    local skill_path="skills/${skill_name}"
+    local ts
+    ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+    # Atualizar JSON com campos approved
+    if command -v jq &>/dev/null; then
+        jq \
+            --arg ts "$ts" \
+            --arg skill_path "$skill_path" \
+            --arg skill_name "$skill_name" \
+            '.approved = true | .approved_at = $ts | .skill_path = $skill_path | .approved_by = "user" | .skill_name = $skill_name' \
+            "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+    else
+        # Fallback sed para campos approved
+        sed -i \
+            -e "s/\"validated\": true/\"validated\": true, \"approved\": true, \"approved_at\": \"$ts\", \"approved_by\": \"user\", \"skill_path\": \"$skill_path\"/" \
+            "$file"
+    fi
+
+    echo -e "${GREEN}[✓]${RESET} Aprovada: $id → $skill_path"
+}
+
+# ============================================================
+# _compile_lesson — Compila uma lição approved → skill
+#   $1 = lesson id
+#   $2 = skill_path
+#   $3 = dry_run (true/false)
+# ============================================================
+
+lessons::_compile_lesson() {
+    local id="$1"
+    local skill_path="$2"
+    local dry_run="${3:-false}"
+    local dir="${DEVORQ_LESSONS_DIR}/captured"
+    local file="${dir}/${id}.json"
+
+    [ ! -f "$file" ] && echo "[ERROR] Lição não encontrada: $id" && return 1
+
+    # Verificar approved
+    if command -v jq &>/dev/null; then
+        local approved
+        approved=$(jq -r '.approved // false' "$file")
+        [ "$approved" != "true" ] && echo "[SKIP] Não aprovada: $id" && return 0
+    fi
+
+    local title problem solution tags stack skill_name
+    if command -v jq &>/dev/null; then
+        title=$(jq -r '.title' "$file")
+        problem=$(jq -r '.problem' "$file")
+        solution=$(jq -r '.solution' "$file")
+        tags=$(jq -r '.tags | join(", ")' "$file")
+        stack=$(jq -r '.stack // ""' "$file")
+        skill_name=$(jq -r '.skill_name // (.skill_path | split("/")[1]) // "learned-lesson"' "$file")
+    fi
+
+    [ -z "$skill_path" ] && skill_path="skills/${skill_name:-learned-lesson}"
+
+    if [ "$dry_run" = "true" ]; then
+        echo "[DRY RUN] Skill seria gerada em: $skill_path"
+        echo "  Title: $title"
+        echo "  Tags: $tags"
+        return 0
+    fi
+
+    # Criar diretórios
+    mkdir -p "${skill_path}/references/approved"
+    mkdir -p "${skill_path}/scripts"
+
+    # Copiar lição approved
+    cp "$file" "${skill_path}/references/approved/${id}.json"
+
+    # Gerar/atualizar SKILL.md
+    local skill_md="${skill_path}/SKILL.md"
+    local entry="- **${title}**: ${problem} → ${solution} (${tags})"
+
+    if [ -f "$skill_md" ]; then
+        # Adicionar entrada se já existe
+        if ! grep -qF "$title" "$skill_md" 2>/dev/null; then
+            if grep -q "## Approved Lessons" "$skill_md" 2>/dev/null; then
+                # Inserir após "## Approved Lessons"
+                sed -i "/## Approved Lessons/a\\\\$entry" "$skill_md"
+            else
+                echo "" >> "$skill_md"
+                echo "## Approved Lessons" >> "$skill_md"
+                echo "$entry" >> "$skill_md"
+            fi
+        fi
+    else
+        # Criar SKILL.md do zero
+        local trigger_word
+        trigger_word=$(echo "$problem" | cut -d' ' -f1-3 | tr -s ' ')
+        local desc_tag
+        desc_tag=$(echo "$tags" | cut -d',' -f1 | xargs)
+        cat > "$skill_md" << SKELLEOF
+---
+name: ${skill_name:-learned-lesson}
+description: Use quando detectar problema relacionado a ${desc_tag:-conhecimento geral}
+triggers:
+  - "${trigger_word}"
+---
+
+# ${skill_name:-learned-lesson} — Skill Gerada
+
+> Auto-generated from approved lesson: $id
+
+## Problema
+$problem
+
+## Solução
+$solution
+
+## Tags
+$tags
+
+## Stack
+$stack
+
+## Approved Lessons
+$entry
+SKELLEOF
+    fi
+
+    # Atualizar timestamp de compilação na lição
+    local compiled_at
+    compiled_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    if command -v jq &>/dev/null; then
+        jq --arg compiled_at "$compiled_at" '.compiled_at = $compiled_at' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+    fi
+
+    echo -e "${GREEN}[✓]${RESET} Skill compilada: $skill_path"
+    echo "   $title"
+}
+
+# ============================================================
+# compile — Compila lições approved → skills
+#   $1 = lesson id opcional (todas se vazio)
+#   $2 = skill_path opcional
+#   $3 = dry_run (true/false)
+# ============================================================
+
+lessons::compile() {
+    local lesson_id="${1:-}"
+    local skill_path="${2:-}"
+    local dry_run="${3:-false}"
+    local dir="${DEVORQ_LESSONS_DIR}/captured"
+    local count=0
+
+    if [ ! -d "$dir" ]; then
+        echo "[INFO] Nenhuma lição capturada."
+        return 0
+    fi
+
+    if [ -n "$lesson_id" ]; then
+        lessons::_compile_lesson "$lesson_id" "$skill_path" "$dry_run"
+        return $?
+    fi
+
+    # Compilar todas as approved
+    for f in "$dir"/*.json; do
+        [ -f "$f" ] || continue
+        local id
+        id=$(basename "$f" .json)
+        if lessons::_compile_lesson "$id" "$skill_path" "$dry_run" &>/dev/null; then
+            ((count++)) || true
+        fi
+    done
+
+    echo ""
+    echo "Skills compiladas: $count"
+}
+
+# ============================================================
+# migrate — Adiciona campos approved a lições existentes
+# ============================================================
+
+lessons::migrate() {
+    local dir="${DEVORQ_LESSONS_DIR}/captured"
+    local count=0
+
+    [ ! -d "$dir" ] && echo "[INFO] Nenhuma lição para migrar." && return 0
+
+    echo "[MIGRATE] Adicionando campos approved a lições existentes..."
+
+    for f in "$dir"/*.json; do
+        [ -f "$f" ] || continue
+
+        if command -v jq &>/dev/null; then
+            # Verificar se já tem campo approved
+            if jq -e '.approved' "$f" &>/dev/null; then
+                continue
+            fi
+
+            # Adicionar campos com defaults
+            jq '.approved = false | .approved_at = null | .approved_by = null | .skill_path = null | .skill_name = null | .compiled_at = null' \
+                "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+            echo "  Migrado: $(basename "$f")"
+            ((count++)) || true
+        fi
+    done
+
+    echo "Lições migradas: $count"
+}
+
+# ============================================================
+# list — Lista lições com filtros
+#   $1 = filtro: all|pending|approved|validated
+# ============================================================
+
+lessons::list() {
+    local filter="${1:-all}"
+    local dir="${DEVORQ_LESSONS_DIR}/captured"
+
+    [ ! -d "$dir" ] && echo "[INFO] Nenhuma lição capturada." && return 0
+
+    local count=0
+    for f in "$dir"/*.json; do
+        [ -f "$f" ] || continue
+        ((count++)) || true
+    done
+
+    echo -e "${CYAN}[LESSONS]${RESET} Total: $count | Filtro: $filter"
+    echo ""
+
+    for f in "$dir"/*.json; do
+        [ -f "$f" ] || continue
+
+        local id title validated approved compiled_at skill_name
+        id=$(basename "$f" .json)
+        if command -v jq &>/dev/null; then
+            title=$(jq -r '.title' "$f")
+            validated=$(jq -r '.validated' "$f")
+            approved=$(jq -r '.approved' "$f")
+            compiled_at=$(jq -r '.compiled_at // "—" ' "$f")
+            skill_name=$(jq -r '.skill_name // .skill_path // "—" ' "$f")
+        fi
+
+        # Aplicar filtro
+        case "$filter" in
+            pending)
+                [[ "$validated" = "true" ]] && continue
+                ;;
+            validated)
+                [[ "$validated" != "true" ]] && continue
+                [[ "$approved" = "true" ]] && continue
+                ;;
+            approved)
+                [[ "$approved" != "true" ]] && continue
+                ;;
+            compiled)
+                [[ "$compiled_at" = "—" ]] || [[ "$compiled_at" = "null" ]] && continue
+                ;;
+        esac
+
+        # Status badges
+        local val_mark="[ ]"
+        [[ "$validated" = "true" ]] && val_mark="${GREEN}[✓]${RESET}"
+        local appr_mark="[ ]"
+        [[ "$approved" = "true" ]] && appr_mark="${GREEN}[★]${RESET}"
+
+        echo -e "  $val_mark $appr_mark ${id}"
+        echo -e "       ${title}"
+        if [[ "$approved" = "true" ]]; then
+            echo -e "       ${CYAN}→ $skill_name${RESET}"
+        fi
+        echo ""
+    done
+}
+
+# ============================================================
 # export — Exporta todas as lições para JSON
 # ============================================================
 

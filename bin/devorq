@@ -66,6 +66,12 @@ COMANDOS:
                              Capturar lição aprendida
   lessons search "<q>"      Buscar lições locais
   lessons validate           Validar lição com Context7
+  lessons approve <id>       Aprovar lição para skill
+  lessons approve --all      Aprovar todas validadas
+  lessons compile [<id>]     Compilar lições approved → skill
+  lessons compile --dry-run  Preview sem modificar arquivos
+  lessons list [filtro]     Listar lições (all|pending|approved|validated)
+  lessons migrate            Migrar lições existentes (campos approved)
 
   context                    Mostrar contexto atual
   compact                    Gerar handoff para próxima sessão
@@ -209,10 +215,137 @@ devorq::cmd_lessons() {
             source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
             lessons::validate || devorq::info "LESSONS validate: (lib não disponível)"
             ;;
+        approve)
+            shift
+            _devorq_lessons_approve "$@"
+            ;;
+        compile)
+            shift
+            _devorq_lessons_compile "$@"
+            ;;
+        list)
+            shift
+            source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+            local filter="${1:-all}"
+            lessons::list "$filter"
+            ;;
+        migrate)
+            source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+            lessons::migrate
+            ;;
         *)
-            devorq::error "Uso: devorq lessons capture|search|validate"
+            devorq::error "Uso: devorq lessons capture|search|validate|approve|compile|list|migrate"
             ;;
     esac
+}
+
+# ============================================================
+# _devorq_lessons_approve — Parse args e executa lessons::approve
+# ============================================================
+
+_devorq_lessons_approve() {
+    local lesson_id=""
+    local skill_name=""
+    local batch_mode="false"
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --all)
+                batch_mode="true"
+                shift
+                ;;
+            --skill=*)
+                skill_name="${1#*=}"
+                shift
+                ;;
+            --auto)
+                # Flag de auto — aceito mas não muda comportamento aqui
+                shift
+                ;;
+            -h|--help)
+                echo "Uso: devorq lessons approve <id> [--skill=<name>] [--all] [--auto]"
+                echo "     devorq lessons approve --all [--skill=<name>] [--auto]"
+                return 0
+                ;;
+            -*)
+                shift
+                ;;
+            *)
+                lesson_id="$1"
+                shift
+                ;;
+        esac
+    done
+
+    source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+
+    if [ "$batch_mode" = "true" ]; then
+        local count=0
+        local dir="${DEVORQ_LESSONS_DIR:-${PWD}/.devorq/state/lessons}/captured"
+        [ ! -d "$dir" ] && devorq::warn "Nenhuma lição capturada." && return 0
+
+        for f in "$dir"/*.json; do
+            [ -f "$f" ] || continue
+
+            # Só lições validated e não-approved
+            if command -v jq &>/dev/null; then
+                local validated approved
+                validated=$(jq -r '.validated // false' "$f" 2>/dev/null)
+                approved=$(jq -r '.approved // false' "$f" 2>/dev/null)
+                [ "$validated" != "true" ] && continue
+                [ "$approved" = "true" ] && continue
+            fi
+
+            local id
+            id=$(basename "$f" .json)
+            if lessons::approve "$id" "$skill_name" &>/dev/null; then
+                ((count++)) || true
+            fi
+        done
+        devorq::success "Aprovadas: $count lições"
+    else
+        if [ -z "$lesson_id" ]; then
+            devorq::error "Uso: devorq lessons approve <id> [--skill=<name>] [--all]"
+        fi
+        lessons::approve "$lesson_id" "$skill_name"
+    fi
+}
+
+# ============================================================
+# _devorq_lessons_compile — Parse args e executa lessons::compile
+# ============================================================
+
+_devorq_lessons_compile() {
+    local lesson_id=""
+    local skill_path=""
+    local dry_run="false"
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --dry-run)
+                dry_run="true"
+                shift
+                ;;
+            --skill=*)
+                skill_path="skills/${1#*=}"
+                shift
+                ;;
+            -h|--help)
+                echo "Uso: devorq lessons compile [<id>] [--dry-run] [--skill=<name>]"
+                return 0
+                ;;
+            -*)
+                shift
+                ;;
+            *)
+                lesson_id="$1"
+                shift
+                ;;
+        esac
+    done
+
+    source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+    lessons::compile "$lesson_id" "$skill_path" "$dry_run"
 }
 
 devorq::cmd_context() {
