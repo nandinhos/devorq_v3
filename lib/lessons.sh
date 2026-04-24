@@ -529,8 +529,65 @@ SKELLEOF
         jq --arg compiled_at "$compiled_at" '.compiled_at = $compiled_at' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
     fi
 
+    # Atualizar skill index
+    lessons::_update_skill_index "$(dirname "$skill_path")" "$(basename "$skill_path")"
+
     echo -e "${GREEN}[✓]${RESET} Skill compilada: $skill_path"
     echo "   $title"
+}
+
+# ============================================================
+# _update_skill_index — Mantém skills/.index.md atualizado
+#   $1 = skills dir (ex: "skills")
+#   $2 = skill name (ex: "laravel")
+# ============================================================
+
+lessons::_update_skill_index() {
+    local skills_dir="${1:-skills}"
+    local skill_name="$2"
+    local index_file="${skills_dir}/.index.md"
+
+    mkdir -p "$skills_dir"
+
+    local today
+    today=$(date +%Y-%m-%d)
+    local skill_dir="${skills_dir}/${skill_name}"
+    local skill_md="${skill_dir}/SKILL.md"
+
+    # Extrair description do SKILL.md se existir
+    local description=""
+    if [ -f "$skill_md" ]; then
+        description=$(sed -n '/^description:/p' "$skill_md" | sed 's/^description: *//' | tr -d '"')
+        [ -z "$description" ] && description="Skill gerada automaticamente"
+    fi
+
+    local entry="| ${skill_name} | ${description} | ${today} |"
+
+    if [ -f "$index_file" ]; then
+        # Não duplicar se já existir
+        if ! grep -q "^| ${skill_name} |" "$index_file" 2>/dev/null; then
+            # Remover linha separadora antes de adicionar
+            sed -i '/^|---/d' "$index_file"
+            echo "$entry" >> "$index_file"
+            echo "|---" >> "$index_file"
+            # Ordenar
+            local temp_file
+            temp_file=$(mktemp)
+            (echo "| Skill | Description | Updated |"; grep "^| " "$index_file" | sort) > "$temp_file"
+            mv "$temp_file" "$index_file"
+        fi
+    else
+        cat > "$index_file" << INDEXEOF
+# Skills Index
+
+> Auto-generated from approved lessons
+
+| Skill | Description | Updated |
+|--- |---|---|
+${entry}
+|--- |---|---|
+INDEXEOF
+    fi
 }
 
 # ============================================================
