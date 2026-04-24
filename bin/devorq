@@ -450,12 +450,18 @@ _devorq_lessons_auto_commit() {
         git commit -m "feat(skill): $skill_name — auto-generated from approved lessons ($compiled lesson(s))"
         devorq::success "Commit: $skill_name"
 
-        # Tentar push (silently fail se sem remote)
+        # Tentar push
         if git remote get-url origin &>/dev/null; then
-            if git push origin HEAD 2>&1; then
-                devorq::success "Push: origin/$(git rev-parse --abbrev-ref HEAD)"
+            # Checar se credential helper ou token está disponível
+            if git config --get credential.helper &>/dev/null || [ -n "${GITHUB_TOKEN:-}" ]; then
+                if git push origin HEAD 2>&1; then
+                    devorq::success "Push: origin/$(git rev-parse --abbrev-ref HEAD)"
+                else
+                    devorq::warn "Push falhou — verifique token ou conexão"
+                fi
             else
-                devorq::warn "Push falhou — sem conexão ou token"
+                devorq::warn "Push ignorado — configure GITHUB_TOKEN ou git credential.helper"
+                devorq::info "Dica: export GITHUB_TOKEN=ghp_... antes de rodar"
             fi
         else
             devorq::info "Sem remote configurado — pulando push"

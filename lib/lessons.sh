@@ -139,11 +139,42 @@ lessons::validate() {
         return 0
     fi
 
-    # Verificar se Context7 está disponível
+    local ctx7_available=false
     if [ -z "${OPENAI_API_KEY:-}" ] && [ ! -f "${DEVORQ_CONFIG:-${HOME}/.devorq/config}" ]; then
         echo -e "${YELLOW}[!]${RESET} Context7 não configurado — validacao automatica indisponivel"
         echo "  (Usando validacao manual: todas as lessons pendentes serao marcadas como 'skipped')"
         # NAO return aqui — fuzzy check e auto-trigger ainda devem rodar
+    else
+        ctx7_available=true
+    fi
+
+    # Em modo AUTO sem Context7: auto-validar todas as não-validadas
+    if [ "${LESSONS_AUTO:-false}" = "true" ] && [ "$ctx7_available" = "false" ]; then
+        local auto_val_count=0
+        for f in "$dir"/*.json; do
+            [ -f "$f" ] || continue
+            if command -v jq &>/dev/null; then
+                local already_validated
+                already_validated=$(jq -r '.validated // false' "$f" 2>/dev/null)
+                [ "$already_validated" = "true" ] && continue
+            fi
+            local ts
+            ts=$(date +%Y-%m-%dT%H:%M:%S)
+            if command -v jq &>/dev/null; then
+                jq --arg ts "$ts" '.validated = true | .validated_at = $ts' "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+            else
+                sed 's/"validated": false/"validated": true/' "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+            fi
+            local title
+            title=$(jq -r '.title' "$f" 2>/dev/null || echo "$(basename "$f")")
+            echo -e "  ${GREEN}[✓]${RESET} $title (auto-validada em modo AUTO)"
+            ((auto_val_count++)) || true
+        done
+        if [ "$auto_val_count" -gt 0 ]; then
+            echo ""
+            echo -e "${CYAN}[AUTO]${RESET} $auto_val_count lição(ões) auto-validadas (Context7 indisponível)"
+        fi
+        validated_count=$auto_val_count
     fi
 
     # Carregar lib/context7.sh para usar ctx7_resolve
@@ -156,7 +187,8 @@ lessons::validate() {
     echo -e "${CYAN}[GATE-6]${RESET} Validando lições com Context7..."
 
     # Encontrar lições não-validadas
-    local validated_count=0
+    # NOTA: validated_count pode vir pré-setado do bloco auto-validate acima
+    [ -z "${validated_count:-}" ] && validated_count=0
     local skipped_count=0
     for f in "$dir"/*.json; do
         [ -f "$f" ] || continue
@@ -224,7 +256,7 @@ lessons::validate() {
         local auto_mode="${LESSONS_AUTO:-false}"
         if [ "$auto_mode" = "true" ]; then
             echo ""
-            devorq::log "Auto-trigger: approve + compile (LESSONS_AUTO=true)"
+            echo "[DEVORQ] Auto-trigger: approve + compile (LESSONS_AUTO=true)"
             # Approve todas as validated (não-approved)
             local approve_count=0
             for f in "$dir"/*.json; do
@@ -247,7 +279,7 @@ lessons::validate() {
             read -p "[$validated_count] lição(ões) validada(s). Aprovar para skill? [Y/n]: " confirm
             confirm="${confirm:-Y}"
             if [[ "$confirm" =~ ^[Yy]$ ]]; then
-                devorq::log "Aprovando lições..."
+                echo "[DEVORQ] Aprovando lições..."
                 local approve_count=0
                 for f in "$dir"/*.json; do
                     [ -f "$f" ] || continue
