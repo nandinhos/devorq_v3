@@ -254,6 +254,35 @@ detect_gotchas() {
     # Sail specific
     if [ -f docker-compose.yml ] && grep -q "sail" docker-compose.yml 2>/dev/null; then
         gotchas+=("SAIL: usar 'vendor/bin/sail' em vez de 'docker-compose exec app'")
+        gotchas+=("SAIL: prefixo é './vendor/bin/sail' para todos os comandos artisan")
+    fi
+
+    # Laravel-specific
+    if [ -f artisan ]; then
+        gotchas+=("LARAVEL: após 'git pull', verificar se composer.lock mudou — se sim, 'composer install'")
+        if grep -q "APP_ENV=production" .env 2>/dev/null; then
+            gotchas+=("LARAVEL: APP_ENV=production detectado — debug desabilitado")
+        fi
+        if [ -f "bootstrap/cache/config.php" ] || [ -d "bootstrap/cache" ]; then
+            gotchas+=("LARAVEL: config cacheado — após mudar .env, rodar 'php artisan config:clear'")
+        fi
+    fi
+
+    # Filament-specific
+    if [ -f composer.json ] && grep -q '"filament/filament"' composer.json 2>/dev/null; then
+        local filament_version
+        filament_version=$(grep '"filament/filament"' composer.json 2>/dev/null | grep -oP '"filament/filament": "\K[^"]+' | head -1)
+        # Strip version prefix chars (^ ~ >= etc)
+        filament_version="${filament_version#^}"
+        filament_version="${filament_version#~}"
+        filament_version="${filament_version#>}"
+        filament_version="${filament_version#<=}"
+        [ -n "$filament_version" ] && gotchas+=("FILAMENT: versão ${filament_version} — v4: RelationManagers diferente, v5: Infolists")
+    fi
+
+    # Vite (Laravel 11 default)
+    if [ -f vite.config.js ] || [ -f vite.config.ts ]; then
+        gotchas+=("VITE: Laravel 11 usa Vite — 'npm run dev' para desenvolvimento, 'npm run build' para produção")
     fi
 
     # Permissions

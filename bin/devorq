@@ -506,9 +506,100 @@ devorq::cmd_scope() {
             fi
             ;;
         template)
+            local type="${2:-default}"
             devorq::info "Template de contrato de escopo:"
             echo ""
-            cat << 'EOF'
+            case "$type" in
+                laravel)
+                    cat << 'EOF'
+# CONTRATO DE ESCOPO — [nome-da-feature]
+
+## IDENTIFICAÇÃO
+- **Task**: [resumo da feature]
+- **Tipo**: feature | bugfix | refactor
+- **Complexidade**: baixa | média | alta
+- **Stack**: Laravel 11 + Filament v5
+
+## 1. FAZER
+1. [ ] Criar Migration
+2. [ ] Criar Model com fillable/casts/relationships
+3. [ ] Criar Service ou Action (lógica de negócio)
+4. [ ] Criar Policy (se aplicável)
+5. [ ] Criar Resource Filament
+6. [ ] Criar testes (Feature ou Unit)
+
+## 2. NÃO FAZER
+1. NÃO modificar migrations existentes (criar nova)
+2. NÃO colocar lógica no Controller (usar Service/Action)
+3. NÃO hardcodar strings (usar lang())
+4. NÃO commitar se `php artisan test` falhar
+5. NÃO ignorar `composer.lock` mudou após `git pull`
+
+## 3. ARQUIVOS
+```
+database/migrations/
+app/Models/
+app/Services/  ou  app/Actions/
+app/Policies/
+app/Filament/Resources/
+tests/Feature/
+```
+
+## 4. DONE_CRITERIA
+- [ ] Migration executa sem erro
+- [ ] Model: fillable, casts, relationships definidos
+- [ ] Resource Filament carrega em /admin
+- [ ] Policy permite/denega acesso corretamente
+- [ ] `php artisan test --filter=NomeDaFeature` passa
+- [ ] `./vendor/bin/pint --test` sem violações
+EOF
+                    ;;
+                filament)
+                    cat << 'EOF'
+# CONTRATO DE ESCOPO — [nome-do-resource]
+
+## IDENTIFICAÇÃO
+- **Task**: [nome do Resource]
+- **Tipo**: feature | refactor
+- **Complexidade**: baixa | média | alta
+- **Stack**: Filament v5
+
+## 1. FAZER
+1. [ ] Criar/editar Model (fillable, casts, relationships)
+2. [ ] Criar Resource com schema de formulário
+3. [ ] Criar RelationManagers (se relacionamentos)
+4. [ ] Definir header actions (Create, Edit, Delete)
+5. [ ] Definir table columns
+6. [ ] Verificar getTitle(), getLabel(), getNavigationLabel()
+7. [ ] Adicionar testes Feature
+
+## 2. NÃO FAZER
+1. NÃO usar `$formSchema` (v5 = Infolists)
+2. NÃO criar lógica de negócio no Resource (usar Service/Action)
+3. NÃO esquecer `canAccessRecord()` se usar Policies
+4. NÃO ignorar ordem de tabs se usar Tab layout
+
+## 3. ARQUIVOS
+```
+app/Filament/Resources/[Nome]Resource.php
+app/Filament/Resources/[Nome]Resource/
+app/Models/[Model].php
+app/[Services|Actions]/
+tests/Feature/Filament/[Nome]ResourceTest.php
+```
+
+## 4. DONE_CRITERIA
+- [ ] Resource acessible em /admin/[route-name]
+- [ ] List page: table columns renderizam
+- [ ] Create page: form submete sem erro
+- [ ] Edit page: carrega dados existentes
+- [ ] Delete: funciona com confirmation
+- [ ] RelationManagers: carregam dados relacionados
+- [ ] `php artisan test --filter=[Nome]Resource` passa
+EOF
+                    ;;
+                *)
+                    cat << 'EOF'
 # CONTRATO DE ESCOPO — [nome-da-task]
 
 ## IDENTIFICAÇÃO
@@ -516,18 +607,27 @@ devorq::cmd_scope() {
 - **Tipo**: feature | bugfix | refactor
 - **Complexidade**: baixa | média | alta
 
-## FAZER
+## 1. FAZER
 1. [funcionalidade específica]
 
-## NÃO FAZER
+## 2. NÃO FAZER
 1. [o que NÃO fazer]
 
-## ARQUIVOS
-- `caminho/arquivo.ext`
+## 3. ARQUIVOS
+```
+caminho/arquivo.ext
+```
 
-## DONE_CRITERIA
+## 4. DONE_CRITERIA
 - [ ] [critério verificável]
 EOF
+                    ;;
+            esac
+            if [ "$type" != "default" ] && [ "$type" != "laravel" ] && [ "$type" != "filament" ]; then
+                echo ""
+                devorq::warn "Tipo desconhecido: $type"
+                echo "Use: devorq scope template [laravel|filament|default]"
+            fi
             ;;
         *)
             devorq::info "Scope-Guard — Contrato de Escopo"
