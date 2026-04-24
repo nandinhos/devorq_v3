@@ -25,19 +25,20 @@ usage() {
 [ -z "$CONTRACT" ] && usage
 [ ! -f "$CONTRACT" ] && echo -e "${RED}❌ NÃO ENCONTRADO: $CONTRACT${NC}" && exit 2
 
-# Section checks
-has_fazer=$(grep -cE "^##[[:space:]]*FAZER" "$CONTRACT" 2>/dev/null || echo 0)
-has_nao_fazer=$(grep -cE "^##[[:space:]]*NÃO FAZER" "$CONTRACT" 2>/dev/null || echo 0)
-has_arquivos=$(grep -cE "^##[[:space:]]*ARQUIVOS" "$CONTRACT" 2>/dev/null || echo 0)
-has_criteria=$(grep -cE "^##[[:space:]]*DONE_CRITERIA" "$CONTRACT" 2>/dev/null || echo 0)
-has_identificacao=$(grep -cE "^##[[:space:]]*IDENTIFICAÇÃO" "$CONTRACT" 2>/dev/null || echo 0)
+# Section checks (case-insensitive, flexible: ## 1. FAZER, ## FAZER, etc.)
+has_fazer=$(grep -cEi "^##[[:space:]]+[0-9]*\.?[[:space:]]*FAZER" "$CONTRACT" 2>/dev/null || true)
+has_nao_fazer=$(grep -cEi "^##[[:space:]]+[0-9]*\.?[[:space:]]*NÃO FAZER" "$CONTRACT" 2>/dev/null || true)
+has_arquivos=$(grep -cEi "^##[[:space:]]+[0-9]*\.?[[:space:]]*ARQUIVOS" "$CONTRACT" 2>/dev/null || true)
+has_criteria=$(grep -cEi "^##[[:space:]]+[0-9]*\.?[[:space:]]*DONE_CRITERIA" "$CONTRACT" 2>/dev/null || true)
+has_identificacao=$(grep -cEi "^##[[:space:]]+[0-9]*\.?[[:space:]]*IDENTIFICAÇÃO" "$CONTRACT" 2>/dev/null || true)
 
-# Score
+# Score: 4 required + 1 optional = max 5
 score=0
 [ "$has_fazer" -ge 1 ] && score=$((score + 1))
 [ "$has_nao_fazer" -ge 1 ] && score=$((score + 1))
 [ "$has_arquivos" -ge 1 ] && score=$((score + 1))
 [ "$has_criteria" -ge 1 ] && score=$((score + 1))
+[ "$has_identificacao" -ge 1 ] && score=$((score + 1))
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  🛡️  SCOPE-GUARD — Validação"
@@ -46,21 +47,29 @@ echo ""
 echo "  Contrato: $CONTRACT"
 echo ""
 
-[ "$has_identificacao" -ge 1 ] && echo "  ✅ ## IDENTIFICAÇÃO" || echo "  ❌ ## IDENTIFICAÇÃO"
+[ "$has_identificacao" -ge 1 ] && echo "  ✅ ## Identificação" || echo "  ❌ ## Identificação"
 [ "$has_fazer" -ge 1 ] && echo "  ✅ ## FAZER" || echo "  ❌ ## FAZER"
 [ "$has_nao_fazer" -ge 1 ] && echo "  ✅ ## NÃO FAZER" || echo "  ❌ ## NÃO FAZER"
 [ "$has_arquivos" -ge 1 ] && echo "  ✅ ## ARQUIVOS" || echo "  ❌ ## ARQUIVOS"
 [ "$has_criteria" -ge 1 ] && echo "  ✅ ## DONE_CRITERIA" || echo "  ❌ ## DONE_CRITERIA"
 
 echo ""
-echo "  Score: $score/5"
+echo "  Score: $score/5  (4+ required)"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-if [ "$score" -ge 4 ]; then
+# Minimum 4 required: FAZER, NÃO FAZER, ARQUIVOS, DONE_CRITERIA
+required_score=0
+[ "$has_fazer" -ge 1 ] && required_score=$((required_score + 1))
+[ "$has_nao_fazer" -ge 1 ] && required_score=$((required_score + 1))
+[ "$has_arquivos" -ge 1 ] && required_score=$((required_score + 1))
+[ "$has_criteria" -ge 1 ] && required_score=$((required_score + 1))
+
+if [ "$required_score" -ge 4 ]; then
     echo -e "  ${GREEN}✅ CONTRATO VÁLIDO${NC}"
     exit 0
 else
     echo -e "  ${RED}❌ CONTRATO INCOMPLETO${NC}"
+    echo "  Mínimo: FAZER + NÃO FAZER + ARQUIVOS + DONE_CRITERIA"
     exit 1
 fi
