@@ -214,6 +214,59 @@ lessons::validate() {
 
     echo ""
     echo "Validadas: $validated_count | Puladas: $skipped_count"
+
+    # Auto-trigger: sugerir approve + compile se tiver lições validadas
+    if [ "$validated_count" -gt 0 ]; then
+        local auto_mode="${LESSONS_AUTO:-false}"
+        if [ "$auto_mode" = "true" ]; then
+            echo ""
+            devorq::log "Auto-trigger: approve + compile (LESSONS_AUTO=true)"
+            # Approve todas as validated (não-approved)
+            local approve_count=0
+            for f in "$dir"/*.json; do
+                [ -f "$f" ] || continue
+                if command -v jq &>/dev/null; then
+                    local validated approved
+                    validated=$(jq -r '.validated // false' "$f")
+                    approved=$(jq -r '.approved // false' "$f")
+                    [ "$validated" != "true" ] && continue
+                    [ "$approved" = "true" ] && continue
+                    local id; id=$(basename "$f" .json)
+                    lessons::approve "$id" "" "true" &>/dev/null && ((approve_count++)) || true
+                fi
+            done
+            echo "Aprovadas: $approve_count"
+            # Compile todas as approved
+            lessons::compile "" "" "false"
+        else
+            echo ""
+            read -p "[$validated_count] lição(ões) validada(s). Aprovar para skill? [Y/n]: " confirm
+            confirm="${confirm:-Y}"
+            if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                devorq::log "Aprovando lições..."
+                local approve_count=0
+                for f in "$dir"/*.json; do
+                    [ -f "$f" ] || continue
+                    if command -v jq &>/dev/null; then
+                        local validated approved
+                        validated=$(jq -r '.validated // false' "$f")
+                        approved=$(jq -r '.approved // false' "$f")
+                        [ "$validated" != "true" ] && continue
+                        [ "$approved" = "true" ] && continue
+                        local id; id=$(basename "$f" .json)
+                        lessons::approve "$id" "" "true" &>/dev/null && ((approve_count++)) || true
+                    fi
+                done
+                echo "Aprovadas: $approve_count"
+                echo ""
+                read -p "Compilar skills? [Y/n]: " compile_confirm
+                compile_confirm="${compile_confirm:-Y}"
+                if [[ "$compile_confirm" =~ ^[Yy]$ ]]; then
+                    lessons::compile
+                fi
+            fi
+        fi
+    fi
 }
 
 # ============================================================

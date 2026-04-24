@@ -65,13 +65,15 @@ COMANDOS:
   lessons capture "<t>" "<p>" "<s>"
                              Capturar lição aprendida
   lessons search "<q>"      Buscar lições locais
-  lessons validate           Validar lição com Context7
+  lessons validate [--auto]  Validar lição com Context7 [--auto=pula prompts]
   lessons approve <id>       Aprovar lição para skill
-  lessons approve --all      Aprovar todas validadas
+  lessons approve --all [--skill=<name>] [--auto]
   lessons compile [<id>]     Compilar lições approved → skill
   lessons compile --dry-run  Preview sem modificar arquivos
-  lessons list [filtro]     Listar lições (all|pending|approved|validated)
+  lessons list [filtro]      Listar lições (all|pending|approved|validated|compiled)
   lessons migrate            Migrar lições existentes (campos approved)
+  lessons auto-commit <skill> [--auto] [--force]
+                             Compilar + git commit + push
 
   context                    Mostrar contexto atual
   compact                    Gerar handoff para próxima sessão
@@ -212,8 +214,25 @@ devorq::cmd_lessons() {
             lessons::search "$query"
             ;;
         validate)
+            shift
+            local auto_flag="false"
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --auto) auto_flag="true"; shift ;;
+                    -*) shift ;;
+                    *) shift ;;
+                esac
+            done
             source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
-            lessons::validate || devorq::info "LESSONS validate: (lib não disponível)"
+            if [ "$auto_flag" = "true" ]; then
+                LESSONS_AUTO=true lessons::validate
+            else
+                lessons::validate
+            fi
+            ;;
+        auto-commit)
+            shift
+            _devorq_lessons_auto_commit "$@"
             ;;
         approve)
             shift
@@ -346,6 +365,99 @@ _devorq_lessons_compile() {
 
     source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
     lessons::compile "$lesson_id" "$skill_path" "$dry_run"
+}
+
+# ============================================================
+# _devorq_lessons_auto_commit — Compile + git commit + push
+# ============================================================
+
+_devorq_lessons_auto_commit() {
+    local skill_name=""
+    local auto_mode="false"
+    local force_mode="false"
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --auto)
+                auto_mode="true"
+                shift
+                ;;
+            --force)
+                force_mode="true"
+                shift
+                ;;
+            -h|--help)
+                echo "Uso: devorq lessons auto-commit <skill-name> [--auto] [--force]"
+                return 0
+                ;;
+            -*)
+                shift
+                ;;
+            *)
+                skill_name="$1"
+                shift
+                ;;
+        esac
+    done
+
+    [ -z "$skill_name" ] && devorq::error "Uso: devorq lessons auto-commit <skill-name> [--auto] [--force]"
+
+    source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+
+    # Compile a skill específica
+    local skill_path="skills/${skill_name}"
+    echo -e "${CYAN}[AUTO-COMMIT]${RESET} Compilando skill: $skill_name"
+
+    local compiled=0
+    local dir="${DEVORQ_LESSONS_DIR:-${PWD}/.devorq/state/lessons}/captured"
+    for f in "$dir"/*.json; do
+        [ -f "$f" ] || continue
+        if command -v jq &>/dev/null; then
+            local approved sname
+            approved=$(jq -r '.approved // false' "$f" 2>/dev/null)
+            sname=$(jq -r '.skill_name // ""' "$f" 2>/dev/null)
+            [ "$approved" != "true" ] && continue
+            [ "$sname" != "$skill_name" ] && continue
+            lessons::_compile_lesson "$(basename "$f" .json)" "$skill_path" "false" &>/dev/null
+            ((compiled++)) || true
+        fi
+    done
+
+    if [ "$compiled" -eq 0 ]; then
+        devorq::warn "Nenhuma lição approved para skill: $skill_name"
+        return 1
+    fi
+
+    echo "Compiladas: $compiled lição(ões)"
+
+    # Git commit + push
+    if [ ! -d ".git" ]; then
+        devorq::info "Não é um repo git — pulando commit"
+        return 0
+    fi
+
+    local confirm="Y"
+    if [ "$auto_mode" != "true" ] && [ "$force_mode" != "true" ]; then
+        read -p "Commit + push skill '$skill_name'? [Y/n]: " confirm
+        confirm="${confirm:-Y}"
+    fi
+
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        git add "skills/${skill_name}/"
+        git commit -m "feat(skill): $skill_name — auto-generated from approved lessons ($compiled lesson(s))"
+        devorq::success "Commit: $skill_name"
+
+        # Tentar push (silently fail se sem remote)
+        if git remote get-url origin &>/dev/null; then
+            if git push origin HEAD 2>&1; then
+                devorq::success "Push: origin/$(git rev-parse --abbrev-ref HEAD)"
+            else
+                devorq::warn "Push falhou — sem conexão ou token"
+            fi
+        else
+            devorq::info "Sem remote configurado — pulando push"
+        fi
+    fi
 }
 
 devorq::cmd_context() {
