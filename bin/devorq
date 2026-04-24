@@ -69,6 +69,8 @@ COMANDOS:
 
   context                    Mostrar contexto atual
   compact                    Gerar handoff para próxima sessão
+  scope validate <f>        Validar contrato de escopo
+  scope template             Mostrar template de contrato
   ddd explore                Workshop interativo de domínio
   ddd validate               Validar SPEC.md (GATE-0)
 
@@ -483,6 +485,59 @@ devorq::cmd_stats() {
     cd "$original_pwd"
 }
 
+devorq::cmd_scope() {
+    local sub="${1:-}"
+    local scope_root="${DEVORQ_ROOT}/skills/scope-guard"
+
+    case "$sub" in
+        validate)
+            local contract="${2:-}"
+            [ -z "$contract" ] && devorq::error "Uso: devorq scope validate <arquivo.md>"
+            local validator="${scope_root}/scripts/scope-validate.sh"
+            if [ ! -f "$validator" ]; then
+                devorq::error "scope-validate.sh não encontrado"
+            fi
+            if bash "$validator" "$contract"; then
+                devorq::success "Contrato válido"
+                return 0
+            else
+                devorq::fail "Contrato incompleto"
+                return 1
+            fi
+            ;;
+        template)
+            devorq::info "Template de contrato de escopo:"
+            echo ""
+            cat << 'EOF'
+# CONTRATO DE ESCOPO — [nome-da-task]
+
+## IDENTIFICAÇÃO
+- **Task**: [resumo]
+- **Tipo**: feature | bugfix | refactor
+- **Complexidade**: baixa | média | alta
+
+## FAZER
+1. [funcionalidade específica]
+
+## NÃO FAZER
+1. [o que NÃO fazer]
+
+## ARQUIVOS
+- `caminho/arquivo.ext`
+
+## DONE_CRITERIA
+- [ ] [critério verificável]
+EOF
+            ;;
+        *)
+            devorq::info "Scope-Guard — Contrato de Escopo"
+            echo ""
+            devorq::info "Use: devorq scope validate <arquivo.md>"
+            devorq::info "     devorq scope template"
+            ;;
+    esac
+}
+
 devorq::cmd_ddd() {
     local sub="${1:-}"
     local ddd_root="${DEVORQ_ROOT}/skills/ddd-deep-domain"
@@ -533,6 +588,7 @@ main() {
         lessons)   shift; devorq::cmd_lessons "$@" ;;
         context)   devorq::cmd_context ;;
         compact)   devorq::cmd_compact ;;
+        scope)     shift; devorq::cmd_scope "$@" ;;
         ddd)       shift; devorq::cmd_ddd "$@" ;;
         sync)      shift; devorq::cmd_sync "$@" ;;
         vps)       shift; devorq::cmd_vps "$@" ;;
