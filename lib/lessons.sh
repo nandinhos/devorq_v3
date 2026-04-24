@@ -215,6 +215,11 @@ lessons::validate() {
     echo ""
     echo "Validadas: $validated_count | Puladas: $skipped_count"
 
+    # Fuzzy match: avisar se problema similar já existe
+    if [ "$validated_count" -gt 0 ]; then
+        lessons::_fuzzy_check "$dir"
+    fi
+
     # Auto-trigger: sugerir approve + compile se tiver lições validadas
     if [ "$validated_count" -gt 0 ]; then
         local auto_mode="${LESSONS_AUTO:-false}"
@@ -588,6 +593,96 @@ ${entry}
 |--- |---|---|
 INDEXEOF
     fi
+}
+
+# ============================================================
+# _fuzzy_check — Detecta lições com problemas similares
+#   $1 = lessons dir
+# ============================================================
+
+lessons::_fuzzy_check() {
+    local dir="$1"
+    local threshold="${FUZZY_THRESHOLD:-3}"
+
+    # Pegar últimas N lições validadas
+    local recent=()
+    for f in "$dir"/*.json; do
+        [ -f "$f" ] || continue
+        if command -v jq &>/dev/null; then
+            local validated approved
+            validated=$(jq -r '.validated // false' "$f" 2>/dev/null)
+            approved=$(jq -r '.approved // false' "$f" 2>/dev/null)
+            [ "$validated" = "true" ] && [ "$approved" != "true" ] || continue
+        else
+            continue
+        fi
+        recent+=("$f")
+    done
+
+    # Comparar pares
+    local found_similar=false
+    for i in "${!recent[@]}"; do
+        for j in "${recent[@]}"; do
+            [ "$i" -ge "${#recent[@]}" ] && break
+            [ "${recent[$i]}" = "$j" ] && continue
+
+            local problem_i problem_j
+            if command -v jq &>/dev/null; then
+                problem_i=$(jq -r '.problem' "${recent[$i]}" 2>/dev/null)
+                problem_j=$(jq -r '.problem' "$j" 2>/dev/null)
+            fi
+
+            # Extrair palavras-chave (3+ letras)
+            local words_i words_j
+            words_i=$(echo "$problem_i" | tr ' ' '\n' | grep -E '^.{3,}$' | sort -u)
+            words_j=$(echo "$problem_j" | tr ' ' '\n' | grep -E '^.{3,}$' | sort -u)
+
+            # Contar overlap
+            local overlap
+            overlap=$(comm -12 <(echo "$words_i") <(echo "$words_j") | wc -l)
+
+            if [ "$overlap" -ge "$threshold" ]; then
+                if [ "$found_similar" = "false" ]; then
+                    echo ""
+                    echo -e "${YELLOW}[!]${RESET} Possível duplicata detectada (fuzzy match):"
+                    found_similar=true
+                fi
+                local id_i id_j
+                id_i=$(basename "${recent[$i]}" .json)
+                id_j=$(basename "$j" .json)
+                echo -e "  ${id_i} ↔ ${id_j} ($overlap palavras em comum)"
+            fi
+        done
+    done
+}
+
+# ============================================================
+# _suggest_tags — Sugere tags via Context7 (se disponível)
+#   $1 = path do arquivo JSON
+# ============================================================
+
+lessons::_suggest_tags() {
+    local file="$1"
+
+    if ! declare -f ctx7_resolve &>/dev/null; then
+        return 1
+    fi
+
+    local problem title
+    if command -v jq &>/dev/null; then
+        problem=$(jq -r '.problem' "$file" 2>/dev/null)
+        title=$(jq -r '.title' "$file" 2>/dev/null)
+    fi
+
+    # Query pro Context7
+    local suggestion
+    suggestion=$(ctx7_resolve "general" "Sugira tags para: $title — $problem" 2>/dev/null | head -1)
+
+    if [ -n "$suggestion" ] && ! echo "$suggestion" | grep -qi "error\|nenhum\|null"; then
+        echo "$suggestion"
+        return 0
+    fi
+    return 1
 }
 
 # ============================================================
