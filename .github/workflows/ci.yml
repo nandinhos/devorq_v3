@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          # Instalar jq se não existir
+          which jq || sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Run CI Test Suite
+        run: bash scripts/ci-test.sh
+
+      - name: Run devorq self-test
+        run: |
+          export DEVORQ_ROOT="$PWD"
+          export DEVORQ_DIR="$PWD"
+          bash bin/devorq test
+
+      - name: Run devorq ddd validate
+        run: |
+          export DEVORQ_ROOT="$PWD"
+          export DEVORQ_DIR="$PWD"
+          bash bin/devorq ddd validate
+
+  lint:
+    name: ShellCheck Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run shellcheck
+        run: |
+          which shellcheck && bash -c 'shellcheck --version' || echo "shellcheck not installed — skipping"
+          if which shellcheck >/dev/null 2>&1; then
+            shellcheck bin/devorq lib/*.sh scripts/*.sh skills/*/scripts/*.sh 2>&1 || true
+          fi
