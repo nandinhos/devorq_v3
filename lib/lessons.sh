@@ -141,8 +141,9 @@ lessons::validate() {
 
     # Verificar se Context7 está disponível
     if [ -z "${OPENAI_API_KEY:-}" ] && [ ! -f "${DEVORQ_CONFIG:-${HOME}/.devorq/config}" ]; then
-        echo -e "${YELLOW}[!]${RESET} Context7 não configurado — valide manualmente"
-        return 0
+        echo -e "${YELLOW}[!]${RESET} Context7 não configurado — validacao automatica indisponivel"
+        echo "  (Usando validacao manual: todas as lessons pendentes serao marcadas como 'skipped')"
+        # NAO return aqui — fuzzy check e auto-trigger ainda devem rodar
     fi
 
     # Carregar lib/context7.sh para usar ctx7_resolve
@@ -215,10 +216,8 @@ lessons::validate() {
     echo ""
     echo "Validadas: $validated_count | Puladas: $skipped_count"
 
-    # Fuzzy match: avisar se problema similar já existe
-    if [ "$validated_count" -gt 0 ]; then
-        lessons::_fuzzy_check "$dir"
-    fi
+    # Fuzzy check sempre executa (ajuda o usuário a decidir approve)
+    lessons::_fuzzy_check "$dir"
 
     # Auto-trigger: sugerir approve + compile se tiver lições validadas
     if [ "$validated_count" -gt 0 ]; then
@@ -632,14 +631,19 @@ lessons::_fuzzy_check() {
                 problem_j=$(jq -r '.problem' "$j" 2>/dev/null)
             fi
 
-            # Extrair palavras-chave (3+ letras)
+            # Extrair palavras-chave (3+ letras) + filtrar vazio
+            # grep pode nào encontrar matches (exit 1) → usar || true com set -e
             local words_i words_j
-            words_i=$(echo "$problem_i" | tr ' ' '\n' | grep -E '^.{3,}$' | sort -u)
-            words_j=$(echo "$problem_j" | tr ' ' '\n' | grep -E '^.{3,}$' | sort -u)
+            words_i=$(echo "$problem_i" | tr ' ' '\n' | grep -E '^.{3,}$' | grep -v '^$' | sort -u || true)
+            words_j=$(echo "$problem_j" | tr ' ' '\n' | grep -E '^.{3,}$' | grep -v '^$' | sort -u || true)
+
+            # Skip se qualquer um for vazio (evita false-positive com linha vazia)
+            [ -z "$words_i" ] && continue
+            [ -z "$words_j" ] && continue
 
             # Contar overlap
             local overlap
-            overlap=$(comm -12 <(echo "$words_i") <(echo "$words_j") | wc -l)
+            overlap=$(comm -12 <(echo "$words_i") <(echo "$words_j") | grep -v '^$' | wc -l)
 
             if [ "$overlap" -ge "$threshold" ]; then
                 if [ "$found_similar" = "false" ]; then
@@ -714,7 +718,7 @@ lessons::compile() {
         [ -f "$f" ] || continue
         local id
         id=$(basename "$f" .json)
-        if lessons::_compile_lesson "$id" "$skill_path" "$dry_run" &>/dev/null; then
+        if lessons::_compile_lesson "$id" "$skill_path" "$dry_run"; then
             ((count++)) || true
         fi
     done
@@ -788,10 +792,11 @@ lessons::list() {
             skill_name=$(jq -r '.skill_name // .skill_path // "—" ' "$f")
         fi
 
-        # Aplicar filtro
+        # Filtro: pending = validada mas nao aprovada
         case "$filter" in
             pending)
-                [[ "$validated" = "true" ]] && continue
+                [[ "$validated" != "true" ]] && continue
+                [[ "$approved" = "true" ]] && continue
                 ;;
             validated)
                 [[ "$validated" != "true" ]] && continue
