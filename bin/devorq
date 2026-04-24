@@ -69,6 +69,8 @@ COMANDOS:
 
   context                    Mostrar contexto atual
   compact                    Gerar handoff para próxima sessão
+  ddd explore                Workshop interativo de domínio
+  ddd validate               Validar SPEC.md (GATE-0)
 
   sync push                  Enviar lessons → HUB
   sync pull                  Receber lessons ← HUB
@@ -481,6 +483,39 @@ devorq::cmd_stats() {
     cd "$original_pwd"
 }
 
+devorq::cmd_ddd() {
+    local sub="${1:-}"
+    local ddd_root="${DEVORQ_ROOT}/skills/ddd-deep-domain"
+
+    case "$sub" in
+        explore)
+            devorq::info "DDD Domain Workshop — pressione Ctrl+C para sair"
+            echo ""
+            devorq::info "Carregue a skill: hermes load ddd-deep-domain"
+            devorq::info "Ou leia: ${ddd_root}/SKILL.md"
+            echo ""
+            devorq::info "Referências: ${ddd_root}/references/domain-questions.md"
+            devorq::info "Validador:  ${ddd_root}/scripts/ddd-validate-spec.sh"
+            ;;
+        validate)
+            local validator="${ddd_root}/scripts/ddd-validate-spec.sh"
+            if [ ! -f "$validator" ]; then
+                devorq::error "ddd-validate-spec.sh não encontrado"
+            fi
+            if bash "$validator"; then
+                devorq::success "SPEC.md tem modelo mental válido"
+                return 0
+            else
+                devorq::fail "SPEC.md não tem alma (entidades, contextos, invariantes)"
+                return 1
+            fi
+            ;;
+        *)
+            devorq::error "Uso: devorq ddd explore|validate"
+            ;;
+    esac
+}
+
 # ============================================================
 # MAIN DISPATCH
 # ============================================================
@@ -498,6 +533,7 @@ main() {
         lessons)   shift; devorq::cmd_lessons "$@" ;;
         context)   devorq::cmd_context ;;
         compact)   devorq::cmd_compact ;;
+        ddd)       shift; devorq::cmd_ddd "$@" ;;
         sync)      shift; devorq::cmd_sync "$@" ;;
         vps)       shift; devorq::cmd_vps "$@" ;;
         context7)  shift; devorq::cmd_context7 "$@" ;;

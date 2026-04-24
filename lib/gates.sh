@@ -37,6 +37,46 @@ gate::info() {
 }
 
 # ============================================================
+# GATE-0 — DDD Domain Exploration (OPIONAL, pre-GATE-1)
+# ============================================================
+
+gate_0() {
+    gate::info 0 "Domain Exploration — checa se intent requer DDD"
+
+    # Detecta keywords DDD no intent (enviado via DEVORQ_INTENT)
+    local intent="${DEVORQ_INTENT:-}"
+    if [ -z "$intent" ]; then
+        # Tenta ler do context.json se existir
+        local ctx_file="${PWD}/.devorq/state/context.json"
+        if [ -f "$ctx_file" ] && command -v jq &>/dev/null; then
+            intent=$(jq -r '.intent // ""' "$ctx_file" 2>/dev/null || echo "")
+        fi
+    fi
+
+    # Se não tem keywords DDD, skip
+    if ! echo "$intent" | grep -qiE "domínio|ddd|modelagem|entidade|contexto|bounded|invariante"; then
+        gate::info 0 "DDD não detectado — skip"
+        return 0
+    fi
+
+    # DDD detectado — valida se SPEC.md tem modelo mental
+    local ddd_validate="${DEVORQ_ROOT}/skills/ddd-deep-domain/scripts/ddd-validate-spec.sh"
+    if [ ! -f "$ddd_validate" ]; then
+        gate::warn 0 "ddd-validate-spec.sh não encontrado — skip"
+        return 0
+    fi
+
+    if bash "$ddd_validate"; then
+        gate::pass 0 "DDD: SPEC.md tem modelo mental válido"
+        return 0
+    else
+        gate::fail 0 "DDD: SPEC.md parece CRUD sem modelo de domínio"
+        gate::info 0 "Sugestão: devorq ddd explore  (ou carregue skill ddd-deep-domain)"
+        return 1
+    fi
+}
+
+# ============================================================
 # GATE-1 — Spec Exists (BLOQUEANTE)
 # ============================================================
 
