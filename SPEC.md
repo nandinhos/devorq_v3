@@ -3,7 +3,7 @@
 > **Princípio de auto-construção:** o DEVORQ constrói a si mesmo.
 > Sistema operacional → usa-se para construir a si mesmo → refina → cresce.
 
-**Versão:** 3.3.0 | **Atualizado:** 2026-04-22
+**Versão:** 3.4.0 | **Atualizado:** 2026-04-25
 
 ---
 
@@ -550,7 +550,54 @@ devorq build
 
 ---
 
+## 15. Commit Convention
+
+Formato obrigatório para todos os commits:
+
+```
+escopo(fase): descrição detalhada
+```
+
+### Regras
+
+| Regra | Descrição |
+|-------|-----------|
+| **Idioma** | Português do Brasil |
+| **Sem emojis** | Apenas texto |
+| **Escopo obrigatório** | Área/arquivo: `auto`, `gates`, `lessons`, `docs`, `lib`, `bin`, `readme`, `spec` |
+| **Fase opcional** | Se relacionado a PRD: `(feat-v4-001)`, senão `(core)` |
+| **Descrição clara** | Verbo no presente + o que foi feito |
+
+### Exemplos
+
+```
+auto(feat-v4-001): adiciona modo hibrido tracker para stories do prd
+auto(feat-v4-002): adiciona comando discuss para decisoes de implementacao
+gates(core): refatora gate 3 com suporte a context files enhanced
+docs(readme): atualiza secao quick start com devorq auto
+lessons(core): implementa captura de licoes com validacao context7
+bin(core): adiciona comando auto com suporte a --continue
+```
+
+### Escopos Válidos
+
+| Escopo | Uso |
+|--------|-----|
+| `bin` | Changes em bin/devorq |
+| `lib` | Changes em qualquer lib/*.sh |
+| `auto` | Sistema AUTO mode |
+| `gates` | Sistema de gates |
+| `lessons` | Sistema de lições |
+| `context` | Context files e management |
+| `docs` | Documentação |
+| `readme` | README.md |
+| `spec` | SPEC.md |
+| `skills` | Skills do agente |
+| `prd` | prd.json e stories |
+
+---
+
 **Repo:** https://github.com/nandinhos/devorq_v3
-**Última atualização:** 2026-04-22 05:45 BRT
-**Versão:** 3.3.0
+**Última atualização:** 2026-04-25 03:30 BRT
+**Versão:** 3.4.0
 **Status:** 100% — Zero pendências

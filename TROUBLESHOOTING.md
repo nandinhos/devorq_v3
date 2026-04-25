@@ -2,7 +2,7 @@
 
 > Problemas comuns e soluções.
 
-**Versão:** 3.3.0
+**Versão:** 3.4.0
 
 ---
 
@@ -299,5 +299,5 @@ devorq version
 
 ---
 
-**Versão:** 3.3.0
+**Versão:** 3.4.0
 **Repo:** https://github.com/nandinhos/devorq_v3

@@ -2,7 +2,7 @@
 
 > Guia completo de instalação para Linux, macOS, WSL, e containers Docker.
 
-**Versão:** 3.3.0
+**Versão:** 3.4.0
 
 ---
 
@@ -210,5 +210,5 @@ rm ~/bin/devorq         # ou ~/.local/bin/devorq
 
 ---
 
-**Versão:** 3.3.0
+**Versão:** 3.4.0
 **Repo:** https://github.com/nandinhos/devorq_v3
