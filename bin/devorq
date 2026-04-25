@@ -335,22 +335,46 @@ devorq::cmd_version() {
 
 devorq::cmd_upgrade() {
     devorq::info "Atualizando DEVORQ..."
+
     local current_version
     current_version=$(cat "${DEVORQ_ROOT}/.devorq/version" 2>/dev/null || echo "desconhecida")
     devorq::info "Versão atual: $current_version"
 
     if [ -d "${DEVORQ_ROOT}/.git" ]; then
-        git -C "${DEVORQ_ROOT}" pull || devorq::error "Git pull falhou"
+        devorq::info "Método: Clone git — executando git pull..."
+
+        git -C "${DEVORQ_ROOT}" pull origin main || {
+            devorq::error "Git pull falhou"
+            return 1
+        }
+
         local new_version
         new_version=$(cat "${DEVORQ_ROOT}/.devorq/version" 2>/dev/null || echo "desconhecida")
-        devorq::success "Atualizado: $current_version -> $new_version"
+        devorq::success "Atualizado (git): $current_version -> $new_version"
 
-        # Re-roda build para confirmar integridade
-        devorq::info "Executando devorq build para validar..."
-        devorq::cmd_build
+    elif [ -f "${DEVORQ_ROOT}/bin/devorq" ]; then
+        local bin_path="${DEVORQ_ROOT}/bin/devorq"
+        devorq::info "Método: Binário direto — baixando update..."
+
+        cp "$bin_path" "${bin_path}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+
+        curl -fsSL "https://raw.githubusercontent.com/nandinhos/devorq_v3/main/bin/devorq" \
+            -o "$bin_path" || {
+            devorq::error "Download falhou"
+            return 1
+        }
+        chmod +x "$bin_path"
+
+        devorq::success "Atualizado (curl): binário substituído"
+
     else
-        devorq::error "Não é um clone git — use install.sh"
+        devorq::error "Instalação não reconhecida"
+        devorq::info "Para instalar: curl -fsSL https://raw.githubusercontent.com/nandinhos/devorq_v3/main/bin/devorq -o ~/bin/devorq"
+        return 1
     fi
+
+    devorq::info "Executando devorq build para validar..."
+    devorq::cmd_build
 }
 
 devorq::cmd_test() {
