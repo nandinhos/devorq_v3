@@ -66,51 +66,59 @@ devorq::banner() {
 
 devorq::help() {
     devorq::banner
-    cat << EOF
-DEVORQ v${DEVORQ_VERSION} — Framework bash puro para metodologia de desenvolvimento sistemático
-
-USO:
-  devorq <comando> [opções]
-
-COMANDOS:
-  init                       Inicializar .devorq/ no projeto
-  test                       Testar estrutura do projeto
-  flow "<intent>"           Workflow completo (gates 1-7)
-  gate [1-7]                Executar gate específico
-
-  lessons capture "<t>" "<p>" "<s>"
-                             Capturar lição aprendida
-  lessons search "<q>"      Buscar lições locais
-  lessons validate           Validar lição com Context7
-
-  context                    Mostrar contexto atual
-  compact                    Gerar handoff para próxima sessão
-
-  sync push                  Enviar lessons → HUB
-  sync pull                  Receber lessons ← HUB
-  vps check                  Testar conexão com VPS HUB
-  context7 install           Instalar Context7 (cli|mcp|api)
-  debug [erro]               Workflow debug sistemático (4 fases)
-  build                      Executa devorq test + gates 1-7 (Self-Building)
-  stats                      Mostra estatísticas de uso (lessons, gates, contexto)
-  auto [N|--all]             Modo AUTO — executa stories via devorq flow
-
-  version [--sync]           Versão instalada (--sync sincroniza todos os docs)
-  upgrade                    Atualizar DEVORQ
-  uninstall                  Remover instalação global
-
-OPÇÕES:
-  -h, --help                Este help
-  -v, --verbose             Modo debug
-
-EXEMPLOS:
-  devorq init
-  devorq test
-  devorq gate 1
-  devorq lessons capture "jq install" "no apt-get" "curl binary to ~/bin"
-  devorq vps check
-
-EOF
+    echo -e "\033[38;5;82mDEVORQ v${DEVORQ_VERSION}\033[0m — \033[38;5;117mFramework bash puro para metodologia de desenvolvimento sistemático\033[0m"
+    echo ""
+    echo -e "\033[38;5;226mUSO:\033[0m"
+    echo -e "  \033[38;5;255mdevorq\033[0m \033[38;5;250m<comando>\033[0m \033[38;5;245m[opções]\033[0m"
+    echo ""
+    echo -e "\033[38;5;226mCOMANDOS\033[0m"
+    echo ""
+    echo -e "\033[38;5;82m  INICIALIZAÇÃO E TESTE\033[0m"
+    echo -e "  \033[38;5;255m  init\033[0m                        \033[38;5;245mInicializar .devorq/ no projeto\033[0m"
+    echo -e "  \033[38;5;255m  test\033[0m                        \033[38;5;245mTestar estrutura do projeto\033[0m"
+    echo -e "  \033[38;5;255m  build\033[0m                      \033[38;5;245mExecuta devorq test + gates 1-7 (Self-Building)\033[0m"
+    echo ""
+    echo -e "\033[38;5;82m  WORKFLOW\033[0m"
+    echo -e "  \033[38;5;255m  flow\033[0m \033[38;5;250m\"<intent>\"\033[0m           \033[38;5;245mWorkflow completo (gates 1-7)\033[0m"
+    echo -e "  \033[38;5;255m  gate\033[0m \033[38;5;250m[1-7]\033[0m                \033[38;5;245mExecutar gate específico\033[0m"
+    echo -e "  \033[38;5;255m  auto\033[0m \033[38;5;250m[N|--all]\033[0m             \033[38;5;245mModo AUTO — executa stories via devorq flow\033[0m"
+    echo ""
+    echo -e "\033[38;5;82m  LIÇÕES APRENDIDAS\033[0m"
+    echo -e "  \033[38;5;255m  lessons capture\033[0m \033[38;5;250m\"<t>\" \"<p>\" \"<s>\"\033[0m"
+    echo -e "                               \033[38;5;245mCapturar lição aprendida\033[0m"
+    echo -e "  \033[38;5;255m  lessons search\033[0m \033[38;5;250m\"<q>\"\033[0m       \033[38;5;245mBuscar lições locais\033[0m"
+    echo -e "  \033[38;5;255m  lessons validate\033[0m          \033[38;5;245mValidar lição com Context7\033[0m"
+    echo ""
+    echo -e "\033[38;5;82m  CONTEXTO E HANDOVER\033[0m"
+    echo -e "  \033[38;5;255m  context\033[0m                   \033[38;5;245mMostrar contexto atual\033[0m"
+    echo -e "  \033[38;5;255m  compact\033[0m                  \033[38;5;245mGerar handoff para próxima sessão\033[0m"
+    echo ""
+    echo -e "\033[38;5;82m  SINCRONIZAÇÃO (HUB VPS)\033[0m"
+    echo -e "  \033[38;5;255m  sync push\033[0m                 \033[38;5;245mEnviar lessons → HUB\033[0m"
+    echo -e "  \033[38;5;255m  sync pull\033[0m                 \033[38;5;245mReceber lessons ← HUB\033[0m"
+    echo -e "  \033[38;5;255m  vps check\033[0m                 \033[38;5;245mTestar conexão com VPS HUB\033[0m"
+    echo ""
+    echo -e "\033[38;5;82m  FERRAMENTAS\033[0m"
+    echo -e "  \033[38;5;255m  context7 install\033[0m         \033[38;5;245mInstalar Context7 (cli|mcp|api)\033[0m"
+    echo -e "  \033[38;5;255m  debug\033[0m \033[38;5;250m[erro]\033[0m               \033[38;5;245mWorkflow debug sistemático (4 fases)\033[0m"
+    echo -e "  \033[38;5;255m  stats\033[0m                     \033[38;5;245mMostrar estatísticas de uso\033[0m"
+    echo ""
+    echo -e "\033[38;5;82m  SISTEMA\033[0m"
+    echo -e "  \033[38;5;255m  version\033[0m \033[38;5;250m[--sync]\033[0m          \033[38;5;245mVersão instalada\033[0m"
+    echo -e "  \033[38;5;255m  upgrade\033[0m                    \033[38;5;245mAtualizar DEVORQ\033[0m"
+    echo -e "  \033[38;5;255m  uninstall\033[0m                  \033[38;5;245mRemover instalação global\033[0m"
+    echo ""
+    echo -e "\033[38;5;226mOPÇÕES:\033[0m"
+    echo -e "  \033[38;5;250m  -h, --help\033[0m               \033[38;5;245mEste help\033[0m"
+    echo -e "  \033[38;5;250m  -v, --verbose\033[0m            \033[38;5;245mModo debug\033[0m"
+    echo ""
+    echo -e "\033[38;5;226mEXEMPLOS:\033[0m"
+    echo -e "  \033[38;5;250m  devorq init\033[0m"
+    echo -e "  \033[38;5;250m  devorq test\033[0m"
+    echo -e "  \033[38;5;250m  devorq gate 1\033[0m"
+    echo -e "  \033[38;5;250m  devorq lessons capture \"jq install\" \"no apt-get\" \"curl binary\"\033[0m"
+    echo -e "  \033[38;5;250m  devorq vps check\033[0m"
+    echo -e "  \033[38;5;250m  devorq auto --all\033[0m"
 }
 
 # ============================================================
