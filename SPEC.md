@@ -3,7 +3,7 @@
 > **Princípio de auto-construção:** o DEVORQ constrói a si mesmo.
 > Sistema operacional → usa-se para construir a si mesmo → refina → cresce.
 
-**Versão:** 3.2.1 | **Atualizado:** 2026-04-22
+**Versão:** 3.3.0 | **Atualizado:** 2026-04-22
 
 ---
 
@@ -552,5 +552,5 @@ devorq build
 
 **Repo:** https://github.com/nandinhos/devorq_v3
 **Última atualização:** 2026-04-22 05:45 BRT
-**Versão:** 3.2.1
+**Versão:** 3.3.0
 **Status:** 100% — Zero pendências

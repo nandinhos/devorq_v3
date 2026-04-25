@@ -27,7 +27,7 @@ set -euo pipefail
 
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION="3.2.1"
+DEVORQ_VERSION="3.3.0"
 
 # jq no ~/bin (instalado via curl sem root)
 if [ -d "${HOME}/bin" ] && [[ ":$PATH:" != *":${HOME}/bin:"* ]]; then
@@ -78,7 +78,7 @@ COMANDOS:
   build                      Executa devorq test + gates 1-7 (Self-Building)
   stats                      Mostra estatísticas de uso (lessons, gates, contexto)
 
-  version                    Versão instalada
+  version [--sync]           Versão instalada (--sync sincroniza todos os docs)
   upgrade                    Atualizar DEVORQ
   uninstall                  Remover instalação global
 
@@ -330,7 +330,52 @@ devorq::cmd_skills() {
 }
 
 devorq::cmd_version() {
-    echo "DEVORQ v${DEVORQ_VERSION}"
+    local sync_mode=""
+    if [[ "${1:-}" == "--sync" ]]; then
+        sync_mode="1"
+    fi
+
+    if [[ -n "$sync_mode" ]]; then
+        devorq::info "Sincronizando versão ${DEVORQ_VERSION} em todos os arquivos..."
+        local updated=0
+
+        update_file() {
+            local file="$1"
+            local pattern="$2"
+            if [[ ! -f "$file" ]]; then
+                devorq::warn "  $file: não encontrado"
+                return 1
+            fi
+
+            local current
+            current=$(grep -oE "$pattern" "$file" 2>/dev/null | head -1 || echo "")
+
+            if [[ -z "$current" ]]; then
+                devorq::info "  $file: padrão não encontrado (ignorado)"
+                return 0
+            fi
+
+            if [[ "$current" == *"${DEVORQ_VERSION}"* ]]; then
+                devorq::info "  $file: já em ${DEVORQ_VERSION}"
+            else
+                sed -i "s/${current}/${DEVORQ_VERSION}/g" "$file" 2>/dev/null && {
+                    devorq::success "  $file: $current -> ${DEVORQ_VERSION}"
+                    updated=$((updated + 1))
+                }
+            fi
+        }
+
+        update_file "${DEVORQ_ROOT}/README.md" '[0-9]+\.[0-9]+\.[0-9]+'
+        update_file "${DEVORQ_ROOT}/INSTALL.md" '[0-9]+\.[0-9]+\.[0-9]+'
+        update_file "${DEVORQ_ROOT}/EXTRAS.md" '[0-9]+\.[0-9]+\.[0-9]+'
+        update_file "${DEVORQ_ROOT}/TROUBLESHOOTING.md" '[0-9]+\.[0-9]+\.[0-9]+'
+        update_file "${DEVORQ_ROOT}/SPEC.md" '[0-9]+\.[0-9]+\.[0-9]+'
+        update_file "${DEVORQ_ROOT}/.devorq/version" '[0-9]+\.[0-9]+\.[0-9]+'
+
+        devorq::success "Versão sincronizada: ${DEVORQ_VERSION} ($updated arquivos atualizados)"
+    else
+        echo "DEVORQ v${DEVORQ_VERSION}"
+    fi
 }
 
 devorq::cmd_upgrade() {
@@ -342,9 +387,8 @@ devorq::cmd_upgrade() {
 
     if [ -d "${DEVORQ_ROOT}/.git" ]; then
         devorq::info "Método: Clone git — executando git pull..."
-
-        git -C "${DEVORQ_ROOT}" pull origin main || {
-            devorq::error "Git pull falhou"
+        git -C "${DEVORQ_ROOT}" pull --ff-only origin main || {
+            devorq::error "Git pull falhou (divergência?). Use git reset --hard origin/main para recuperar."
             return 1
         }
 
@@ -529,7 +573,7 @@ main() {
         debug)     devorq::cmd_debug "$@" ;;
         build)     devorq::cmd_build ;;
         stats)     devorq::cmd_stats ;;
-        version)   devorq::cmd_version ;;
+        version)   shift; devorq::cmd_version "$@" ;;
         upgrade)   devorq::cmd_upgrade ;;
         uninstall) devorq::cmd_uninstall ;;
         *)         devorq::help ;;

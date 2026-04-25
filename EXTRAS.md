@@ -2,7 +2,7 @@
 
 > Tópicos avançados: Context-Mode, Context7, Superpowers, HUB, Self-Building, e Debug Sistemático.
 
-**Versão:** 3.2.1 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3)
+**Versão:** 3.3.0 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3)
 
 ---
 
@@ -432,6 +432,6 @@ DEVORQ CORE (/projects/devorq_v3)
 
 ---
 
-**Versão:** 3.2.1
+**Versão:** 3.3.0
 **Repo:** https://github.com/nandinhos/devorq_v3
 **Última atualização:** 2026-04-22 05:45 BRT
