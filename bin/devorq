@@ -34,6 +34,11 @@ if [ -d "${HOME}/bin" ] && [[ ":$PATH:" != *":${HOME}/bin:"* ]]; then
     export PATH="${HOME}/bin:$PATH"
 fi
 
+# Source all lib/*.sh for command availability
+for f in "${DEVORQ_LIB}"/*.sh; do
+    source "$f" 2>/dev/null || true
+done
+
 # ============================================================
 # LOGGING (sem cores — compatibilidade máxima)
 # ============================================================
@@ -77,6 +82,7 @@ COMANDOS:
   debug [erro]               Workflow debug sistemático (4 fases)
   build                      Executa devorq test + gates 1-7 (Self-Building)
   stats                      Mostra estatísticas de uso (lessons, gates, contexto)
+  auto [N|--all]             Modo AUTO — executa stories via devorq flow
 
   version [--sync]           Versão instalada (--sync sincroniza todos os docs)
   upgrade                    Atualizar DEVORQ
@@ -575,6 +581,7 @@ main() {
         stats)     devorq::cmd_stats ;;
         version)   shift; devorq::cmd_version "$@" ;;
         upgrade)   devorq::cmd_upgrade ;;
+        auto)      shift; devorq::cmd_auto "$@" ;;
         uninstall) devorq::cmd_uninstall ;;
         *)         devorq::help ;;
     esac

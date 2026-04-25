@@ -1,0 +1,112 @@
+{
+  "project": "devorq_v3",
+  "created": "2026-04-25T00:00:00Z",
+  "stories": [
+    {
+      "id": "feat-v4-001",
+      "title": "devorq spike - experimentação rápida",
+      "description": "Criar comando devorq spike para experimentos descartáveis",
+      "acceptanceCriteria": [
+        "devorq spike --new <hipotese> cria estrutura em .devorq/spikes/",
+        "devorq spike --verdict <resultado> marca como válido/inválido",
+        "Suporta --stack bash|python|node|php",
+        "Limite de 1h por spike (auto-aviso)",
+        "Cria: hypothesis.md, experiments/, verdict.md"
+      ],
+      "priority": 10,
+      "passes": false
+    },
+    {
+      "id": "feat-v4-002",
+      "title": "devorq discuss - decisões de implementação",
+      "description": "Capturar decisões de design antes de planejar",
+      "acceptanceCriteria": [
+        "devorq discuss [N] inicia modo interativo por fase",
+        "Cria .devorq/state/phases/XX-discuss/CONTEXT.md",
+        "Detecta tipo: visual|api|cli|content e faz perguntas relevantes",
+        "Decisões ficam em decisions/[] no CONTEXT.md"
+      ],
+      "priority": 20,
+      "passes": false
+    },
+    {
+      "id": "feat-v4-003",
+      "title": "devorq plan - plans estruturados",
+      "description": "Criar comando devorq plan para tasks atômicas verificáveis",
+      "acceptanceCriteria": [
+        "devorq plan create <nome> cria .devorq/state/plans/XXX-nome.md",
+        "Formato: XML-like com <action>, <verify>, <done>",
+        "Suporta depends_on e wave (1, 2, 3...)",
+        "devorq plan list mostra todos",
+        "devorq plan status mostra pendentes/concluídos"
+      ],
+      "priority": 30,
+      "passes": false
+    },
+    {
+      "id": "feat-v4-004",
+      "title": "devorq wave - execução paralela",
+      "description": "Wave-based execution com depends_on",
+      "acceptanceCriteria": [
+        "devorq wave plan identifica waves por depends_on",
+        "Wave 1: tasks sem dependências (paralelo)",
+        "Wave 2: tasks dependem de W1",
+        "Wave 3: tasks dependem de W2",
+        "devorq wave execute [N] executa wave N"
+      ],
+      "priority": 40,
+      "passes": false
+    },
+    {
+      "id": "feat-v4-005",
+      "title": "Enhanced Context Files - PROJECT.md",
+      "description": "Criar template PROJECT.md via devorq init",
+      "acceptanceCriteria": [
+        "devorq init cria PROJECT.md com template",
+        "Template: # Projeto, ## Visão, ## Stack, ## Arquitetura",
+        "Carregado automaticamente no flow (Gate-3 enhanced)"
+      ],
+      "priority": 50,
+      "passes": false
+    },
+    {
+      "id": "feat-v4-006",
+      "title": "Enhanced Context Files - STATE.md",
+      "description": "Criar template STATE.md para decisões cross-session",
+      "acceptanceCriteria": [
+        "devorq init cria STATE.md com template",
+        "Sections: decisions, blockers, progress",
+        "devorq context --update atualiza",
+        "Carregado em devorq flow para contexto"
+      ],
+      "priority": 60,
+      "passes": false
+    },
+    {
+      "id": "feat-v4-007",
+      "title": "devorq map - análise de codebase",
+      "description": "Brownfield: analisar código existente antes de adicionar feature",
+      "acceptanceCriteria": [
+        "devorq map escaneia stack, patterns, conventions",
+        "Gera: stack.json, patterns.json, conventions.json",
+        "Atualiza PROJECT.md com findings",
+        "usa parallel agents se disponíveis"
+      ],
+      "priority": 70,
+      "passes": false
+    },
+    {
+      "id": "feat-v4-008",
+      "title": "devorq brainstorm - trade-offs documentados",
+      "description": "Brainstorming estruturado para decisões técnicas",
+      "acceptanceCriteria": [
+        "devorq brainstorm <goal> inicia",
+        "Identifica gray areas e alternativas",
+        "Documenta prós/contras",
+        "Resultado em STATE.md decisions/"
+      ],
+      "priority": 80,
+      "passes": false
+    }
+  ]
+}
