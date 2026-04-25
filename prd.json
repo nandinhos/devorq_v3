@@ -27,7 +27,7 @@
         "Decis\u00f5es ficam em decisions/[] no CONTEXT.md"
       ],
       "priority": 20,
-      "passes": false
+      "passes": true
     },
     {
       "id": "feat-v4-003",
