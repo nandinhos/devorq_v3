@@ -4,22 +4,22 @@
 
 devorq::auto::usage() {
     cat <<'USAGE_EOF'
-Usage: devorq auto [N|--all]
+Usage: devorq auto [N|--all|--continue]
 
-Modo AUTO: executa stories do prd.json via devorq flow.
-1. Gera/usa prd.json do SPEC.md
-2. Executa story via devorq flow
-3. Verifica via devorq build
-4. Git commit se passou
+Modo AUTO (Híbrido): tracker de progresso para stories.
+1. Mostra stories pendentes do prd.json
+2. Você implementa manualmente
+3. Usa --continue para marcar e commitar
 
 Args:
-  N      Numero de iterations (default: 1)
-  --all  Executar todas as pendentes
+  N          Numero de iterations (default: 1)
+  --all      Executar todas as pendentes
+  --continue Marque story atual como done + commit
 
 Exemplos:
-  devorq auto          # Executa 1 story
-  devorq auto 3        # Executa 3 stories
-  devorq auto --all    # Executa todas
+  devorq auto              # Mostra stories pendentes
+  devorq auto 3            # Mostra 3 stories
+  devorq auto --continue   # Marca story atual como done
 USAGE_EOF
 }
 
@@ -246,14 +246,23 @@ devorq::auto::git_commit() {
 
 devorq::auto::execute_flow() {
     local story_title="$1"
-    devorq::auto::info "Executando: devorq flow \"$story_title\""
-    devorq flow "$story_title"
+    devorq::auto::info "Story: $story_title"
+    devorq::auto::info "Implemente manualmente, depois rode 'devorq auto --continue'"
+    devorq::auto::info "para marcar como done e commitar."
+    echo "Press Enter quando implementar:"
+    read -r _ < /dev/stdin
+    return 0
 }
 
 devorq::auto::verify() {
     local project="$1"
     devorq::auto::info "Verificando via devorq build..."
-    devorq build
+    if devorq build 2>&1; then
+        return 0
+    else
+        echo "devorq build falhou. Corrija e tente novamente."
+        return 1
+    fi
 }
 
 devorq::auto::run() {
@@ -344,17 +353,60 @@ devorq::auto::run() {
 
 devorq::cmd_auto() {
     local iterations=1
+    local mode="interactive"
 
     if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
         devorq::auto::usage
         return 0
     fi
 
-    if [[ "${1:-}" == "--all" ]]; then
+    if [[ "${1:-}" == "--continue" || "${1:-}" == "-c" ]]; then
+        mode="continue"
+    elif [[ "${1:-}" == "--all" ]]; then
         iterations=999
     elif [[ -n "${1:-}" && "${1:-}" =~ ^[0-9]+$ ]]; then
         iterations="${1:-1}"
     fi
 
-    devorq::auto::run "$iterations"
+    if [[ "$mode" == "continue" ]]; then
+        devorq::auto::run_continue
+    else
+        devorq::auto::run "$iterations"
+    fi
+}
+
+devorq::auto::run_continue() {
+    local project_root="${DEVORQ_PROJECT_ROOT:-$PWD}"
+    cd "$project_root"
+
+    devorq::auto::require_prd "$project_root"
+
+    local story_json
+    story_json=$(devorq::auto::next_story "$project_root")
+
+    if [[ -z "$story_json" || "$story_json" == "null" ]]; then
+        devorq::auto::success "Todas stories processadas."
+        return 0
+    fi
+
+    local story_id story_title
+    story_id=$(echo "$story_json" | jq -r '.id')
+    story_title=$(echo "$story_json" | jq -r '.title')
+
+    devorq::auto::info "Marcando como done: $story_id - $story_title"
+
+    if devorq::auto::verify "$project_root"; then
+        devorq::auto::git_commit "$project_root" "$story_id" "$story_title"
+        devorq::auto::mark_pass "$project_root" "$story_id"
+        devorq::auto::success "Story completa: $story_id"
+
+        local done total pending
+        done=$(devorq::auto::completed_count "$project_root")
+        total=$(devorq::auto::total_count "$project_root")
+        pending=$(devorq::auto::pending_count "$project_root")
+        devorq::auto::info "Progress: $done/$total stories ($pending pending)"
+    else
+        devorq::auto::fail "Verification failed. Corrija e tente novamente."
+        return 1
+    fi
 }

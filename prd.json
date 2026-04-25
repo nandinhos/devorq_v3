@@ -41,7 +41,7 @@
         "devorq plan status mostra pendentes/conclu\u00eddos"
       ],
       "priority": 30,
-      "passes": false
+      "passes": true
     },
     {
       "id": "feat-v4-004",
