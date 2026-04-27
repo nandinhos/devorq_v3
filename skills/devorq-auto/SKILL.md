@@ -1,7 +1,7 @@
 ---
 name: devorq-auto
-description: DEVORQ-AUTO v1.0.0 — Modo autonomo story-by-story do DEVORQ v3. Implementacao automatica via delegate_task seguindo o padrao Ralph (loop com contexto limpo por iteracao). Gera prd.json do SPEC.md, executa uma story por vez, verifica, commita. NAO depende do Ralph instalado — usa delegate_task nativo.
-version: 1.0.0
+description: DEVORQ-AUTO v1.1.0 — Modo autonomo story-by-story do DEVORQ v3. Implementacao automatica via delegate_task seguindo o padrao Ralph (loop com contexto limpo por iteracao). Gera prd.json do SPEC.md, executa uma story por vez, verifica, commita. NAO depende do Ralph instalado — usa delegate_task nativo.
+version: 1.1.0
 author: Fernando Dos Santos (Nando)
 license: MIT
 metadata:
@@ -11,7 +11,7 @@ metadata:
     stack: [bash, jq, python3, delegate_task]
 ---
 
-# DEVORQ-AUTO v1.0.0
+# DEVORQ-AUTO v1.1.0
 
 ## Visao Geral
 
@@ -233,11 +233,117 @@ echo "[$(date +%H:%M)] ✅ ${STORY_TITLE} — PASSED" >> progress.txt
 - **verification-before-completion**: graftada dentro de check-story.sh como gate final
 - **devorq (v3)**: devorq-auto e modo acelerado do DEVORQ — nao substitui. GATE-1 a GATE-7 continuam valendo para o fluxo geral.
 
+## armadilhas Descobertas (após uso real em WSL/Docker)
+
+### 1. delegate_task nao acessa /projects/ corretamente
+Sub-agentes spawneados via `delegate_task` podem Nao conseguir acessar paths como `/home/nandodev/projects/` ou `/projects/` — Timeout ou exit -1.
+**Sintoma:** sub-agente da timeout (600s) mesmo com task simples.
+**Solucao:** usar `execute_code` (Python) para implementacao direta quando delegate_task falha. O agente principal TEM acesso ao filesystem.
+```python
+# Padrao de fallback quando delegate_task falha
+import subprocess
+result = subprocess.run(['git', 'add', '-A'], capture_output=True, cwd=project_root)
+```
+**Regra:** se delegate_task falha 2x na mesma story, implementar diretamente via `execute_code`.
+
+### 2. Fallback automatico execute_code (v1.1.0)
+Se `delegate_task` falhar 1x, o loop agora faz retry automatico com `execute_code` em vez de parar imediatamente.
+```bash
+# MAX_DELEGATE_RETRIES=1 (default)
+# Se falhar, tenta novamente com contexto simplificado
+```
+Se falhar 2x, cria `.devorq-auto/pending_story.json` com a story pendente.
+
+### 3. force-continue para batch (v1.1.0)
+Flag `--force-continue` pula stories com erro e continua o batch:
+```bash
+./loop-auto.sh . --all --force-continue
+```
+Falhas sao logadas em `lessons.json` mas nao param o loop.
+
+### 4. Stories "by design" vs "SKIPPED"
+- **By design** = codigo JA esta correto, comentarios indicam intencao deliberada. Marcar `passes: true`.
+- **SKIPPED** =技术上 possivel mas requer analise manual profunda (ex: ARCH-01 Enums com dois conjuntos). Marcar `passes: false, notes: "SKIPPED: reason"`.
+```python
+# Exemplo: SEC-03 hierarquia — comentarios JA indicam design intencional
+story['passes'] = True  # JA implementado corretamente
+
+# Exemplo: ARCH-01 — dois conjuntos de Enums, analisar manualmente
+story['passes'] = False
+story['notes'] = 'SKIPPED: dois conjuntos de Enums (root app/*.php vs app/Enums/*.php)'
+```
+
+### 5. Complex stories = implementar diretamente
+Stories como DB-01 (migration + update em todo PHP code), ARCH-02 (base class com logicas diferentes), ARCH-06 (Value Objects) saofaceis de entender mas tediosas de implementar. Faca diretamente via `execute_code` em vez de delegar:
+```python
+# Padrao para implementacao direta limpa
+base = '/home/nandodev/projects/eventos-control'
+# 1. Ler arquivos relevantes
+# 2. Gerar codigo novo
+# 3. write_file() ou patch()
+# 4. git add + commit
+```
+
+
+## Licoes Aprendidas (v1.1.0+)
+
+Arquivo: `.devorq-auto/lessons.json` — persiste entre sessoes por projeto.
+
+```json
+{
+  "project": "nome-do-projeto",
+  "created": "2026-04-23T02:30:00Z",
+  "lessons": [
+    {
+      "story_id": "feat-001",
+      "story_title": "Adicionar validacao de CPF",
+      "type": "delegate",
+      "details": "failed_after_1_retries",
+      "timestamp": "2026-04-23T14:30:00Z"
+    }
+  ],
+  "stats": {
+    "total": 5,
+    "delegate_failed": 1,
+    "verification_failed": 0,
+    "complex_detected": 2
+  }
+}
+```
+
+### O que e salvo automaticamente
+
+| Type | Quando | Para que serve |
+|------|--------|---------------|
+| `delegate` | delegate_task falhou apos retries | Suggest implementacao direta na proxima |
+| `verification` | check-story.sh falhou | Recordar que precisa de mais testes |
+| `complex` | Heuristica detectou keywords complexas | Propor quebra de story antes de tentar |
+| `success` | Story passou limpa | Confianca em patterns similares |
+
+### Heuristicas de Complexidade
+
+Stories sao marcadas como "complex" se conterem keywords como:
+- `migration`, `enum`, `policy`, `relation`, `many-to-many`
+- `factory`, `seeder`, `job`, `queue`, `event`, `listener`
+- `middleware`, `service provider`, `config`, `schema`
+- Descricao muito longa (>500 chars)
+
+### Sugestoes Automaticas
+
+Antes de cada story, o loop verifica se ha licao similar anterior e exibe:
+```
+📚 Licao anterior relevante:
+  -> feat-001: delegate falhou com keywords migration
+```
+
+
 ## Limitacoes
 
 - Nao substitui o DEVORQ manual — e acelerador para fases de implementacao pura
 - Nao faz decisoes arquiteturais — story ambigua = PARA e pergunta
 - Nao gera codigo de alta complexidade sozinho — stories complexas podem precisar de intervencao
+- **delegate_task pode falhar em ambientes container/WSL** — ter fallback `execute_code` sempre disponivel
+- **Stories que requerem analise de dois conjuntos de arquivos diferentes** (ex: Enums duplicados) = SKIPPED para analise manual
 - Funciona melhor com PHP/Laravel (base DEVORQ) mas e agnostico de stack
 
 ## Dependencias
