@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 #===========================================================
-# devorq-auto — loop-auto.sh v1.1.0
+# devorq-auto — loop-auto.sh v1.2.0
 # Loop principal Ralph-style: delegate -> verify -> commit
-# Com fallback automatico execute_code e lessons aprendidas
+# Com:
+#   - Fallback automatico execute_code
+#   - Lessons aprendidas por projeto
+#   - Log estruturado: failures.md + runs/*.log + pending/*.json
 #===========================================================
 set -euo pipefail
 
@@ -12,7 +15,7 @@ SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 #-----------------------------------------------------------
 # Config
 #-----------------------------------------------------------
-DEVORQ_AUTO_VERSION="1.1.0"
+DEVORQ_AUTO_VERSION="1.2.0"
 FORCE_CONTINUE=false
 CAPTURE_LESSONS=true
 MAX_DELEGATE_RETRIES=1
@@ -30,7 +33,7 @@ Loop Ralph-style: uma story por iteracao.
 3. Fallback automatico para execute_code se delegate falhar
 4. check-story.sh para verificar
 5. git commit se passou
-6. Atualiza prd.json + lessons.json
+6. Atualiza prd.json + lessons + failures.md
 
 Args:
   PROJECT_ROOT    Diretorio do projeto (obrigatorio)
@@ -42,13 +45,13 @@ Options:
   --no-learn        Nao captura licoes aprendidas
   -h, --help        Este help
 
-Exit codes:
-  0   Sucesso
-  1   Projeto nao encontrado
-  2   Abortado pelo usuario
-  3   Verification falhou
-  4   Delegate falhou (apos todos os retries)
-  5   prd.json nao encontrado
+Output files:
+  progress.txt         Log append-only de cada iteracao
+  .devorq-auto/
+    failures.md       Sumario das falhas (human-readable, latest)
+    lessons.json      Falhas estruturadas (máquina)
+    runs/YYYY-MM-DD_HH-MM.log   Log completo do batch
+    pending/*.json    Context de cada story que falhou
 EOF
 }
 
@@ -64,13 +67,36 @@ devorq_auto::warn()    { echo "⚠️  $*"; }
 devorq_auto::learn()  { echo "📚 $*"; }
 
 #-----------------------------------------------------------
+# Devorq-auto directory structure
+#-----------------------------------------------------------
+DEVORQ_AUTO_DIR=""
+RUN_LOG_FILE=""
+
+devorq_auto::setup_dirs() {
+    local project="$1"
+    DEVORQ_AUTO_DIR="$project/.devorq-auto"
+    mkdir -p "$DEVORQ_AUTO_DIR/pending" "$DEVORQ_AUTO_DIR/runs"
+
+    # Create run log for this execution
+    RUN_LOG_FILE="$DEVORQ_AUTO_DIR/runs/$(date +%Y-%m-%d_%H-%M).log"
+}
+
+#-----------------------------------------------------------
+# Log to run file
+#-----------------------------------------------------------
+devorq_auto::log() {
+    local msg="[$(date +%H:%M:%S)] $*"
+    echo "$msg" >> "$RUN_LOG_FILE"
+    echo "$msg"
+}
+
+#-----------------------------------------------------------
 # Lessons — persistencia de licoes aprendidas por projeto
 #-----------------------------------------------------------
 LESSONS_FILE=""
 
 devorq_auto::lessons_init() {
     local project="$1"
-    mkdir -p "$project/.devorq-auto"
     LESSONS_FILE="$project/.devorq-auto/lessons.json"
 
     if [[ ! -f "$LESSONS_FILE" ]]; then
@@ -99,7 +125,7 @@ devorq_auto::lessons_capture() {
     tmp=$(mktemp)
 
     python3 -c "
-import json, sys
+import json
 from datetime import datetime
 
 with open('$LESSONS_FILE') as f:
@@ -113,19 +139,15 @@ lesson = {
     'timestamp': datetime.now().isoformat()
 }
 
-# Incrementa stats
-key = '$failure_type'.replace(' ', '_').lower()
-if 'failed' in key:
-    key = key.replace('_failed', '')
-    if '$failure_type' == 'delegate':
-        data['stats']['delegate_failed'] += 1
-    elif '$failure_type' == 'verification':
-        data['stats']['verification_failed'] += 1
-elif key == 'complex':
-    data['stats']['complex_detected'] += 1
-
 data['lessons'].append(lesson)
 data['stats']['total'] += 1
+
+if '$failure_type' == 'delegate':
+    data['stats']['delegate_failed'] += 1
+elif '$failure_type' == 'verification':
+    data['stats']['verification_failed'] += 1
+elif '$failure_type' == 'complex':
+    data['stats']['complex_detected'] += 1
 
 with open('$tmp', 'w') as f:
     json.dump(data, f, indent=2)
@@ -139,7 +161,6 @@ devorq_auto::lessons_suggest() {
 
     [[ ! -f "$LESSONS_FILE" ]] && return 0
 
-    # Procura licao similar anterior
     python3 -c "
 import json
 with open('$LESSONS_FILE') as f:
@@ -148,17 +169,131 @@ with open('$LESSONS_FILE') as f:
 similar = [l for l in data['lessons'] if l['type'] in ('delegate', 'complex') and l['story_title'].lower() in '$story_title'.lower()]
 if similar:
     print()
-    devorq_auto::learn 'Licao anterior relevante:'
+    print('📚 Licao anterior relevante:')
     for l in similar[-2:]:
         print(f"  -> {l['story_id']}: {l['details']}")
 " 2>/dev/null || true
 }
 
 #-----------------------------------------------------------
+# FAILURES.MD — Gerar sumario human-readable das falhas
+#-----------------------------------------------------------
+devorq_auto::failures_generate() {
+    local project="$1"
+
+    [[ ! -f "$LESSONS_FILE" ]] && return 0
+
+    local failures_md="$DEVORQ_AUTO_DIR/failures.md"
+    local total pending done
+
+    total=$(devorq_auto::total_count "$project")
+    pending=$(devorq_auto::pending_count "$project")
+    done=$(devorq_auto::completed_count "$project")
+
+    python3 << PYEOF
+import json
+from datetime import datetime
+
+project_name = '$(basename "$project")'
+
+with open('$LESSONS_FILE') as f:
+    data = json.load(f)
+
+failed = [l for l in data['lessons'] if l['type'] in ('delegate', 'verification', 'complex')]
+failed.reverse()  # Most recent first
+
+type_icon = {
+    'delegate': '❌',
+    'verification': '❌',
+    'complex': '⚠️'
+}
+
+type_action = {
+    'delegate': 'delegate_task falhou apos retries',
+    'verification': 'check-story.sh failed',
+    'complex': 'Story complexa detectada'
+}
+
+lines = []
+lines.append(f'# DEVORQ-AUTO Failures — {project_name}')
+lines.append(f'Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}')
+lines.append('')
+lines.append(f'## {len(failed)} Stories Pendentes de Correção')
+lines.append('')
+
+for l in failed:
+    icon = type_icon.get(l['type'], '❌')
+    action = type_action.get(l['type'], l['type'])
+    dt = datetime.fromisoformat(l['timestamp']).strftime('%Y-%m-%d %H:%M')
+    lines.append(f'### {icon} {l["story_id"]}: {l["story_title"]}')
+    lines.append(f'- **Tipo:** {l["type"]} ({l["details"]})')
+    lines.append(f'- **Data:** {dt}')
+    lines.append(f'- **Action:** {action}')
+    lines.append(f'- **Contexto:** \`.devorq-auto/pending/{l["story_id"]}.json\`')
+    lines.append('')
+
+lines.append('---')
+lines.append(f'Total: {len(failed)} failures | Stats: delegate={data["stats"]["delegate_failed"]}, verification={data["stats"]["verification_failed"]}, complex={data["stats"]["complex_detected"]}')
+lines.append(f'Progresso: {done}/{total} done, {pending} pending')
+
+with open('$failures_md', 'w') as f:
+    f.write('
+'.join(lines))
+PYEOF
+}
+
+#-----------------------------------------------------------
+# PENDING — Salvar contexto da story que falhou
+#-----------------------------------------------------------
+devorq_auto::pending_save() {
+    local project="$1"
+    local story_json="$2"
+    local failure_type="$3"
+    local details="$4"
+
+    local story_id
+    story_id=$(echo "$story_json" | jq -r '.id')
+
+    local pending_file="$DEVORQ_AUTO_DIR/pending/${story_id}.json"
+
+    # Write story_json to temp file first to avoid escaping issues
+    local json_tmp
+    json_tmp=$(mktemp)
+    echo "$story_json" > "$json_tmp"
+
+    python3 << PYEOF
+import json
+from datetime import datetime
+
+with open('$json_tmp') as f:
+    story = json.load(f)
+
+pending = {
+    'story_id': story['id'],
+    'title': story['title'],
+    'description': story['description'],
+    'acceptanceCriteria': story.get('acceptanceCriteria', []),
+    'priority': story['priority'],
+    'failure': {
+        'type': '$failure_type',
+        'details': '$details',
+        'timestamp': datetime.now().isoformat()
+    }
+}
+
+with open('$pending_file', 'w') as f:
+    json.dump(pending, f, indent=2)
+PYEOF
+
+    rm -f "$json_tmp"
+    echo "Saved: $pending_file"
+}
+
+#-----------------------------------------------------------
 # Detectar projeto
 #-----------------------------------------------------------
 devorq_auto::detect_project() {
-    local dir="${1:-.}"
+    local dir="\${1:-.}"
 
     if [[ -f "$dir/SPEC.md" ]]; then
         echo "$dir"
@@ -168,7 +303,6 @@ devorq_auto::detect_project() {
         return 0
     fi
 
-    # Procura subindo
     local parent="$dir"
     while [[ "$parent" != "/" && "$parent" != "." ]]; do
         parent=$(dirname "$parent")
@@ -248,7 +382,7 @@ with open('$prd') as f:
     data = json.load(f)
 for s in data['stories']:
     if s['id'] == '$story_id':
-        s['passes'] = True  # Marca como done mas com skip
+        s['passes'] = True
         s['skipped'] = True
         s['skip_reason'] = '$reason'
         break
@@ -265,12 +399,12 @@ devorq_auto::append_progress() {
     local progress="$1/progress.txt"
     local story_id="$2"
     local story_title="$3"
-    local status="${4:-PASSED}"
+    local status="\${4:-PASSED}"
 
     {
         echo "# devorq-auto progress — $(basename "$1")"
         echo "# Formato: [HH:MM] ✅|❌|⏭️  Story Title — PASSED|FAILED|SKIPPED"
-        echo "[$(date +%H:%M)] ${status} ${story_id}: ${story_title} — ${status}"
+        echo "[$(date +%H:%M)] \${status} \${story_id}: \${story_title} — \${status}"
     } >> "$progress"
 }
 
@@ -280,11 +414,11 @@ devorq_auto::append_progress() {
 devorq_auto::ensure_branch() {
     local project="$1"
     local branch_file="$project/.devorq-auto/.last-branch"
-    local existing_branch
 
     mkdir -p "$project/.devorq-auto"
 
     if [[ -f "$branch_file" ]]; then
+        local existing_branch
         existing_branch=$(cat "$branch_file")
         if git -C "$project" rev-parse --verify "$existing_branch" >/dev/null 2>&1; then
             git -C "$project" checkout "$existing_branch" 2>/dev/null && return 0
@@ -310,12 +444,11 @@ devorq_auto::git_commit() {
     fi
 
     git -C "$project" add -A
-    git -C "$project" commit -m "feat(${story_id}): ${story_title}" --no-verify 2>/dev/null || true
+    git -C "$project" commit -m "feat(\${story_id}): \${story_title}" --no-verify 2>/dev/null || true
 }
 
 #-----------------------------------------------------------
 # Detectar complexidade de story
-# Heuristicas: keywords que indicam trabalho complexo
 #-----------------------------------------------------------
 devorq_auto::detect_complexity() {
     local story_title="$1"
@@ -331,8 +464,7 @@ devorq_auto::detect_complexity() {
         return 0
     fi
 
-    # Comprimento excessivo = possivel
-    local total_len=$((${#story_title} + ${#story_desc}))
+    local total_len=$((\${#story_title} + \${#story_desc}))
     if [[ $total_len -gt 500 ]]; then
         echo "complex:long_description"
         return 0
@@ -363,32 +495,11 @@ devorq_auto::propose_break() {
     local choice="1"
     read -r choice < /dev/stdin
 
-    case "${choice:-1}" in
+    case "\${choice:-1}" in
         2) echo "SKIPPED" ;;
         3) exit 2 ;;
         *) echo "CONTINUE" ;;
     esac
-}
-
-#-----------------------------------------------------------
-# Execute via fallback (execute_code equivalent in bash)
-# Para casos onde delegate_task falhou 1x
-#-----------------------------------------------------------
-devorq_auto::execute_fallback() {
-    local project="$1"
-    local story_json="$2"
-
-    devorq_auto::info "🔄 Fallback: tentando implementacao direta..."
-
-    # Salva story como .devorq-auto/pending_story.json
-    local pending="$project/.devorq-auto/pending_story.json"
-    echo "$story_json" > "$pending"
-
-    devorq_auto::info "📝 Implementacao direta exigida."
-    devorq_auto::info "   A task foi armazenada em: $pending"
-    devorq_auto::info "   Sera necessaria intervencao manual ou agente direto."
-
-    return 1  # Indica que precisa de help
 }
 
 #-----------------------------------------------------------
@@ -412,7 +523,7 @@ import json
 with open('$project/prd.json') as f:
     for s in sorted(json.load(f)['stories'], key=lambda x: x['priority']):
         icon = '✅' if s.get('passes', False) else ('⏭️ ' if s.get('skipped') else '🔴')
-        skipped = f' (SKIP: {s[\"skip_reason\"]})' if s.get('skipped') else ''
+        skipped = f' (SKIP: {s["skip_reason"]})' if s.get('skipped') else ''
         print(f'  [{s["priority"]}] "{s["title"]}" [{icon}]')
 "
 }
@@ -421,7 +532,7 @@ with open('$project/prd.json') as f:
 # Mostrar story atual
 #-----------------------------------------------------------
 devorq_auto::show_story() {
-    local story_json="\$1"
+    local story_json="$1"
     local id title desc priority
 
     id=$(echo "$story_json" | jq -r '.id')
@@ -438,7 +549,7 @@ devorq_auto::show_story() {
 }
 
 #-----------------------------------------------------------
-# DELEGATE — wrapper que tenta ate MAX retries
+# DELEGATE — wrapper com retry
 #-----------------------------------------------------------
 devorq_auto::delegate_with_retry() {
     local story_json="$1"
@@ -446,16 +557,16 @@ devorq_auto::delegate_with_retry() {
     local attempt=0
     local last_error=""
 
-    while [[ $attempt -le $MAX_DELEGATE_RETRIES ]]; do
+    while [[ $attempt -lt $MAX_DELEGATE_RETRIES ]]; do
         attempt=$((attempt + 1))
 
         if [[ $attempt -eq 1 ]]; then
             devorq_auto::info "⏳ Delegando para sub-agente (tentativa $attempt)..."
         else
-            devorq_auto::warn "Retry $attempt com fallback direto..."
+            devorq_auto::warn "Retry $attempt..."
         fi
 
-        if [[ -n "${DEVORQ_DELEGATE_FN:-}" ]]; then
+        if [[ -n "\${DEVORQ_DELEGATE_FN:-}" ]]; then
             local output
             output=$($DEVORQ_DELEGATE_FN "$story_json" "$project" 2>&1) && {
                 devorq_auto::success "Delegate completo"
@@ -464,7 +575,7 @@ devorq_auto::delegate_with_retry() {
             last_error="$output"
         else
             devorq_auto::info "⏳ SIMULATED — Nao ha DEVORQ_DELEGATE_FN (rode via agent)"
-            return 0  # Modo simulado = ok
+            return 0
         fi
 
         if [[ $attempt -lt $MAX_DELEGATE_RETRIES ]]; then
@@ -475,6 +586,27 @@ devorq_auto::delegate_with_retry() {
 
     devorq_auto::fail "Delegate falhou apos $MAX_DELEGATE_RETRIES retries: $last_error"
     return 1
+}
+
+#-----------------------------------------------------------
+# Handle failure — save pending + lessons
+#-----------------------------------------------------------
+devorq_auto::handle_failure() {
+    local project="$1"
+    local story_json="$2"
+    local story_id="$3"
+    local story_title="$4"
+    local failure_type="$5"
+    local details="$6"
+
+    # Save pending context
+    devorq_auto::pending_save "$project" "$story_json" "$failure_type" "$details"
+
+    # Capture lesson
+    devorq_auto::lessons_capture "$project" "$story_id" "$story_title" "$failure_type" "$details"
+
+    # Update progress
+    devorq_auto::append_progress "$project" "$story_id" "$story_title" "FAILED"
 }
 
 #-----------------------------------------------------------
@@ -498,14 +630,19 @@ main() {
 
     [[ -z "$project_root" ]] && { devorq_auto::usage; exit 1; }
 
-    # Detectar projeto
     project_root=$(devorq_auto::detect_project "$project_root")         || devorq_auto::die 1 "Nao encontrei SPEC.md ou .git a partir de: $project_root"
 
     cd "$project_root"
     devorq_auto::require_prd "$project_root"
 
-    # Init lessons
+    # Setup dirs and init
+    devorq_auto::setup_dirs "$project_root"
     devorq_auto::lessons_init "$project_root"
+
+    # Start run log header
+    devorq_auto::log "=== DEVORQ-AUTO v$DEVORQ_AUTO_VERSION RUN START ==="
+    devorq_auto::log "Project: $project_root"
+    devorq_auto::log "Force-continue: $FORCE_CONTINUE | Capture-lessons: $CAPTURE_LESSONS"
 
     local pending
     pending=$(devorq_auto::pending_count "$project_root")
@@ -514,13 +651,14 @@ main() {
     echo ""
     echo "devorq-auto loop v$DEVORQ_AUTO_VERSION — $pending stories pendentes"
     echo "Force-continue: $FORCE_CONTINUE | Capture-lessons: $CAPTURE_LESSONS"
+    echo "Log: $RUN_LOG_FILE"
     echo "=============================================="
 
-    # Garantir branch
     devorq_auto::ensure_branch "$project_root"
 
     local loop=0
     local total_failures=0
+    local failure_list=()
 
     while [[ $loop -lt $iterations ]]; do
         loop=$((loop + 1))
@@ -528,6 +666,7 @@ main() {
         local story_json
         story_json=$(devorq_auto::next_story "$project_root")
         [[ -z "$story_json" || "$story_json" == "null" ]] && {
+            devorq_auto::log "All stories processed"
             echo "✅ Todas stories processadas."
             break
         }
@@ -538,15 +677,14 @@ main() {
         story_desc=$(echo "$story_json" | jq -r '.description')
         story_priority=$(echo "$story_json" | jq -r '.priority')
 
+        devorq_auto::log "--- Story: $story_id ---"
         devorq_auto::info "🚀 Iteration $loop — Story: $story_id"
         devorq_auto::show_story "$story_json"
 
-        # Sugere licao similar anterior
+        # Suggest previous lesson
         devorq_auto::lessons_suggest "$project_root" "$story_title"
 
-        # ================================================
-        # Detectar complexidade
-        # ================================================
+        # Detect complexity
         local complexity
         complexity=$(devorq_auto::detect_complexity "$story_title" "$story_desc")
         local complex_result=""
@@ -559,25 +697,25 @@ main() {
                 devorq_auto::warn "Story marcada como SKIPPED"
                 devorq_auto::mark_skip "$project_root" "$story_id" "$complexity"
                 devorq_auto::append_progress "$project_root" "$story_id" "$story_title" "SKIPPED"
+                devorq_auto::log "SKIPPED: $story_id ($complexity)"
                 continue
             elif [[ "$complex_result" == "CONTINUE" ]]; then
                 devorq_auto::info "Prosseguindo mesmo assim..."
             fi
         fi
 
-        # ================================================
-        # DELEGATE com retry
-        # ================================================
+        # DELEGATE with retry
         local delegate_ok=false
         if devorq_auto::delegate_with_retry "$story_json" "$project_root"; then
             delegate_ok=true
         else
             devorq_auto::fail "Delegate falhou apos retries"
-            devorq_auto::lessons_capture "$project_root" "$story_id" "$story_title" "delegate" "failed_after_$MAX_DELEGATE_RETRIES_retries"
+            devorq_auto::handle_failure "$project_root" "$story_json" "$story_id" "$story_title" "delegate" "failed_after_${MAX_DELEGATE_RETRIES}_retries"
+            total_failures=$((total_failures + 1))
+            failure_list+=("$story_id")
 
             if [[ "$FORCE_CONTINUE" == "true" ]]; then
                 devorq_auto::warn "FORCE_CONTINUE=true — pulando story"
-                total_failures=$((total_failures + 1))
                 continue
             fi
 
@@ -589,24 +727,24 @@ main() {
             local choice
             read -r choice < /dev/stdin
 
-            case "${choice:-1}" in
+            case "\${choice:-1}" in
                 2) devorq_auto::warn "Pulando $story_id"; continue ;;
                 3) loop=$((loop - 1)); continue ;;
                 *) devorq_auto::die 4 "Abortado pelo usuario" ;;
             esac
         fi
 
-        # ================================================
         # Verification gate
-        # ================================================
         devorq_auto::info "🔍 Verificando..."
+        devorq_auto::log "Running verification for: $story_id"
         if "$SKILL_DIR/scripts/check-story.sh" "$project_root"; then
             devorq_auto::success "Verification passed"
             devorq_auto::git_commit "$project_root" "$story_id" "$story_title"
-            devorq_auto::success "Commit: feat(${story_id}): ${story_title}"
+            devorq_auto::success "Commit: feat(\${story_id}): \${story_title}"
             devorq_auto::mark_pass "$project_root" "$story_id"
             devorq_auto::append_progress "$project_root" "$story_id" "$story_title" "PASSED"
             devorq_auto::lessons_capture "$project_root" "$story_id" "$story_title" "success" ""
+            devorq_auto::log "PASSED: $story_id"
 
             local done total
             done=$(devorq_auto::completed_count "$project_root")
@@ -614,35 +752,37 @@ main() {
             devorq_auto::info "📊 Progress: $done/$total stories done"
         else
             devorq_auto::fail "Verification failed"
-            devorq_auto::lessons_capture "$project_root" "$story_id" "$story_title" "verification" "check-story.sh_failed"
-            devorq_auto::append_progress "$project_root" "$story_id" "$story_title" "FAILED"
+            devorq_auto::handle_failure "$project_root" "$story_json" "$story_id" "$story_title" "verification" "check-story.sh_failed"
             total_failures=$((total_failures + 1))
+            failure_list+=("$story_id")
 
             if [[ "$FORCE_CONTINUE" == "true" ]]; then
                 devorq_auto::warn "FORCE_CONTINUE=true — continuando mesmo assim"
-            else
-                echo ""
-                echo "  [1] Abortar"
-                echo "  [2] Pular story e continuar"
-                echo "  [3] Tentar novamente"
-                echo -n "  Escolha [1]: "
-                local choice
-                read -r choice < /dev/stdin
-
-                case "${choice:-1}" in
-                    2) devorq_auto::warn "Pulando $story_id"; continue ;;
-                    3) loop=$((loop - 1)); continue ;;
-                    *) devorq_auto::die 3 "Verification failed — abortado" ;;
-                esac
+                continue
             fi
+
+            echo ""
+            echo "  [1] Abortar"
+            echo "  [2] Pular story e continuar"
+            echo "  [3] Tentar novamente"
+            echo -n "  Escolha [1]: "
+            local choice
+            read -r choice < /dev/stdin
+
+            case "\${choice:-1}" in
+                2) devorq_auto::warn "Pulando $story_id"; continue ;;
+                3) loop=$((loop - 1)); continue ;;
+                *) devorq_auto::die 3 "Verification failed — abortado" ;;
+            esac
         fi
 
         echo ""
     done
 
-    # ================================================
+    # Generate failures.md
+    devorq_auto::failures_generate "$project_root"
+
     # Summary
-    # ================================================
     local done total
     done=$(devorq_auto::completed_count "$project_root")
     total=$(devorq_auto::total_count "$project_root")
@@ -653,11 +793,17 @@ main() {
     echo "✅ AUTO MODE COMPLETE (v$DEVORQ_AUTO_VERSION)"
     echo "═══════════════════════════════════════"
     echo "$done stories done, $pending pending, $total_failures failures"
-    echo "📊 progress: $project_root/progress.txt"
-    echo "📋 status:   $project_root/prd.json"
-    echo "📚 lessons:  $project_root/.devorq-auto/lessons.json"
+    echo ""
+    echo "📊 progress:    $project_root/progress.txt"
+    echo "📋 prd.json:    $project_root/prd.json"
+    echo "📚 lessons:     $DEVORQ_AUTO_DIR/lessons.json"
+    echo "📝 failures:    $DEVORQ_AUTO_DIR/failures.md"
+    echo "📁 run log:     $RUN_LOG_FILE"
+    echo "📁 pending ctx: $DEVORQ_AUTO_DIR/pending/"
     echo "⚠️  Lembre de: E2E antes do PR"
-    echo "═══════════════════════════════════════"
+    echo "══════════════════════════════════════="
+
+    devorq_auto::log "=== RUN END: $done done, $pending pending, $total_failures failures ==="
 }
 
 main "$@"

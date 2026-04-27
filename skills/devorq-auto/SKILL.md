@@ -1,7 +1,7 @@
 ---
 name: devorq-auto
-description: DEVORQ-AUTO v1.1.0 — Modo autonomo story-by-story do DEVORQ v3. Implementacao automatica via delegate_task seguindo o padrao Ralph (loop com contexto limpo por iteracao). Gera prd.json do SPEC.md, executa uma story por vez, verifica, commita. NAO depende do Ralph instalado — usa delegate_task nativo.
-version: 1.1.0
+description: DEVORQ-AUTO v1.2.0 — Modo autonomo story-by-story do DEVORQ v3. Implementacao automatica via delegate_task seguindo o padrao Ralph (loop com contexto limpo por iteracao). Gera prd.json do SPEC.md, executa uma story por vez, verifica, commita. NAO depende do Ralph instalado — usa delegate_task nativo.
+version: 1.2.0
 author: Fernando Dos Santos (Nando)
 license: MIT
 metadata:
@@ -334,6 +334,61 @@ Antes de cada story, o loop verifica se ha licao similar anterior e exibe:
 ```
 📚 Licao anterior relevante:
   -> feat-001: delegate falhou com keywords migration
+```
+
+
+
+## Output Files (v1.2.0+)
+
+Estrutura de logs criada em `.devorq-auto/` dentro do projeto:
+
+```
+projeto/
+├── progress.txt                    # Log append-only de cada iteracao
+└── .devorq-auto/
+    ├── failures.md                 # SUMARIO das falhas (human-readable) ✨
+    ├── lessons.json                # Falhas estruturadas (máquina)
+    ├── runs/
+    │   ├── 2026-04-27_14-30.log    # Log completo do batch
+    │   └── 2026-04-27_15-45.log
+    └── pending/
+        ├── feat-002.json           # Contexto da story que falhou
+        └── feat-005.json
+```
+
+### failures.md (human-readable)
+```markdown
+# DEVORQ-AUTO Failures — eventos-control
+Generated: 2026-04-27 15:45
+
+## 3 Stories Pendentes de Correção
+
+### ❌ feat-002: Criar migration para coluna cpf
+- **Tipo:** delegate (failed_after_1_retries)
+- **Data:** 2026-04-27 14:31
+- **Action:** delegate_task falhou apos retries
+- **Contexto:** `.devorq-auto/pending/feat-002.json`
+```
+
+### lessons.json (machine-readable)
+```json
+{
+  "project": "eventos-control",
+  "lessons": [
+    {"story_id": "feat-002", "type": "delegate", "details": "failed_after_1_retries", ...}
+  ],
+  "stats": { "delegate_failed": 1, "verification_failed": 1, "complex_detected": 1 }
+}
+```
+
+### pending/*.json (contexto para debug)
+```json
+{
+  "story_id": "feat-002",
+  "title": "Criar migration para coluna cpf",
+  "acceptanceCriteria": [...],
+  "failure": { "type": "delegate", "details": "failed_after_1_retries", "timestamp": "..." }
+}
 ```
 
 
