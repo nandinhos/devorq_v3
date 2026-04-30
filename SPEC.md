@@ -3,7 +3,7 @@
 > **Princípio de auto-construção:** o DEVORQ constrói a si mesmo.
 > Sistema operacional → usa-se para construir a si mesmo → refina → cresce.
 
-**Versão:** 3.4.0 | **Atualizado:** 2026-04-25
+**Versão:** 3.4.1 | **Atualizado:** 2026-04-25
 
 ---
 
@@ -599,5 +599,5 @@ bin(core): adiciona comando auto com suporte a --continue
 
 **Repo:** https://github.com/nandinhos/devorq_v3
 **Última atualização:** 2026-04-25 03:30 BRT
-**Versão:** 3.4.0
+**Versão:** 3.4.1
 **Status:** 100% — Zero pendências
