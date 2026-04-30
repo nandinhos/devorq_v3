@@ -600,7 +600,7 @@ main() {
         flow)      shift; devorq::cmd_flow "$@" ;;
         gate)      shift; devorq::cmd_gate "$@" ;;
         lessons)   shift; devorq::cmd_lessons "$@" ;;
-        context)   devorq::cmd_context ;;
+        context)   shift; devorq::cmd_context "$@" ;;
         compact)   devorq::cmd_compact ;;
         sync)      shift; devorq::cmd_sync "$@" ;;
         vps)       shift; devorq::cmd_vps "$@" ;;
