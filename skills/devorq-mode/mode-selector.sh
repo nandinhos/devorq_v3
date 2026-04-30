@@ -113,6 +113,16 @@ main() {
         validate_project
 
         if _is_auto; then
+            # Checar se intent contém DDD keywords
+            local ctx_file="${PROJECT_ROOT}/.devorq/state/context.json"
+            local intent=""
+            if [ -f "$ctx_file" ]; then
+                intent=$(jq -r '.intent // ""' "$ctx_file" 2>/dev/null || echo "")
+            fi
+            if echo "$intent" | grep -qiE "domínio|ddd|modelagem|entidade|contexto|bounded|invariante"; then
+                warn "DDD detectado no intent + modo AUTO"
+                info "Sugestão: considere usar CLASSIC ou rodar: devorq ddd explore"
+            fi
             echo "MODE=AUTO"
             return 0
         elif _is_classic; then
