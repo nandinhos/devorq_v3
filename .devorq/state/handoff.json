@@ -1,0 +1,63 @@
+{
+  "handoff_id": "devorq-bugfix-handoff-001",
+  "timestamp": "2026-04-30T00:00:00Z",
+  "project": "devorq_v3",
+  "version": "3.4.0",
+  "author": "devorq-agent",
+  "status": "RESOLVED — bugs corrigidos no repo original",
+  "summary": "Os 3 bugs reportados foram corrigidos no repo original DEVORQ (devorq_v3). O report mencionava o projeto 'eventos-control' como afetado, mas a correção foi aplicada diretamente em devorq_v3 — o framework CLI que é usado como base.",
+
+  "bugs_resolved": [
+    {
+      "bug_id": 1,
+      "title": "ctx_set usa --arg em vez de --argjson",
+      "file": "lib/context.sh",
+      "line": 201,
+      "severity": "ALTA",
+      "status": "CORRIGIDO",
+      "fix": "Detecta se valor é JSON válido via jq -e antes de escolher --argjson (arrays/objects) ou --arg (strings).",
+      "applied_diff": "if echo \"$value\" | jq -e . >/dev/null 2>&1; then\n    jq --arg f \"$field\" --argjson v \"$value\" '.[$f] = $v' \"$ctx_file\" > \"$tmp\"\nelse\n    jq --arg f \"$field\" --arg v \"$value\" '.[$f] = $v' \"$ctx_file\" > \"$tmp\"\nfi"
+    },
+    {
+      "bug_id": 2,
+      "title": "Double-source de context.sh causa fallback silencioso",
+      "file": "bin/devorq",
+      "line": "253-262",
+      "severity": "CRÍTICA",
+      "status": "CORRIGIDO",
+      "fix": "Removeu o segundo source de context.sh dentro de cmd_context. Substituiu por verificação via command -v ctx_set antes do case statement.",
+      "applied_diff": "if ! command -v ctx_set &>/dev/null; then\n    # fallback direto sem re-source\nfi"
+    },
+    {
+      "bug_id": 3,
+      "title": "Gate 2 usa PHPUnit, falha em projetos Pest v4",
+      "file": "lib/gates.sh",
+      "line": "71-131",
+      "severity": "ALTA",
+      "status": "CORRIGIDO",
+      "fix": "Detecção automática: pest > phpunit > artisan test. Pest tem prioridade quando instalado.",
+      "applied_logic": "if [ -f \"vendor/bin/pest\" ]; then test_cmd=\"vendor/bin/pest --compact\"\nelif [ -f \"vendor/bin/phpunit\" ]; then test_cmd=\"vendor/bin/phpunit --no-coverage\"\nelif [ -f \"artisan\" ]; then test_cmd=\"php artisan test --compact\""
+    }
+  ],
+
+  "verification": {
+    "syntax_check": "PASS — bash -n em todos os arquivos .sh",
+    "files_verified": [
+      "bin/devorq",
+      "lib/context.sh",
+      "lib/gates.sh"
+    ]
+  },
+
+  "note_for_events_control": {
+    "message": "O projeto eventos-control (Laravel 12 + Pest v4) utiliza o DEVORQ como CLI base. As correções acima estão no repo devorq_v3. Se o.events-control tem uma cópia local ou submodule do DEVORQ, precisará sincronizar/pull da versão corrigida (v3.4.0+) para receber as correções.",
+    "action_required": "Executar devorq upgrade no projeto eventos-control para obter as correções, ouificar git pull no diretório de instalação do DEVORQ."
+  },
+
+  "next_steps": [
+    "Pull das correções no repo devorq_v3 (já aplicado localmente)",
+    "Se eventos-control usar DEVORQ via submodule: atualizar submodule",
+    "Testar devorq context set com array para confirmar Bug #1 resolvido",
+    "Testar devorq gate 2 no projeto eventos-control para confirmar Bug #3 resolvido"
+  ]
+}

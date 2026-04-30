@@ -71,42 +71,47 @@ gate_1() {
 gate_2() {
     gate::info 2 "Tests Pass — devorq test passa"
 
-    # Para projetos que têm tests/ ou vendor/bin/phpunit
     local has_tests=false
     local test_errors=0
+    local test_cmd=""
 
-    # PHPUnit (Laravel/PHP)
-    if [ -f "phpunit.xml" ] || [ -f "composer.json" ]; then
-        if [ -d "tests" ]; then
-            has_tests=true
-            if command -v php &>/dev/null && [ -f "vendor/bin/phpunit" ]; then
-                vendor/bin/phpunit --testdox 2>/dev/null || {
-                    gate::warn 2 "PHPUnit falhou"
-                    ((test_errors++))
-                }
-            elif [ -f "composer.json" ]; then
-                gate::warn 2 "vendor/ não instalado"
-                ((test_errors++))
-            fi
-        fi
-    fi
-
-    # pytest (Python)
-    if [ -f "pytest.ini" ] || [ -f "pyproject.toml" ]; then
-        if [ -d "tests" ]; then
-            has_tests=true
-            if command -v pytest &>/dev/null; then
-                pytest -q 2>/dev/null || {
-                    gate::warn 2 "pytest falhou"
-                    ((test_errors++))
-                }
-            fi
-        fi
-    fi
-
-    # Bash: shellcheck na estrutura do projeto
-    if [ -f "bin/devorq" ] || [ -f "Makefile" ]; then
+    if [ -d "tests" ] || [ -f "phpunit.xml" ] || [ -f "pytest.ini" ] || [ -f "pyproject.toml" ] || [ -f "bin/devorq" ] || [ -f "Makefile" ]; then
         has_tests=true
+    fi
+
+    if [ -f "composer.json" ] && [ -d "tests" ]; then
+        if [ -f "vendor/bin/pest" ]; then
+            test_cmd="vendor/bin/pest --compact"
+            gate::info 2 "Runner detectado: Pest"
+        elif [ -f "vendor/bin/phpunit" ]; then
+            test_cmd="vendor/bin/phpunit --no-coverage"
+            gate::info 2 "Runner detectado: PHPUnit"
+        elif [ -f "artisan" ]; then
+            test_cmd="php artisan test --compact"
+            gate::info 2 "Runner detectado: artisan test"
+        fi
+
+        if [ -n "$test_cmd" ] && command -v php &>/dev/null; then
+            $test_cmd 2>/dev/null || {
+                gate::warn 2 "Testes falharam (exit code: $?)"
+                ((test_errors++))
+            }
+        elif [ -f "composer.json" ] && [ ! -d "vendor" ]; then
+            gate::warn 2 "vendor/ não instalado"
+            ((test_errors++))
+        fi
+    fi
+
+    if [ -f "pytest.ini" ] || [ -f "pyproject.toml" ]; then
+        if [ -d "tests" ] && command -v pytest &>/dev/null; then
+            pytest -q 2>/dev/null || {
+                gate::warn 2 "pytest falhou"
+                ((test_errors++))
+            }
+        fi
+    fi
+
+    if [ -f "bin/devorq" ] || [ -f "Makefile" ]; then
         if command -v shellcheck &>/dev/null; then
             local sc_errors
             sc_errors=$(shellcheck -S error bin/devorq lib/*.sh scripts/*.sh 2>/dev/null | grep -c "SC[12]" || true)

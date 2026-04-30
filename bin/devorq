@@ -250,8 +250,7 @@ devorq::cmd_context() {
     local ctx_file="${PWD}/.devorq/state/context.json"
     local sub="${1:-}"
 
-    source "${DEVORQ_LIB}/context.sh" 2>/dev/null || {
-        # Fallback: apenas mostra arquivo
+    if ! command -v ctx_set &>/dev/null; then
         if [ ! -f "$ctx_file" ]; then
             devorq::warn "Nenhum .devorq/state/context.json encontrado"
             devorq::info "Execute 'devorq init' primeiro"
@@ -259,7 +258,7 @@ devorq::cmd_context() {
         fi
         cat "$ctx_file"
         return 0
-    }
+    fi
 
     case "$sub" in
         lint)   ctx_lint ;;

@@ -201,7 +201,12 @@ ctx_set() {
     if command -v jq &>/dev/null; then
         local tmp
         tmp=$(mktemp)
-        jq --arg f "$field" --arg v "$value" '.[$f] = $v' "$ctx_file" > "$tmp" && mv "$tmp" "$ctx_file"
+        if echo "$value" | jq -e . >/dev/null 2>&1; then
+            jq --arg f "$field" --argjson v "$value" '.[$f] = $v' "$ctx_file" > "$tmp"
+        else
+            jq --arg f "$field" --arg v "$value" '.[$f] = $v' "$ctx_file" > "$tmp"
+        fi
+        mv "$tmp" "$ctx_file"
     else
         # Fallback grep+sed rudimentar
         if grep -q "\"$field\"" "$ctx_file" 2>/dev/null; then
