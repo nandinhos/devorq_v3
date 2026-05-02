@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/devorq — DEVORQ v3.2 CLI
+# bin/devorq — DEVORQ v3.4 CLI
 #
 # LOCALINSTALL: Este repo é ~/.devorq/ (global)
 # PROJETO: .devorq/ no projeto (só config/state)
@@ -27,7 +27,7 @@ set -euo pipefail
 
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION="3.2.1"
+DEVORQ_VERSION="3.4.1"
 
 # jq no ~/bin (instalado via curl sem root)
 if [ -d "${HOME}/bin" ] && [[ ":$PATH:" != *":${HOME}/bin:"* ]]; then
