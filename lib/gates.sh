@@ -37,43 +37,58 @@ gate::info() {
 }
 
 # ============================================================
-# GATE-0 — DDD Domain Exploration (OPIONAL, pre-GATE-1)
+# GATE-0 — DDD Domain Exploration + env-context (OPCIONAL, pre-GATE-1)
 # ============================================================
 
 gate_0() {
-    gate::info 0 "Domain Exploration — checa se intent requer DDD"
+    gate::info 0 "Domain Exploration + Environment Context"
 
-    # Detecta keywords DDD no intent (enviado via DEVORQ_INTENT)
     local intent="${DEVORQ_INTENT:-}"
     if [ -z "$intent" ]; then
-        # Tenta ler do context.json se existir
         local ctx_file="${PWD}/.devorq/state/context.json"
         if [ -f "$ctx_file" ] && command -v jq &>/dev/null; then
             intent=$(jq -r '.intent // ""' "$ctx_file" 2>/dev/null || echo "")
         fi
     fi
 
-    # Se não tem keywords DDD, skip
-    if ! echo "$intent" | grep -qiE "domínio|ddd|modelagem|entidade|contexto|bounded|invariante"; then
-        gate::info 0 "DDD não detectado — skip"
-        return 0
-    fi
+    local env_context_run=false
 
-    # DDD detectado — valida se SPEC.md tem modelo mental
-    local ddd_validate="${DEVORQ_ROOT}/skills/ddd-deep-domain/scripts/ddd-validate-spec.sh"
-    if [ ! -f "$ddd_validate" ]; then
-        gate::warn 0 "ddd-validate-spec.sh não encontrado — skip"
-        return 0
-    fi
-
-    if bash "$ddd_validate"; then
-        gate::pass 0 "DDD: SPEC.md tem modelo mental válido"
-        return 0
+    # Sempre executa env-context (primeira mensagem da sessão)
+    local env_detect="${DEVORQ_ROOT}/skills/env-context/scripts/env-detect.sh"
+    if [ -f "$env_detect" ]; then
+        local env_output
+        if env_output=$(bash "$env_detect" 2>/dev/null); then
+            gate::info 0 "Environment detected:"
+            echo "$env_output" | head -15
+            env_context_run=true
+        fi
     else
-        gate::fail 0 "DDD: SPEC.md parece CRUD sem modelo de domínio"
-        gate::info 0 "Sugestão: devorq ddd explore  (ou carregue skill ddd-deep-domain)"
-        return 1
+        gate::warn 0 "env-detect.sh não encontrado — skipping env-context"
     fi
+
+    # DDD Domain Exploration — só se keywords detectadas
+    if echo "$intent" | grep -qiE "domínio|ddd|modelagem|entidade|contexto|bounded|invariante"; then
+        gate::info 0 "DDD keywords detectadas no intent"
+
+        local ddd_validate="${DEVORQ_ROOT}/skills/ddd-deep-domain/scripts/ddd-validate-spec.sh"
+        if [ ! -f "$ddd_validate" ]; then
+            gate::warn 0 "ddd-validate-spec.sh não encontrado"
+            return 0
+        fi
+
+        if bash "$ddd_validate" 2>/dev/null; then
+            gate::pass 0 "DDD: SPEC.md tem modelo mental válido"
+        else
+            gate::fail 0 "DDD: SPEC.md parece CRUD sem modelo de domínio"
+            gate::info 0 "Sugestão: devorq ddd explore"
+            return 1
+        fi
+    else
+        gate::info 0 "DDD não detectado — skip"
+    fi
+
+    gate::pass 0 "GATE-0 completo (env-context: ${env_context_run})"
+    return 0
 }
 
 # ============================================================
@@ -292,6 +307,38 @@ gate_5() {
     gate::fail 5 "devorq compact falhou"
     rm -f "$tmp"
     return 1
+}
+
+# ============================================================
+# GATE-5.5 — UNIFY Check (NÃO BLOQUEANTE)
+# ============================================================
+
+gate_5_5() {
+    gate::info 5.5 "UNIFY — fase de fechamento"
+
+    local ctx_file="${PWD}/.devorq/state/context.json"
+
+    if [ ! -f "$ctx_file" ]; then
+        gate::warn 5.5 "context.json não existe — pulando UNIFY check"
+        return 0
+    fi
+
+    if command -v jq &>/dev/null; then
+        local unify_done
+        unify_done=$(jq -r '.unify_done // false' "$ctx_file" 2>/dev/null || echo "false")
+
+        if [ "$unify_done" != "true" ]; then
+            gate::warn 5.5 "UNIFY ainda não executado nesta sessão"
+            gate::info 5.5 "Execute: devorq unify [feature]"
+            gate::info 5.5 "Ou inclua --unify no devorq flow para executar automaticamente"
+        else
+            local unify_file
+            unify_file=$(jq -r '.unify_file // "unknown"' "$ctx_file" 2>/dev/null || echo "unknown")
+            gate::pass 5.5 "UNIFY executado: $unify_file"
+        fi
+    fi
+
+    return 0  # Sempre passa — não bloqueante
 }
 
 # ============================================================

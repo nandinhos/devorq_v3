@@ -883,3 +883,69 @@ lessons::export() {
     done
     echo "]"
 }
+
+# ============================================================
+# lessons::from_unify
+#   Extrai lições do UNIFY.md e captura automaticamente
+#   $1 = caminho para UNIFY.md
+# ============================================================
+
+lessons::from_unify() {
+    local unify_file="$1"
+
+    if [ ! -f "$unify_file" ]; then
+        echo "[WARN] UNIFY file não encontrado: $unify_file"
+        return 1
+    fi
+
+    # Extrair lições da seção "Lições Aprendidas"
+    local in_lessons=false
+    local lesson_num=0
+
+    while IFS= read -r line; do
+        # Detectar início da seção
+        if echo "$line" | grep -q "## Lições Aprendidas"; then
+            in_lessons=true
+            continue
+        fi
+
+        # Detectar fim da seção (próxima heading)
+        if [ "$in_lessons" = "true" ] && echo "$line" | grep -qE "^## "; then
+            break
+        fi
+
+        # Processar linhas de lição
+        if [ "$in_lessons" = "true" ] && echo "$line" | grep -qE "^[0-9]+\."; then
+            lesson_num=$((lesson_num + 1))
+
+            # Extrair o texto após o número
+            local lesson_text
+            lesson_text=$(echo "$line" | sed 's/^[0-9]*\. *//')
+
+            # Parse: "**problema** — solução"
+            local problem solution
+            if echo "$lesson_text" | grep -q "—"; then
+                problem=$(echo "$lesson_text" | cut -d'—' -f1 | sed 's/\*\*/"/g' | sed 's/\*\*/"/g')
+                solution=$(echo "$lesson_text" | cut -d'—' -f2- | sed 's/\*\*/"/g' | sed 's/\*\*/"/g')
+            else
+                problem="$lesson_text"
+                solution="Verificar contexto na UNIFY.md"
+            fi
+
+            local title="UNIFY-$lesson_num: $(echo "$problem" | cut -c1-50)"
+
+            if declare -f lessons::capture &>/dev/null; then
+                echo "[INFO] Capturando lição: $title"
+                lessons::capture "$title" "$problem" "$solution" 2>/dev/null || true
+            fi
+        fi
+    done < "$unify_file"
+
+    if [ "$lesson_num" -eq 0 ]; then
+        echo "[INFO] Nenhuma lição encontrada em $unify_file"
+    else
+        echo "[OK] $lesson_num lição(ões) capturada(s) de $unify_file"
+    fi
+
+    return 0
+}
