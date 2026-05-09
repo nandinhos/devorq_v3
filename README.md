@@ -3,7 +3,7 @@
 > **Framework bash puro** para metodologia de desenvolvimento sistemático.
 > Captura lições aprendidas, impõe gates bloqueantes, gera handoffs consistentes.
 
-**Versão:** 3.4.1 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
+**Versão:** 3.5.0 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
 
 ---
 
