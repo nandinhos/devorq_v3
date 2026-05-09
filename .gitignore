@@ -20,3 +20,9 @@ package-lock.json
 *.log
 .DS_Store
 .devorq/state/lessons/downloaded/
+
+# Claude Code config (não commitado)
+.claude/
+
+# UNIFY state (gerado por devorq unify, não versionado)
+.devorq/state/unify/
