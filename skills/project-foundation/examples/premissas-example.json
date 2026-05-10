@@ -1,0 +1,46 @@
+{
+  "project": "devorq_v3",
+  "created_at": "2026-05-10T09:00:00Z",
+  "premissas": [
+    {
+      "id": "PRE-001",
+      "description": "O usuário tem Bash 5+ instalado no ambiente",
+      "owner": "Fernando",
+      "validated": true,
+      "validated_at": "2026-05-10T09:00:00Z",
+      "notes": "Verificado automaticamente pelo env-detect.sh"
+    },
+    {
+      "id": "PRE-002",
+      "description": "Projetos usam Git para controle de versão",
+      "owner": "Fernando",
+      "validated": true,
+      "validated_at": "2026-05-10T09:00:00Z",
+      "notes": "Pré-requisito para devorq init — sem .git, não inicializa"
+    },
+    {
+      "id": "PRE-003",
+      "description": "jq está disponível no PATH ou em ~/bin",
+      "owner": "Fernando",
+      "validated": false,
+      "validated_at": null,
+      "notes": "Fallback para jq-free mode existe mas funcionalidades são reduzidas"
+    },
+    {
+      "id": "PRE-004",
+      "description": "O usuário quer disciplina metodológica, não só prompts",
+      "owner": "Fernando",
+      "validated": false,
+      "validated_at": null,
+      "notes": "Premissa que define o posicionamento do DEVORQ vs. outros scaffolds"
+    },
+    {
+      "id": "PRE-005",
+      "description": "Sessões LLM são curtas (< 2h) e precisam de handoff formal",
+      "owner": "Fernando",
+      "validated": false,
+      "validated_at": null,
+      "notes": "Se sessões longas (> 4h), overhead dos gates pode não compensar"
+    }
+  ]
+}

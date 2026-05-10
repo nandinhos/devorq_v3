@@ -1,0 +1,33 @@
+{
+  "project": "",
+  "created_at": "",
+  "updated_at": "",
+  "what": {
+    "description": "",
+    "examples": []
+  },
+  "why": {
+    "description": "",
+    "business_value": ""
+  },
+  "who": {
+    "description": "",
+    "stakeholders": []
+  },
+  "when": {
+    "description": "",
+    "timeline": ""
+  },
+  "where": {
+    "description": "",
+    "context": ""
+  },
+  "how": {
+    "description": "",
+    "approach": ""
+  },
+  "how_much": {
+    "description": "",
+    "estimated_effort": ""
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "project": "devorq_v3",
+  "created_at": "2026-05-10T09:00:00Z",
+  "updated_at": "2026-05-10T09:00:00Z",
+  "what": {
+    "description": "Framework bash puro para metodologia de desenvolvimento sistemático com gates bloqueantes e captura de lições aprendidas entre sessões LLM",
+    "examples": [
+      "Orquestrador para projetos Laravel usando LLMs",
+      "Sistema de handoff entre agentes com memória persistente"
+    ]
+  },
+  "why": {
+    "description": "Sessões LLM perdem contexto quando transferidas entre agentes. Não há disciplina de gates nem persistência de aprendizados. O DEVORQ resolve isso com processo formal e memória durável.",
+    "business_value": "Reduz retrabalho, melhora qualidade de handoffs, acelera onboarding de novos agentes"
+  },
+  "who": {
+    "description": "Desenvolvedores individuais e times que usam LLMs como copiloto para coding, especialmente em projetos Laravel/TALL",
+    "stakeholders": [
+      "Desenvolvedores solo",
+      "Times de 2-5 pessoas",
+      "Agencies fazendo projects para clientes"
+    ]
+  },
+  "when": {
+    "description": "Em qualquer projeto novo ou refactor significativo. Não é para bugs rápidos ou hotfixes triviais.",
+    "timeline": "Projeto contínuo — v3.5 em maio 2026, v3.6 planejado para junho 2026"
+  },
+  "where": {
+    "description": "Projetos locais com .devorq/ no diretório raiz. HUB opcional em VPS para sync de lições entre máquinas",
+    "context": "Stack: Bash 5+, jq 1.7+, Git, SSH. Projetos Laravel 12 + Livewire 4 são o caso de uso principal"
+  },
+  "how": {
+    "description": "7 gates bloqueantes validam cada fase. Lições aprendidas são capturadas em JSON e sincronizadas com HUB PostgreSQL. Handoffs JSON garantem continuidade entre sessões.",
+    "approach": "DEVORQ flow → GATE-0 (exploration) → GATE-0.5 (foundation) → GATE-1-7 → devorq compact → handoff"
+  },
+  "how_much": {
+    "description": "Custo zero em licenses (open source). Esforço de setup: ~15min para configurar projeto novo. Custo HUB VPS: ~R$50/mês para PostgreSQL + SSH mux",
+    "estimated_effort": "1 desenvolvedor tempo integral para evolução do framework, 2-4h por sprint para manutenção"
+  }
+}
