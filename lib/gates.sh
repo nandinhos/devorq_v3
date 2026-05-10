@@ -92,6 +92,33 @@ gate_0() {
 }
 
 # ============================================================
+# GATE-0.5 — Project Foundation (BLOQUEANTE)
+# ============================================================
+
+gate_0_5() {
+    gate::info 0.5 "Project Foundation — 5W2H, Premissas, Riscos, Requisitos, Restrições"
+
+    local foundation_dir="${PWD}/.devorq/state"
+    local foundation_script="${DEVORQ_ROOT}/skills/project-foundation/scripts/foundation-validate.sh"
+
+    if [ ! -f "$foundation_script" ]; then
+        gate::warn 0.5 "project-foundation não instalado — instalando templates"
+        local init_script="${DEVORQ_ROOT}/skills/project-foundation/scripts/foundation-init.sh"
+        if [ -f "$init_script" ]; then
+            bash "$init_script" "$foundation_dir" "$(basename "$(pwd)")" 2>/dev/null || true
+        fi
+        gate::warn 0.5 "Foundation docs criados — execute novamente"
+        return 1
+    fi
+
+    # Executa validation script — ele já printa [PASS]/[FAIL] por doc e o que fazer em caso de falha
+    bash "$foundation_script" "$foundation_dir" 2>&1 || return 1
+
+    gate::pass 0.5 "Project Foundation — todos os 5 docs válidos"
+    return 0
+}
+
+# ============================================================
 # GATE-1 — Spec Exists (BLOQUEANTE)
 # ============================================================
 

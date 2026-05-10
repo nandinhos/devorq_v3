@@ -1,0 +1,56 @@
+{
+  "project": "devorq_v3",
+  "created_at": "2026-05-10T09:00:00Z",
+  "riscos": [
+    {
+      "id": "RISK-001",
+      "description": "Usuário ignora gates e faz commit direto sem passar pelo flow",
+      "severity": "HIGH",
+      "probability": "MEDIUM",
+      "impact": "HIGH",
+      "mitigation": "Gates são 'blocking' por padrão. Flag DEVORQ_BLOCKING=false é explícita e consciente",
+      "contingency": "Lições capturadas vão para HUB. Revisão semanal de commits fora do flow",
+      "status": "MITIGATED"
+    },
+    {
+      "id": "RISK-002",
+      "description": "HUB PostgreSQL fica indisponível — lessons não sincronizam",
+      "severity": "MEDIUM",
+      "probability": "LOW",
+      "impact": "MEDIUM",
+      "mitigation": "Lessons são salvas localmente primeiro. Sync é eventual e tolerante a falhas",
+      "contingency": "Usar devorq lessons localmente. Sincronizar manualmente quando HUB voltar",
+      "status": "OPEN"
+    },
+    {
+      "id": "RISK-003",
+      "description": "Context.json cresce demais — token overflow em sessões longas",
+      "severity": "MEDIUM",
+      "probability": "MEDIUM",
+      "impact": "MEDIUM",
+      "mitigation": "devorq compact é executado automaticamente antes de handoff. ctx_lint valida tamanho",
+      "contingency": "Executar devorq compact manualmente. Dividir projeto em sub-projetos",
+      "status": "MITIGATED"
+    },
+    {
+      "id": "RISK-004",
+      "description": "Skill compilada de lesson tem bug e aplica solução errada em produção",
+      "severity": "CRITICAL",
+      "probability": "LOW",
+      "impact": "CRITICAL",
+      "mitigation": "Lessons têm ciclo de vida: captured → approved → validated → compiled. Validation com Context7 antes de compilar",
+      "contingency": "Rollback do skill. Reverter para solution manual. Nova lesson de rollback",
+      "status": "OPEN"
+    },
+    {
+      "id": "RISK-005",
+      "description": "Contexto de projeto fica desatualizado após rebase/reset histórico",
+      "severity": "LOW",
+      "probability": "LOW",
+      "impact": "LOW",
+      "mitigation": "context.json é regenerado do .devorq/state/. Não depende de git history",
+      "contingency": "devorq init --reset para regenerar contexto do zero",
+      "status": "CLOSED"
+    }
+  ]
+}

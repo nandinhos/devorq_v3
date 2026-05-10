@@ -1,0 +1,97 @@
+{
+  "project": "devorq_v3",
+  "created_at": "2026-05-10T09:00:00Z",
+  "version": "1.0.0",
+  "requisitos": [
+    {
+      "id": "REQ-001",
+      "type": "FUNCTIONAL",
+      "title": "Inicialização de projeto com devorq init",
+      "description": "O comando devorq init deve criar a estrutura .devorq/state/ com todos os arquivos necessários",
+      "acceptance_criteria": [
+        ".devorq/state/context.json é criado com schema válido",
+        ".devorq/state/handoff.json é criado com schema válido",
+        "Todos os 5 foundation docs são criados como templates vazios",
+        "Exit code 0 é retornado em caso de sucesso"
+      ],
+      "priority": "MUST",
+      "source": "Especificação original v1.0",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "REQ-002",
+      "type": "FUNCTIONAL",
+      "title": "Gates bloqueantes com critérios claros",
+      "description": "Cada gate deve ter critérios de pass/fail explícitos e ser bloqueante por padrão",
+      "acceptance_criteria": [
+        "GATE-1 falha se SPEC.md não existe",
+        "GATE-2 falha se devorq test retorna erro",
+        "GATE-0.5 falha se foundation docs estão incompletos",
+        "Flag DEVORQ_BLOCKING=false desabilita bloqueio"
+      ],
+      "priority": "MUST",
+      "source": "Metodologia 7 gates",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "REQ-003",
+      "type": "FUNCTIONAL",
+      "title": "Captura de lições aprendidas",
+      "description": "Sistema deve permitir capturar, buscar, validar e compilar lições aprendidas",
+      "acceptance_criteria": [
+        "lessons::capture salva JSON em .devorq/state/lessons/captured/",
+        "lessons::search retorna lições que matcham query",
+        "lessons::validate usa Context7 para verificar accuracy",
+        "lessons::compile gera skill em skills/<name>/SKILL.md"
+      ],
+      "priority": "MUST",
+      "source": "Feature request v2.0",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "REQ-004",
+      "type": "NON_FUNCTIONAL",
+      "title": "Performance — comandos executam em < 2s",
+      "description": "Comandos devorq devem responder em menos de 2 segundos para projetos típicos (< 1000 arquivos)",
+      "acceptance_criteria": [
+        "devorq init completa em < 2s",
+        "devorq gate 1-7 completa em < 5s cumulativo",
+        "devorq context mostra output em < 1s"
+      ],
+      "priority": "SHOULD",
+      "source": "用户反馈 — speed matters",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "REQ-005",
+      "type": "NON_FUNCTIONAL",
+      "title": "Compatibilidade — Bash only, sem deps externas",
+      "description": "DEVORQ deve funcionar em qualquer ambiente com Bash 5+ e Git. jq é opcional.",
+      "acceptance_criteria": [
+        "Comandos funcionam sem jq (com funcionalidade reduzida)",
+        "Não há dependências de Python, Ruby, Node ou outras runtimes",
+        "Funciona em WSL2, Linux, macOS (com Git/bash)"
+      ],
+      "priority": "MUST",
+      "source": "Design constraint original",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "REQ-006",
+      "type": "FUNCTIONAL",
+      "title": "Project Foundation — 5W2H, Premissas, Riscos, Requisitos, Restrições",
+      "description": "Sistema deve formalizar contexto de projeto em 5 documentos estruturados antes da implementação",
+      "acceptance_criteria": [
+        "5w2h.json tem todos os 7 campos com description não-vazio",
+        "premissas.json tem pelo menos 1 premissa",
+        "riscos.json tem pelo menos 1 risco com severity e mitigation",
+        "requisitos.json tem pelo menos 1 requisito com acceptance_criteria",
+        "restricoes.json tem pelo menos 1 restrição",
+        "GATE-0.5 bloqueia se qualquer doc está incompleto"
+      ],
+      "priority": "MUST",
+      "source": "Análise de gaps — maio 2026",
+      "status": "DRAFT"
+    }
+  ]
+}

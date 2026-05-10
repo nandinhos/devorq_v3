@@ -1,0 +1,54 @@
+{
+  "project": "devorq_v3",
+  "created_at": "2026-05-10T09:00:00Z",
+  "restricoes": [
+    {
+      "id": "CONST-001",
+      "type": "TECHNICAL",
+      "description": "Bash-only — nenhuma linguagem de scripting adicional (Python, Ruby, Node)",
+      "source": "Design constraint original",
+      "flexibility": "FIXED",
+      "validated": true
+    },
+    {
+      "id": "CONST-002",
+      "type": "TECHNICAL",
+      "description": "Sem dependências externas obrigatórias — jq é opcional com fallback",
+      "source": "Design constraint — funciona offline/rootless",
+      "flexibility": "FLEXIBLE",
+      "validated": true
+    },
+    {
+      "id": "CONST-003",
+      "type": "SCOPE",
+      "description": "DEVORQ não gera código — apenas orquestra processo e documenta aprendizados",
+      "source": "Design decision — orquestrador, não scaffolding",
+      "flexibility": "FIXED",
+      "validated": true
+    },
+    {
+      "id": "CONST-004",
+      "type": "TIME",
+      "description": "Gates devem ser rápidos — overhead máximo de 5s cumulativo para gates 1-7",
+      "source": "REQ-004 — performance requirement",
+      "flexibility": "FLEXIBLE",
+      "validated": false
+    },
+    {
+      "id": "CONST-005",
+      "type": "SCOPE",
+      "description": "Não substitui CI/CD — gates são local/session, não server-side",
+      "source": "Arquitetura — local-first, agent-focused",
+      "flexibility": "FIXED",
+      "validated": true
+    },
+    {
+      "id": "CONST-006",
+      "type": "TECHNICAL",
+      "description": "Context window limit — context.json deve respeitar ~32k tokens para handoff",
+      "source": "Engineering constraint — LLM context limits",
+      "flexibility": "FLEXIBLE",
+      "validated": true
+    }
+  ]
+}
