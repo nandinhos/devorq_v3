@@ -14,14 +14,18 @@ import * as path from 'path';
  */
 
 const DEVORQ_ROOT = path.resolve(__dirname, '../../');
+const DEVORQ_BIN = path.resolve(DEVORQ_ROOT, 'bin/devorq');
 const SANDBOX = '/tmp/devorq-e2e-sandbox';
 
 /**
  * Helper para executar comandos
  */
 function runCommand(cmd: string, cwd: string = DEVORQ_ROOT): { stdout: string; stderr: string; exitCode: number } {
+  // Substitui 'devorq' pelo caminho completo do projeto
+  const adjustedCmd = cmd.replace(/\bdevorq\b/g, DEVORQ_BIN);
+  
   try {
-    const stdout = execSync(cmd, { encoding: 'utf-8', cwd });
+    const stdout = execSync(adjustedCmd, { encoding: 'utf-8', cwd });
     return { stdout, stderr: '', exitCode: 0 };
   } catch (error: any) {
     return {
