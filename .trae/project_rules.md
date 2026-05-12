@@ -19,7 +19,11 @@ Este arquivo contém as diretrizes e regras de desenvolvimento para o projeto DE
 
 - **NUNCA** adicione o Claude/Trae como coautor nos commits
 - Esta é uma regra **RÍGIDA**
-- Commits devem ser feitos apenas pelo autor principal do projeto
+- Commits devem ser feitos **APENAS** após validação manual do usuário
+- Aguardar confirmação antes de cada commit
+- Usar Conventional Commits em português (sem emojis)
+- Formato: `tipo(escopo): descrição em português`
+- Escopo deve identificar a fase (ex: fase-1, fase-2, gates, lessons, etc)
 
 ### Permissões
 
@@ -76,23 +80,69 @@ Após implementar qualquer funcionalidade ou correção:
 - Execute testes em paralelo quando fizer sentido
 - Parallelização **NÃO** deve introduzir instabilidade
 
-#### 3. Commits
+#### 3. Commits - Regras Rígidas
 
-Após verificar que os testes estão passando:
+**REGRAS DE OURO:**
 
-1. Use mensagens de commit no padrão **Conventional Commits**
-2. Formato: `tipo(scope): descrição`
-3. Tipos válidos:
-   - `feat`: Nova funcionalidade
-   - `fix`: Correção de bug
-   - `docs`: Documentação
-   - `test`: Testes
-   - `refactor`: Refatoração
-   - `perf`: Performance
-   - `ci`: CI/CD
-   - `chore`: Tarefas gerais
+1. **AGUARDAR VALIDAÇÃO MANUAL**
+   - Commits devem ser feitos **APENAS** após a conclusão de cada fase da SPEC
+   - **AGUARDAR** validação manual do usuário antes de fazer o commit
+   - Não fazer commits automáticos ou parciais
+   - Solicitar confirmação antes de cada commit
 
-4. Envie para `origin` após o commit
+2. **ESCOPO E DESCRIÇÃO**
+   - Escopo: identificação da fase (ex: `fase-1-gates`, `fase-2-lessons`, etc)
+   - Descrição: detalhamento completo do que foi implementado
+   - Formato: `tipo(escopo): descrição em português`
+
+3. **CONVENCIONAL COMMITS EM PORTUGUÊS**
+   - Tipos válidos (em português):
+     - `feat`: Nova funcionalidade
+     - `fix`: Correção de bug
+     - `docs`: Documentação
+     - `test`: Testes
+     - `refactor`: Refatoração
+     - `perf`: Performance
+     - `ci`: CI/CD
+     - `chore`: Tarefas gerais
+   
+   - Exemplos:
+     ```
+     feat(fase-1-gates): implementa gates 0 a 7 com validacoes
+     fix(fase-2-lessons): corrige captura de licoes em projetos novos
+     docs(especificacao): adiciona documentacao da arquitetura
+     test(gates): implementa testes e2e para gates do sistema
+     ```
+
+4. **SEM EMOJIS**
+   - **NUNCA** use emojis nas mensagens de commit
+   - Mantenha mensagens limpas e profissionais
+
+5. **SEM CO-AUTORIA**
+   - **NUNCA** adicione co-autores (Co-Authored-By)
+   - Esta é uma regra **RÍGIDA**
+   - Commits devem ser feitos apenas pelo autor principal
+
+6. **PUSH APÓS VALIDAÇÃO**
+   - Push para `origin` deve ser feito **APÓS** validação do usuário
+   - Aguardar confirmação antes de enviar para remote
+
+**FLUXO DE COMMIT:**
+
+```
+1. Implementar funcionalidade/fase
+2. Executar e validar testes
+3. Se testes passam:
+   a. Preparar mensagem de commit (tipo + escopo + descricao)
+   b. Solicitar validacao do usuario (AskUserQuestionTool)
+   c. Aguardar confirmacao
+   d. Se confirmado: git commit
+   e. Solicitar permissao para push
+   f. Se confirmado: git push origin
+4. Se testes falham:
+   a. Corrigir problemas
+   b. Voltar ao passo 2
+```
 
 ### Projetos Laravel e Filament
 

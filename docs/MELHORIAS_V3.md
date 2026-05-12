@@ -233,12 +233,15 @@ devorq stats
 ### Git
 
 ```bash
-# Commits Conventional Commits
-git commit -m "feat(cli): adiciona novo comando"
-git commit -m "fix(gates): corrige validação de SPEC.md"
-git commit -m "docs(readme): atualiza exemplos"
+# Commits - Aguardar validacao manual ANTES de cada commit
+# Formato: tipo(escopo): descricao em portugues (sem emojis)
 
-# Push
+# Exemplos:
+git commit -m "feat(gates): implementa gates 0 a 7 com validacoes"
+git commit -m "fix(lessons): corrige captura de licoes em projetos novos"
+git commit -m "docs(arquitetura): adiciona documentacao da arquitetura"
+
+# Push - Aguardar validacao manual ANTES de cada push
 git push origin dev
 ```
 
