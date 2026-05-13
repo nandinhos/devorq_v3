@@ -29,6 +29,15 @@ DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
 DEVORQ_VERSION="3.6.0"
 
+# MODULAR: Carregar módulos de comandos
+if [ -d "${DEVORQ_LIB}/commands" ]; then
+    for module in "${DEVORQ_LIB}"/commands/*.sh; do
+        if [ -f "$module" ]; then
+            source "$module"
+        fi
+    done
+fi
+
 # jq no ~/bin (instalado via curl sem root)
 if [ -d "${HOME}/bin" ] && [[ ":$PATH:" != *":${HOME}/bin:"* ]]; then
     export PATH="${HOME}/bin:$PATH"

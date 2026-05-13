@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# lib/commands/utils.sh — DEVORQ Utils Commands
+#
+# Comandos: version, upgrade, uninstall, build, stats
+#
+# Estrutura modular extraída de bin/devorq
+
+set -euo pipefail
+
+# ============================================================
+# HELP
+# ============================================================
+
+utils::help() {
+    cat << 'EOF'
+UTILS COMMANDS:
+  version                   Mostrar versão
+  upgrade                  Atualizar DEVORQ
+  uninstall               Desinstalar DEVORQ
+  build                   Self-build (test + gates)
+  stats                   Estatísticas
+EOF
+}
+
+# ============================================================
+# version
+# ============================================================
+
+devorq::cmd_version() {
+    echo "DEVORQ v${DEVORQ_VERSION}"
+}
+
+# ============================================================
+# upgrade
+# ============================================================
+
+devorq::cmd_upgrade() {
+    devorq::info "Atualizando DEVORQ..."
+    local current_version
+    current_version=$(cat "${DEVORQ_ROOT}/.devorq/version" 2>/dev/null || echo "desconhecida")
+    devorq::info "Versão atual: $current_version"
+
+    if [ -d "${DEVORQ_ROOT}/.git" ]; then
+        git -C "${DEVORQ_ROOT}" pull || devorq::error "Git pull falhou"
+        local new_version
+        new_version=$(cat "${DEVORQ_ROOT}/.devorq/version" 2>/dev/null || echo "desconhecida")
+        devorq::success "Atualizado: $current_version -> $new_version"
+
+        # Re-roda build para confirmar integridade
+        devorq::info "Executando devorq build para validar..."
+        devorq::cmd_build
+    else
+        devorq::error "Não é um clone git — use install.sh"
+    fi
+}
+
+# ============================================================
+# uninstall
+# ============================================================
+
+devorq::cmd_uninstall() {
+    devorq::warn "Remover DEVORQ de ${DEVORQ_ROOT}?"
+    devorq::info "Ctrl+C para cancelar, Enter para confirmar"
+    read -r
+
+    # Preserva .devorq/ (versão e config do framework — não remove)
+    if [ -d "${DEVORQ_ROOT}/.devorq" ]; then
+        devorq::info "Preservando .devorq/ (version, config)..."
+    fi
+
+    rm -rf "${DEVORQ_ROOT}"
+    devorq::success "Removido de ${DEVORQ_ROOT}"
+    devorq::info "Execute 'rm -f ~/bin/devorq' para remover o symlink"
+}
+
+# ============================================================
+# build
+# ============================================================
+
+devorq::cmd_build() {
+    devorq::info "═══ DEVORQ Self-Build ═══"
+    devorq::info "Executando teste + gates 1-7 no repositório DEVORQ..."
+    echo ""
+
+    # Self-build sempre opera no repo DEVORQ, não no projeto atual
+    local original_pwd="$PWD"
+    cd "${DEVORQ_ROOT}"
+
+    # Etapa 1: teste de estrutura
+    devorq::info "── Etapa 1: devorq test ──"
+    if ! devorq::cmd_test; then
+        devorq::warn "devorq test falhou"
+    fi
+    echo ""
+
+    # Etapa 2: todos os gates
+    local failed=0
+    for gate in 1 2 3 4 5 6 7; do
+        devorq::info "── Etapa 2: Gate $gate ──"
+        if ! devorq::cmd_gate "$gate"; then
+            devorq::fail "Gate $gate falhou"
+            ((failed++))
+        fi
+    done
+
+    cd "$original_pwd"
+
+    echo ""
+    devorq::info "═══ Resultado ═══"
+    if [ $failed -eq 0 ]; then
+        devorq::success "Build OK — 7/7 gates verdes"
+        devorq::info "Sistema pronto para self-building"
+        return 0
+    else
+        devorq::error "$failed gate(s) falhou(aram)"
+    fi
+}
+
+# ============================================================
+# stats
+# ============================================================
+
+devorq::cmd_stats() {
+    # Stats sempre opera no repo DEVORQ (como build)
+    local original_pwd="$PWD"
+    cd "${DEVORQ_ROOT}"
+
+    source "${DEVORQ_LIB}/stats.sh" 2>/dev/null || true
+    if declare -f stats::summary &>/dev/null; then
+        stats::summary
+    else
+        devorq::warn "lib/stats.sh não disponível"
+    fi
+
+    cd "$original_pwd"
+}
