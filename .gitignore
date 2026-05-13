@@ -26,3 +26,23 @@ package-lock.json
 
 # UNIFY state (gerado por devorq unify, não versionado)
 .devorq/state/unify/
+
+# IDE
+.vscode/
+.idea/
+
+# Backups
+bin/devorq.backup*
+
+# Testes E2E
+e2e-tests/playwright-report/
+e2e-tests/test-results/
+e2e-tests/*.log
+e2e-tests/playwright.config.ts.tmp
+
+# Skills geradas (não versionar)
+skills/learned-lesson/
+
+# Docs temporários
+docs/PLANO_CORRECAO*.md
+docs/REFATORACAO*.md
