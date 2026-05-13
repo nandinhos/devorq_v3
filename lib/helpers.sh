@@ -2,13 +2,14 @@
 # lib/helpers.sh - DEVORQ Helper Functions
 # Exit codes: 0=sucesso, 1=erro, 2=invalid_args, 3=not_found, 4=validation_failed, 5=permission_denied
 
-# Exit codes
-declare -r EXIT_SUCCESS=0
-declare -r EXIT_ERROR=1
-declare -r EXIT_INVALID_ARGS=2
-declare -r EXIT_NOT_FOUND=3
-declare -r EXIT_VALIDATION_FAILED=4
-declare -r EXIT_PERMISSION_DENIED=5
+# Exit codes (constantes globais)
+# SC2168: These are valid since file is sourced, not executed directly
+EXIT_SUCCESS=0
+EXIT_ERROR=1
+EXIT_INVALID_ARGS=2
+EXIT_NOT_FOUND=3
+EXIT_VALIDATION_FAILED=4
+EXIT_PERMISSION_DENIED=5
 
 # Sanitize input - remove dangerous characters
 sanitize_input() {
