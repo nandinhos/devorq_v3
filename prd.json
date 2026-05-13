@@ -1,112 +1,215 @@
 {
   "project": "devorq_v3",
-  "created": "2026-04-25T00:00:00Z",
+  "version": "3.6.0",
+  "description": "PRD para correções de Code Review - Prioridade 100% verde",
   "stories": [
     {
-      "id": "feat-v4-001",
-      "title": "devorq spike - experimenta\u00e7\u00e3o r\u00e1pida",
-      "description": "Criar comando devorq spike para experimentos descart\u00e1veis",
-      "acceptanceCriteria": [
-        "devorq spike --new <hipotese> cria estrutura em .devorq/spikes/",
-        "devorq spike --verdict <resultado> marca como v\u00e1lido/inv\u00e1lido",
-        "Suporta --stack bash|python|node|php",
-        "Limite de 1h por spike (auto-aviso)",
-        "Cria: hypothesis.md, experiments/, verdict.md"
-      ],
+      "id": "sec-001",
+      "title": "Corrigir credenciais expostas em variáveis de ambiente",
       "priority": 10,
-      "passes": true
+      "status": "pending",
+      "type": "security",
+      "acceptance_criteria": [
+        "Credenciais não aparecem em logs",
+        "Credenciais não aparecem em ps aux",
+        "Usar arquivo com permissões 600 para credenciais",
+        "cripts/sync-*.py não expõem variáveis sensíveis",
+        "Todos os testes passam"
+      ],
+      "files_to_check": [
+        "scripts/sync-push.py",
+        "scripts/sync-pull.py",
+        "lib/vps.sh",
+        "lib/integration.sh"
+      ]
     },
     {
-      "id": "feat-v4-002",
-      "title": "devorq discuss - decis\u00f5es de implementa\u00e7\u00e3o",
-      "description": "Capturar decis\u00f5es de design antes de planejar",
-      "acceptanceCriteria": [
-        "devorq discuss [N] inicia modo interativo por fase",
-        "Cria .devorq/state/phases/XX-discuss/CONTEXT.md",
-        "Detecta tipo: visual|api|cli|content e faz perguntas relevantes",
-        "Decis\u00f5es ficam em decisions/[] no CONTEXT.md"
-      ],
+      "id": "sec-002",
+      "title": "Implementar validação de host SSH para VPS",
       "priority": 20,
-      "passes": true
+      "status": "pending",
+      "type": "security",
+      "acceptance_criteria": [
+        "SSH usa StrictHostKeyChecking=yes",
+        "SSH usa UserKnownHostsFile",
+        "cripts/sync-*.py validam host antes de conectar",
+        "cripts/sync-*.py não aceitam host key changes automaticamente",
+        "cripts/sync-*.py verificam fingerprint do VPS"
+      ],
+      "files_to_check": [
+        "scripts/sync-push.py",
+        "scripts/sync-pull.py",
+        "lib/vps.sh"
+      ]
     },
     {
-      "id": "feat-v4-003",
-      "title": "devorq plan - plans estruturados",
-      "description": "Criar comando devorq plan para tasks at\u00f4micas verific\u00e1veis",
-      "acceptanceCriteria": [
-        "devorq plan create <nome> cria .devorq/state/plans/XXX-nome.md",
-        "Formato: XML-like com <action>, <verify>, <done>",
-        "Suporta depends_on e wave (1, 2, 3...)",
-        "devorq plan list mostra todos",
-        "devorq plan status mostra pendentes/conclu\u00eddos"
-      ],
+      "id": "sec-003",
+      "title": "Implementar validação e sanitização de inputs",
       "priority": 30,
-      "passes": true
+      "status": "pending",
+      "type": "security",
+      "acceptance_criteria": [
+        "Todas as funções validam inputs",
+        "Scripts/sync-*.py sanitizam inputs",
+        "lib/commands/*.sh validam parâmetros",
+        "Função sanitize_input implementada",
+        "Nenhum caracteres perigosos aceitos: ; & | ` $ ( ) { } [ ] < > ! \\\\"
+      ],
+      "files_to_check": [
+        "lib/commands/*.sh",
+        "scripts/sync-push.py",
+        "scripts/sync-pull.py"
+      ]
     },
     {
-      "id": "feat-v4-004",
-      "title": "devorq wave - execu\u00e7\u00e3o paralela",
-      "description": "Wave-based execution com depends_on",
-      "acceptanceCriteria": [
-        "devorq wave plan identifica waves por depends_on",
-        "Wave 1: tasks sem depend\u00eancias (paralelo)",
-        "Wave 2: tasks dependem de W1",
-        "Wave 3: tasks dependem de W2",
-        "devorq wave execute [N] executa wave N"
-      ],
+      "id": "sec-004",
+      "title": "Implementar validação de paths (prevenir path traversal)",
       "priority": 40,
-      "passes": false
+      "status": "pending",
+      "type": "security",
+      "acceptance_criteria": [
+        "Função validate_path implementada",
+        "Paths são normalizados com realpath",
+        "Scripts verificam se path está dentro de base_dir",
+        "Scripts/sync-*.py validam todos os paths",
+        "lib/commands/*.sh validam paths antes de acessar arquivos"
+      ],
+      "files_to_check": [
+        "lib/commands/*.sh",
+        "scripts/sync-push.py",
+        "scripts/sync-pull.py"
+      ]
     },
     {
-      "id": "feat-v4-005",
-      "title": "Enhanced Context Files - PROJECT.md",
-      "description": "Criar template PROJECT.md via devorq init",
-      "acceptanceCriteria": [
-        "devorq init cria PROJECT.md com template",
-        "Template: # Projeto, ## Vis\u00e3o, ## Stack, ## Arquitetura",
-        "Carregado automaticamente no flow (Gate-3 enhanced)"
-      ],
+      "id": "code-005",
+      "title": "Padronizar nomenclatura de funções para devorq::*",
       "priority": 50,
-      "passes": false
+      "status": "pending",
+      "type": "refactor",
+      "acceptance_criteria": [
+        "Todas funções com prefixo devorq::*",
+        "Nomenclatura consistente: devorq::cmd_*, devorq::lessons::*, devorq::context::*",
+        "Scripts/sync-*.py seguem convenção",
+        "Nenhuma função com nome genérico (f, a, temp)",
+        "Todos os testes passam após refatoração"
+      ],
+      "files_to_check": [
+        "lib/*.sh",
+        "lib/commands/*.sh",
+        "scripts/sync-push.py",
+        "scripts/sync-pull.py"
+      ]
     },
     {
-      "id": "feat-v4-006",
-      "title": "Enhanced Context Files - STATE.md",
-      "description": "Criar template STATE.md para decis\u00f5es cross-session",
-      "acceptanceCriteria": [
-        "devorq init cria STATE.md com template",
-        "Sections: decisions, blockers, progress",
-        "devorq context --update atualiza",
-        "Carregado em devorq flow para contexto"
-      ],
+      "id": "code-006",
+      "title": "Implementar constantes de exit codes",
       "priority": 60,
-      "passes": false
+      "status": "pending",
+      "type": "refactor",
+      "acceptance_criteria": [
+        "Constantes declaradas no início de cada script",
+        "EXIT_SUCCESS=0, EXIT_ERROR=1, EXIT_INVALID_ARGS=2, etc",
+        "Todas funções usam constantes em vez de números",
+        "cripts/sync-*.py usam constantes Python",
+        "Todos os testes passam"
+      ],
+      "files_to_check": [
+        "lib/*.sh",
+        "lib/commands/*.sh",
+        "scripts/sync-push.py",
+        "scripts/sync-pull.py"
+      ]
     },
     {
-      "id": "feat-v4-007",
-      "title": "devorq map - an\u00e1lise de codebase",
-      "description": "Brownfield: analisar c\u00f3digo existente antes de adicionar feature",
-      "acceptanceCriteria": [
-        "devorq map escaneia stack, patterns, conventions",
-        "Gera: stack.json, patterns.json, conventions.json",
-        "Atualiza PROJECT.md com findings",
-        "usa parallel agents se dispon\u00edveis"
-      ],
+      "id": "code-007",
+      "title": "Implementar validação de inputs em todas funções",
       "priority": 70,
-      "passes": false
+      "status": "pending",
+      "type": "refactor",
+      "acceptance_criteria": [
+        "Cada função tem validação no início",
+        "Mensagens de erro claras e consistentes",
+        "Valores default definidos quando apropriado",
+        "cripts/sync-*.py validam args de entrada",
+        "cripts/sync-*.py mostram usage quando inválido"
+      ],
+      "files_to_check": [
+        "lib/commands/*.sh",
+        "scripts/sync-push.py",
+        "scripts/sync-pull.py"
+      ]
     },
     {
-      "id": "feat-v4-008",
-      "title": "devorq brainstorm - trade-offs documentados",
-      "description": "Brainstorming estruturado para decis\u00f5es t\u00e9cnicas",
-      "acceptanceCriteria": [
-        "devorq brainstorm <goal> inicia",
-        "Identifica gray areas e alternativas",
-        "Documenta pr\u00f3s/contras",
-        "Resultado em STATE.md decisions/"
-      ],
+      "id": "test-008",
+      "title": "Aumentar cobertura de testes para 80%+",
       "priority": 80,
-      "passes": false
+      "status": "pending",
+      "type": "test",
+      "acceptance_criteria": [
+        "Testes para edge cases",
+        "Testes para erros",
+        "Testes para segurança",
+        "Testes para validação de inputs",
+        "Cobertura > 80% em scripts principais",
+        "Todos os novos testes passam"
+      ],
+      "files_to_check": [
+        "scripts/ci-test.sh",
+        "e2e-tests/tests/*.spec.ts"
+      ]
+    },
+    {
+      "id": "test-009",
+      "title": "Implementar testes de segurança",
+      "priority": 90,
+      "status": "pending",
+      "type": "test",
+      "acceptance_criteria": [
+        "Testes para injeção de comandos",
+        "Testes para path traversal",
+        "Testes para validação de inputs",
+        "Testes para credenciais",
+        "cripts/sync-*.py têm testes unitários"
+      ],
+      "files_to_check": [
+        "scripts/ci-test.sh",
+        "scripts/e2e-test.sh",
+        "e2e-tests/tests/*.spec.ts"
+      ]
+    },
+    {
+      "id": "lint-010",
+      "title": "Corrigir todos shellcheck warnings",
+      "priority": 100,
+      "status": "pending",
+      "type": "refactor",
+      "acceptance_criteria": [
+        "shellcheck passa em todos os scripts bash",
+        "SC2086: Double quote to prevent globbing - corrigido",
+        "SC2162: read without -r - corrigido",
+        "cripts/sync-*.py sem warnings",
+        "lib/commands/*.sh sem warnings",
+        "Scripts em skills/ sem warnings"
+      ],
+      "files_to_check": [
+        "bin/devorq",
+        "lib/*.sh",
+        "lib/commands/*.sh",
+        "scripts/*.sh",
+        "scripts/sync-push.py",
+        "scripts/sync-pull.py",
+        "skills/*/scripts/*.sh"
+      ]
     }
+  ],
+  "done_criteria": [
+    "Todos os 10 stories com passes=true",
+    "Testes CI: 38/38 passando",
+    "Testes E2E: 100% passando",
+    "shellcheck: 0 warnings",
+    "Credenciais: 0 expostas",
+    "Segurança: 0 vulnerabilidades críticas",
+    "Cobertura: > 80%",
+    "Code review: Aprovado"
   ]
 }
