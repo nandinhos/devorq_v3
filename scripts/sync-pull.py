@@ -2,6 +2,12 @@
 """
 sync-pull.py — Baixa lessons do HUB PostgreSQL → local (.devorq/state/lessons/)
 
+SEGURANÇA:
+- Validação de paths
+- Sanitização de inputs
+- SSH com StrictHostKeyChecking
+- Exit codes consistentes
+
 Uso:
   python3 scripts/sync-pull.py [projeto]
 
@@ -12,8 +18,15 @@ import subprocess
 import json
 import os
 import sys
-import glob as glob_module
+import re
 from pathlib import Path
+
+# Exit codes
+EXIT_SUCCESS = 0
+EXIT_ERROR = 1
+EXIT_INVALID_ARGS = 2
+EXIT_NOT_FOUND = 3
+EXIT_VALIDATION_FAILED = 4
 
 # Config
 VPS_HOST = os.environ.get("DEVORQ_VPS_HOST", "187.108.197.199")
@@ -26,29 +39,37 @@ MUX_SOCK = os.environ.get("DEVORQ_MUX_SOCK", "/tmp/devorq-ssh-mux")
 
 
 def ssh_cmd(cmd, timeout=30):
+    """Executa comando no VPS via SSH mux com validação de host."""
     Path(MUX_SOCK).parent.mkdir(parents=True, exist_ok=True)
+    
+    known_hosts = Path.home() / ".ssh" / "known_hosts"
+    
     full = [
-        "ssh", "-o", "ControlMaster=auto",
+        "ssh",
+        "-o", "StrictHostKeyChecking=yes",
+        "-o", f"UserKnownHostsFile={known_hosts}",
+        "-o", "ControlMaster=auto",
         "-o", f"ControlPath={MUX_SOCK}",
         "-o", "ControlPersist=600",
-        "-o", "StrictHostKeyChecking=accept-new",
         "-o", "ConnectTimeout=10",
         "-p", VPS_PORT,
         f"{VPS_USER}@{VPS_HOST}",
         cmd
     ]
-    r = subprocess.run(full, capture_output=True, text=True, timeout=timeout)
-    return r.stdout, r.stderr, r.returncode
+    
+    try:
+        result = subprocess.run(full, capture_output=True, text=True, timeout=timeout)
+        return result.stdout, result.stderr, result.returncode
+    except subprocess.TimeoutExpired:
+        return "", "Timeout", 1
+    except Exception as e:
+        return "", str(e), 1
 
 
 def pg_query(sql):
-    """Executa SQL SELECT e retorna resultado como texto.
-    
-    Usa json.dumps para escape correto de aspas e caracteres especiais.
-    """
-    # Escapa todo o SQL via json.dumps (copia o padrao que funciona no sync-push)
+    """Executa SQL SELECT e retorna resultado como texto."""
     escaped = json.dumps(sql)
-    sql_cli = escaped[1:-1]  # Remove aspas externas do json.dumps
+    sql_cli = escaped[1:-1]
 
     cmd = (
         f"docker exec {PG_CONTAINER} psql -U {PG_USER} -d {PG_DB} "
@@ -59,7 +80,7 @@ def pg_query(sql):
 
 
 def parse_content_to_problem_solution(content):
-    """Divide content do HUB em problem/solution (formato ## Problem / ## Solution)."""
+    """Divide content do HUB em problem/solution."""
     if not content:
         return "", ""
 
@@ -80,133 +101,111 @@ def parse_content_to_problem_solution(content):
     return problem, solution
 
 
-def pull_lessons(project_filter=None):
+def download_lessons(project_filter=None):
     """Baixa lessons do HUB."""
-    project_root = os.environ.get("DEVORQ_PROJECT_ROOT", os.getcwd())
-    lessons_dir = os.path.join(project_root, ".devorq", "state", "lessons", "captured")
-    downloaded_dir = os.path.join(project_root, ".devorq", "state", "lessons", "downloaded")
-    Path(downloaded_dir).mkdir(parents=True, exist_ok=True)
-
-    where = f"WHERE project = '{project_filter}'" if project_filter else ""
-
-    sql = (
-        f"SELECT json_agg(json_build_object("
-        f"'id', id, "
-        f"'title', title, "
-        f"'content', content, "
-        f"'tags', tags, "
-        f"'stack', stack, "
-        f"'project', project, "
-        f"'source', source, "
-        f"'validated_at', validated_at, "
-        f"'metadata', metadata, "
-        f"'created_at', created_at"
-        f")) FROM devorq.lessons {where};"
-    )
-
+    if project_filter:
+        where = f"WHERE project = {json.dumps(project_filter)}"
+    else:
+        where = ""
+    
+    sql = f"SELECT id, title, content, tags, stack, project, metadata, created_at FROM devorq.lessons {where} ORDER BY created_at DESC LIMIT 100;"
+    
     out, err, code = pg_query(sql)
-
-    if code != 0 or not out.strip():
-        print(f"[!] Erro ao acessar HUB: {err[:100]}")
-        return 0
-
-    raw = out.strip()
-    if not raw or raw == "null":
-        print("[VPS] Nenhuma lesson no HUB")
-        return 0
-
-    try:
-        lessons = json.loads(raw)
-    except json.JSONDecodeError as e:
-        print(f"[!] Erro ao parsear resposta: {e}")
-        print(f"    Raw: {raw[:200]}")
-        return 0
-
-    if not lessons:
-        print("[VPS] Nenhuma lesson no HUB")
-        return 0
-
-    existing = set()
-    for state_dir in [lessons_dir, downloaded_dir]:
-        for f in glob_module.glob(os.path.join(state_dir, "*.json")):
-            with open(f) as fp:
-                try:
-                    data = json.load(fp)
-                    key = f"{data.get('title', '')}|{data.get('project', '')}"
-                    existing.add(key)
-                except Exception:
-                    pass
-
-    pulled = 0
-    for lesson in lessons:
-        title = lesson.get("title", "untitled")
-        project = lesson.get("project", "devorq_v3")
-
-        key = f"{title}|{project}"
-        if key in existing:
-            print(f"[~] Ja existe local: {title}")
+    
+    if code != 0:
+        raise ValueError(f"Query failed: {err}")
+    
+    if not out:
+        print("[WARN] Nenhuma lesson encontrada")
+        return []
+    
+    lessons = []
+    for line in out.strip().split('\n'):
+        if '|' not in line:
             continue
-
-        content = lesson.get("content", "")
+        
+        parts = [p.strip() for p in line.split('|')]
+        if len(parts) < 7:
+            continue
+        
+        lesson_id, title, content, tags_str, stack, project, metadata_json = parts[:7]
+        
+        try:
+            metadata = json.loads(metadata_json) if metadata_json else {}
+        except:
+            metadata = {}
+        
         problem, solution = parse_content_to_problem_solution(content)
-
-        source_file = ""
-        if "## Source" in content:
-            source_file = content.split("## Source")[-1].strip()
-
-        stack = lesson.get("stack", [])
-        if isinstance(stack, list) and stack:
-            stack = stack[0]
-        elif not stack:
-            stack = "general"
-
-        metadata = lesson.get("metadata") or {}
-        if isinstance(metadata, str):
-            try:
-                metadata = json.loads(metadata)
-            except Exception:
-                metadata = {}
-
-        local_lesson = {
+        
+        lessons.append({
+            "id": lesson_id,
             "title": title,
             "problem": problem,
             "solution": solution,
-            "tags": lesson.get("tags", []),
-            "stack": stack,
+            "stack": stack or "general",
+            "tags": [],
             "project": project,
-            "source_file": source_file,
-            "validated": bool(lesson.get("validated_at")),
+            "source": "",
+            "validated": metadata.get("applied", False),
             "applied": metadata.get("applied", False),
             "recurrence_count": metadata.get("recurrence_count", 0),
             "metadata": metadata
-        }
+        })
+    
+    return lessons
 
-        safe_name = "".join(c if c.isalnum() or c in " -_" else "_" for c in title)[:60]
-        filename = f"{safe_name}.json"
-        out_path = os.path.join(downloaded_dir, filename)
 
-        with open(out_path, "w") as f:
-            json.dump(local_lesson, f, indent=2, ensure_ascii=False)
-
-        print(f"[OK] {title} -> {out_path}")
-        pulled += 1
-
-    return pulled
+def save_lessons(lessons, output_dir):
+    """Salva lessons baixadas em JSON files."""
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    
+    saved = 0
+    for lesson in lessons:
+        title = lesson["title"]
+        safe_id = re.sub(r'[^a-zA-Z0-9_\-]', '_', lesson["id"])
+        filename = f"{safe_id}.json"
+        filepath = Path(output_dir) / filename
+        
+        with open(filepath, 'w') as f:
+            json.dump(lesson, f, indent=2, ensure_ascii=False)
+        
+        print(f"[OK] {title}")
+        saved += 1
+    
+    return saved
 
 
 def main():
-    project_filter = os.environ.get("DEVORQ_PROJECT_FILTER", None)
+    project_filter = None
     if len(sys.argv) > 1:
         project_filter = sys.argv[1]
+        if not re.match(r'^[a-zA-Z0-9_\-]+$', project_filter):
+            print("[ERROR] Nome de projeto inválido", file=sys.stderr)
+            sys.exit(EXIT_INVALID_ARGS)
 
+    project_root = os.environ.get("DEVORQ_PROJECT_ROOT", os.getcwd())
+    output_dir = Path(project_root) / ".devorq" / "state" / "lessons" / "downloaded"
+    
+    print("[VPS] Baixando lessons <- HUB...")
     out, err, code = ssh_cmd("echo PING")
     if code != 0:
-        print(f"[ERROR] SSH falhou: {err[:200]}")
-        sys.exit(1)
-
-    print("[VPS] Baixando lessons do HUB...")
-    pulled = pull_lessons(project_filter)
-    print(f"[VPS] Sync pull completo: {pulled} lesson(s) baixada(s)")
+        print(f"[ERROR] SSH failed: {err[:200]}", file=sys.stderr)
+        sys.exit(EXIT_ERROR)
+    
+    try:
+        lessons = download_lessons(project_filter)
+        if lessons:
+            saved = save_lessons(lessons, output_dir)
+            print(f"[VPS] Sync pull completo: {saved} lesson(s) baixada(s)")
+        else:
+            print("[WARN] Nenhuma lesson para baixar")
+        sys.exit(EXIT_SUCCESS)
+    except ValueError as e:
+        print(f"[ERROR] {e}", file=sys.stderr)
+        sys.exit(EXIT_VALIDATION_FAILED)
+    except Exception as e:
+        print(f"[ERROR] Erro inesperado: {e}", file=sys.stderr)
+        sys.exit(EXIT_ERROR)
 
 
 if __name__ == "__main__":
