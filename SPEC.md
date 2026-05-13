@@ -164,7 +164,90 @@ Cada gate é verde ou vermelho. **Vermelho = para e corrige.**
 
 ---
 
-## 4. Módulos de Comandos
+## 4. Contextos DDD (Domain-Driven Design)
+
+O DEVORQ usa Domain-Driven Design para estruturar o conhecimento.
+
+### Contextos Delimitados Identificados
+
+#### Contexto: Framework Core
+**Entidades:**
+- CLI (entry point principal)
+- Module (módulo de comando)
+- Skill (skill carregável)
+
+**Invariantes:**
+- CLI sempre carrega módulos de `lib/commands/`
+- Skill deve ter `SKILL.md` válido
+- Módulo deve ter `devorq::cmd_*` functions
+
+**Serviços:**
+- CLI Dispatcher (roteia comandos)
+- Module Loader (carrega módulos dinamicamente)
+- Skill Loader (carrega skills de `skills/`)
+
+---
+
+#### Contexto: Lições Aprendidas
+**Entidades:**
+- Lesson (lição aprendida)
+- Capture (ação de capturar)
+- Skill (skill compilada de lessons)
+
+**Invariantes:**
+- Lesson ID deve ser único
+- Lesson deve ter title, problem, solution
+- Skill compilada deve manter referência à lesson original
+
+**Serviços:**
+- Lessons::capture (captura nova lesson)
+- Lessons::validate (valida com Context7)
+- Lessons::approve (aprova para skill)
+- Lessons::compile (compila approved → SKILL.md)
+
+**Repositórios:**
+- Lessons Repository (`.devorq/state/lessons/captured/`)
+- Skills Repository (`skills/`)
+
+---
+
+#### Contexto: Gates e Qualidade
+**Entidades:**
+- Gate (checkpoint bloqueante)
+- AcceptanceCriteria (critério de aceite)
+- Handoff (estado para próximo agente)
+
+**Invariantes:**
+- Gate vermelho bloqueia avanço
+- Todos os gates devem estar verdes antes de merge
+- Handoff deve ser JSON válido
+
+**Serviços:**
+- Gate Executor (executa gate específico)
+- Gate Validator (valida critério)
+- Handoff Generator (gera JSON de estado)
+
+---
+
+#### Contexto: Automações e Integrações
+**Entidades:**
+- VPS Connection (conexão SSH)
+- HUB Sync (sincronização com servidor)
+- Context7 API (consulta documentação)
+
+**Invariantes:**
+- VPS deve ter `StrictHostKeyChecking=yes`
+- Sync deve usar variáveis de ambiente seguras
+- Context7 API key não deve aparecer em logs
+
+**Serviços:**
+- VPS::check (testa conexão)
+- Sync Push/Pull (sincroniza com HUB)
+- Context7::check (verifica API disponível)
+
+---
+
+## 5. Módulos de Comandos
 
 ### Comandos CLI Implementados
 
