@@ -2,6 +2,38 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.6.1] — 2026-05-15
+
+### Added
+- **docs/AUTO-MODE.md** — Documentação oficial do AUTO mode
+
+### Changed
+- **AUTO mode unificado** — `loop-auto.sh` agora sourceia `lib/auto.sh`
+  - Funções compartilhadas: `next_story`, `pending_count`, `mark_pass`, etc.
+  - Elimina duplicação de código
+- **v1.2.1** — `loop-auto.sh` atualizado com versão
+
+### Fixed
+- **fix(bin)** — `--help` no comando `devorq auto` agora funciona corretamente
+- **fix(execution.sh)** — Remoção do arquivo legado que sobrescrevia `cmd_auto`
+
+---
+
+## [3.6.0] — 2026-05-14
+
+### Added
+- **sec-001** — Correção de credenciais expostas em variáveis de ambiente
+- **AUTO mode lessons** — Integração de lições aprendidas no loop automático
+  - `.devorq-auto/lessons.json` — Aprendizados estruturados
+  - `.devorq-auto/failures.md` — Sumário de falhas
+  - `.devorq-auto/runs/*.log` — Logs de execução
+
+### Security
+- Correção de vulnerabilidades em `scripts/sync-push.py` e `scripts/sync-pull.py`
+- Validação de inputs e sanitização em `lib/commands/*.sh`
+
+---
+
 ## [3.5.0] — 2026-05-09
 
 ### Added

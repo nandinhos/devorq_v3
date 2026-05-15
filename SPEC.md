@@ -60,7 +60,7 @@ devorq_v3/
 │   ├── debug.sh                # debug::check + devorq::debug (4 fases)
 │   ├── stats.sh                # stats::run — métricas de uso
 │   ├── vps.sh                  # vps::check|exec|pg_exec (SSH mux)
-│   ├── auto.sh                # AUTO mode (story-by-story)
+│   ├── auto.sh                # AUTO mode: lib de funções (sourceada pelo loop)
 │   ├── spec.sh                # SPEC validation
 │   └── unify.sh               # UNIFY phase
 ├── skills/                     # Skills do ecossistema
@@ -68,7 +68,7 @@ devorq_v3/
 │   ├── env-context/           # Detecção automática de ambiente
 │   ├── scope-guard/          # Contrato de escopo
 │   ├── ddd-deep-domain/       # Domain-Driven Design
-│   ├── devorq-auto/          # Modo autônomo
+│   ├── devorq-auto/          # Modo autônomo (loop-auto.sh + auto.sh)
 │   ├── devorq-mode/          # Seletor AUTO/CLASSIC
 │   ├── devorq-code-review/   # Code review multi-agente
 │   ├── security-hardening/   # Padrões de segurança Bash/Python
