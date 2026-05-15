@@ -13,9 +13,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 
 #-----------------------------------------------------------
+# SOURCE: Carregar funções compartilhadas de lib/auto.sh
+#-----------------------------------------------------------
+# lib/auto.sh contém as funções core (next_story, pending_count, etc.)
+# que são reutilizadas pelo loop-auto.sh. As definições no loop-auto.sh
+# (abaixo) sobrescrevem as de lib/auto.sh quando necessário.
+#-----------------------------------------------------------
+if [[ -f "${SKILL_DIR}/../../lib/auto.sh" ]]; then
+    source "${SKILL_DIR}/../../lib/auto.sh"
+fi
+
+#-----------------------------------------------------------
 # Config
 #-----------------------------------------------------------
-DEVORQ_AUTO_VERSION="1.2.0"
+DEVORQ_AUTO_VERSION="1.2.1"
 FORCE_CONTINUE=false
 CAPTURE_LESSONS=true
 MAX_DELEGATE_RETRIES=1
