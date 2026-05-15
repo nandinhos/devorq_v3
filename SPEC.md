@@ -71,7 +71,8 @@ devorq_v3/
 │   ├── devorq-auto/          # Modo autônomo
 │   ├── devorq-mode/          # Seletor AUTO/CLASSIC
 │   ├── devorq-code-review/   # Code review multi-agente
-│   └── learned-lesson/        # Skills geradas de lições
+│   ├── security-hardening/   # Padrões de segurança Bash/Python
+│   └── learned-lesson/        # Gerada em runtime (gitignored); ver docs/SPEC-LESSONS-SKILLS-LOOP.md
 ├── scripts/
 │   ├── sync-push.py          # local → HUB PostgreSQL
 │   ├── sync-pull.py           # HUB PostgreSQL → local

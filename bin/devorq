@@ -1222,10 +1222,10 @@ devorq::cmd_auto() {
     done
 
     local auto_root="${DEVORQ_ROOT}/skills/devorq-auto"
-    local loop_script="${auto_root}/loop-auto.sh"
+    local loop_script="${auto_root}/scripts/loop-auto.sh"
 
     if [ ! -f "$loop_script" ]; then
-        devorq::error "loop-auto.sh não encontrado em ${auto_root}"
+        devorq::error "loop-auto.sh não encontrado em ${auto_root}/scripts/"
     fi
 
     devorq::info "Executando AUTO mode ($count stories)..."
@@ -1235,7 +1235,7 @@ devorq::cmd_auto() {
     elif [ "$force_continue" = "true" ]; then
         bash "$loop_script" "$PWD" --force-continue
     else
-        bash "$loop_script" "$PWD" "$count"
+        bash "$loop_script" "$PWD" --iterations "${count:-1}"
     fi
 }
 

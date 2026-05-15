@@ -108,7 +108,7 @@ devorq_auto::lessons_init() {
   "stats": { "total": 0, "delegate_failed": 0, "verification_failed": 0, "complex_detected": 0 }
 }
 LESSONSEOF
-        python3 -c "import json; d=json.load(open('$LESSONS_FILE')); d['project']='$(basename "$project")'; d['created']='$(date -Iseconds)'; json.dump(d,open('$LESSONS_FILE','w'),indent=2))"
+        python3 -c "import json; d=json.load(open('$LESSONS_FILE')); d['project']='$(basename "$project")'; d['created']='$(date -Iseconds)'; json.dump(d,open('$LESSONS_FILE','w'),indent=2)"
     fi
 }
 
@@ -171,7 +171,7 @@ if similar:
     print()
     print('📚 Licao anterior relevante:')
     for l in similar[-2:]:
-        print(f"  -> {l['story_id']}: {l['details']}")
+        print('  -> ' + l['story_id'] + ': ' + str(l.get('details', '')))
 " 2>/dev/null || true
 }
 
@@ -189,6 +189,7 @@ devorq_auto::failures_generate() {
     total=$(devorq_auto::total_count "$project")
     pending=$(devorq_auto::pending_count "$project")
     done=$(devorq_auto::completed_count "$project")
+    local progress_line="Progresso: ${done}/${total} done, ${pending} pending"
 
     python3 << PYEOF
 import json
@@ -234,11 +235,10 @@ for l in failed:
 
 lines.append('---')
 lines.append(f'Total: {len(failed)} failures | Stats: delegate={data["stats"]["delegate_failed"]}, verification={data["stats"]["verification_failed"]}, complex={data["stats"]["complex_detected"]}')
-lines.append(f'Progresso: {done}/{total} done, {pending} pending')
+lines.append("""$progress_line""")
 
 with open('$failures_md', 'w') as f:
-    f.write('
-'.join(lines))
+    f.write('\n'.join(lines))
 PYEOF
 }
 
@@ -271,8 +271,8 @@ with open('$json_tmp') as f:
 pending = {
     'story_id': story['id'],
     'title': story['title'],
-    'description': story['description'],
-    'acceptanceCriteria': story.get('acceptanceCriteria', []),
+    'description': story.get('description', ''),
+    'acceptanceCriteria': story.get('acceptanceCriteria') or story.get('acceptance_criteria') or [],
     'priority': story['priority'],
     'failure': {
         'type': '$failure_type',
@@ -293,7 +293,7 @@ PYEOF
 # Detectar projeto
 #-----------------------------------------------------------
 devorq_auto::detect_project() {
-    local dir="\${1:-.}"
+    local dir="${1:-.}"
 
     if [[ -f "$dir/SPEC.md" ]]; then
         echo "$dir"
@@ -326,14 +326,27 @@ devorq_auto::require_prd() {
 #-----------------------------------------------------------
 # Selecionar proxima story
 #-----------------------------------------------------------
+# Stories incompletas: aceita prd.json com passes OU status (ex.: status=pending do prd raiz)
+devorq_auto::jq_story_incomplete() {
+    echo 'select((.passes != true) and (.status != "done" and .status != "complete"))'
+}
+
+devorq_auto::jq_story_complete() {
+    echo 'select(.passes == true or .status == "done" or .status == "complete")'
+}
+
 devorq_auto::next_story() {
     local prd="$1/prd.json"
-    jq -r '.stories | sort_by(.priority) | .[] | select(.passes==false) | @json' "$prd" 2>/dev/null | head -1
+    local inc
+    inc=$(devorq_auto::jq_story_incomplete)
+    jq -c --argjson _unused 0 ".stories | sort_by(.priority // 999) | map($inc) | .[0] // empty" "$prd" 2>/dev/null
 }
 
 devorq_auto::pending_count() {
     local prd="$1/prd.json"
-    jq '.stories | map(select(.passes==false)) | length' "$prd" 2>/dev/null
+    local inc
+    inc=$(devorq_auto::jq_story_incomplete)
+    jq ".stories | map($inc) | length" "$prd" 2>/dev/null
 }
 
 devorq_auto::total_count() {
@@ -343,7 +356,9 @@ devorq_auto::total_count() {
 
 devorq_auto::completed_count() {
     local prd="$1/prd.json"
-    jq '.stories | map(select(.passes==true)) | length' "$prd" 2>/dev/null
+    local cmp
+    cmp=$(devorq_auto::jq_story_complete)
+    jq ".stories | map($cmp) | length" "$prd" 2>/dev/null
 }
 
 #-----------------------------------------------------------
@@ -362,6 +377,7 @@ with open('$prd') as f:
 for s in data['stories']:
     if s['id'] == '$story_id':
         s['passes'] = True
+        s['status'] = 'done'
         break
 with open('$tmp', 'w') as f:
     json.dump(data, f, indent=2)
@@ -383,6 +399,7 @@ with open('$prd') as f:
 for s in data['stories']:
     if s['id'] == '$story_id':
         s['passes'] = True
+        s['status'] = 'skipped'
         s['skipped'] = True
         s['skip_reason'] = '$reason'
         break
@@ -399,12 +416,12 @@ devorq_auto::append_progress() {
     local progress="$1/progress.txt"
     local story_id="$2"
     local story_title="$3"
-    local status="\${4:-PASSED}"
+    local status="${4:-PASSED}"
 
     {
         echo "# devorq-auto progress — $(basename "$1")"
         echo "# Formato: [HH:MM] ✅|❌|⏭️  Story Title — PASSED|FAILED|SKIPPED"
-        echo "[$(date +%H:%M)] \${status} \${story_id}: \${story_title} — \${status}"
+        echo "[$(date +%H:%M)] ${status} ${story_id}: ${story_title} — ${status}"
     } >> "$progress"
 }
 
@@ -444,7 +461,7 @@ devorq_auto::git_commit() {
     fi
 
     git -C "$project" add -A
-    git -C "$project" commit -m "feat(\${story_id}): \${story_title}" --no-verify 2>/dev/null || true
+    git -C "$project" commit -m "feat(${story_id}): ${story_title}" --no-verify 2>/dev/null || true
 }
 
 #-----------------------------------------------------------
@@ -464,7 +481,7 @@ devorq_auto::detect_complexity() {
         return 0
     fi
 
-    local total_len=$((\${#story_title} + \${#story_desc}))
+    local total_len=$((${#story_title} + ${#story_desc}))
     if [[ $total_len -gt 500 ]]; then
         echo "complex:long_description"
         return 0
@@ -495,7 +512,7 @@ devorq_auto::propose_break() {
     local choice="1"
     read -r choice < /dev/stdin
 
-    case "\${choice:-1}" in
+    case "${choice:-1}" in
         2) echo "SKIPPED" ;;
         3) exit 2 ;;
         *) echo "CONTINUE" ;;
@@ -521,10 +538,11 @@ devorq_auto::show_status() {
     python3 -c "
 import json
 with open('$project/prd.json') as f:
-    for s in sorted(json.load(f)['stories'], key=lambda x: x['priority']):
-        icon = '✅' if s.get('passes', False) else ('⏭️ ' if s.get('skipped') else '🔴')
-        skipped = f' (SKIP: {s["skip_reason"]})' if s.get('skipped') else ''
-        print(f'  [{s["priority"]}] "{s["title"]}" [{icon}]')
+    for s in sorted(json.load(f)['stories'], key=lambda x: x.get('priority', 0)):
+        done = bool(s.get('passes')) or s.get('status') in ('done', 'complete', 'skipped')
+        icon = '✅' if done and not s.get('skipped') else ('⏭️ ' if s.get('skipped') else '🔴')
+        skipped = f' (SKIP: {s[\"skip_reason\"]})' if s.get('skipped') else ''
+        print(f'  [{s.get(\"priority\", \"?\")}] \"{s.get(\"title\", \"\")}\" [{icon}]{skipped}')
 "
 }
 
@@ -537,15 +555,15 @@ devorq_auto::show_story() {
 
     id=$(echo "$story_json" | jq -r '.id')
     title=$(echo "$story_json" | jq -r '.title')
-    desc=$(echo "$story_json" | jq -r '.description')
-    priority=$(echo "$story_json" | jq -r '.priority')
+    desc=$(echo "$story_json" | jq -r '.description // ""')
+    priority=$(echo "$story_json" | jq -r '.priority // 0')
 
     echo ""
     echo "📖 Story: $id — $title"
     echo "   Priority: $priority"
     echo "   Desc: $desc"
     echo "   Criteria:"
-    echo "$story_json" | jq -r '.acceptanceCriteria[] | "     - \(.)"'
+    echo "$story_json" | jq -r '(.acceptanceCriteria // .acceptance_criteria // [])[] | "     - \(.)"'
 }
 
 #-----------------------------------------------------------
@@ -566,7 +584,7 @@ devorq_auto::delegate_with_retry() {
             devorq_auto::warn "Retry $attempt..."
         fi
 
-        if [[ -n "\${DEVORQ_DELEGATE_FN:-}" ]]; then
+        if [[ -n "${DEVORQ_DELEGATE_FN:-}" ]]; then
             local output
             output=$($DEVORQ_DELEGATE_FN "$story_json" "$project" 2>&1) && {
                 devorq_auto::success "Delegate completo"
@@ -616,6 +634,7 @@ main() {
     local project_root=""
     local iterations=1
     local all=false
+    local positional=()
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -624,9 +643,15 @@ main() {
             --force-continue) FORCE_CONTINUE=true; shift ;;
             --no-learn) CAPTURE_LESSONS=false; shift ;;
             -h|--help) devorq_auto::usage; exit 0 ;;
-            *) project_root="$1"; shift ;;
+            *) positional+=("$1"); shift ;;
         esac
     done
+
+    project_root="${positional[0]:-}"
+    # Compat: loop-auto.sh <DIR> 3  → segundo token numérico = iterations (não sobrescreve DIR)
+    if [[ ${#positional[@]} -ge 2 && "${positional[1]}" =~ ^[0-9]+$ ]]; then
+        iterations="${positional[1]}"
+    fi
 
     [[ -z "$project_root" ]] && { devorq_auto::usage; exit 1; }
 
@@ -686,7 +711,7 @@ main() {
 
         # Detect complexity
         local complexity
-        complexity=$(devorq_auto::detect_complexity "$story_title" "$story_desc")
+        complexity=$(devorq_auto::detect_complexity "$story_title" "$story_desc") || true
         local complex_result=""
 
         if [[ -n "$complexity" ]]; then
@@ -727,7 +752,7 @@ main() {
             local choice
             read -r choice < /dev/stdin
 
-            case "\${choice:-1}" in
+            case "${choice:-1}" in
                 2) devorq_auto::warn "Pulando $story_id"; continue ;;
                 3) loop=$((loop - 1)); continue ;;
                 *) devorq_auto::die 4 "Abortado pelo usuario" ;;
@@ -740,7 +765,7 @@ main() {
         if "$SKILL_DIR/scripts/check-story.sh" "$project_root"; then
             devorq_auto::success "Verification passed"
             devorq_auto::git_commit "$project_root" "$story_id" "$story_title"
-            devorq_auto::success "Commit: feat(\${story_id}): \${story_title}"
+            devorq_auto::success "Commit: feat(${story_id}): ${story_title}"
             devorq_auto::mark_pass "$project_root" "$story_id"
             devorq_auto::append_progress "$project_root" "$story_id" "$story_title" "PASSED"
             devorq_auto::lessons_capture "$project_root" "$story_id" "$story_title" "success" ""
@@ -769,7 +794,7 @@ main() {
             local choice
             read -r choice < /dev/stdin
 
-            case "\${choice:-1}" in
+            case "${choice:-1}" in
                 2) devorq_auto::warn "Pulando $story_id"; continue ;;
                 3) loop=$((loop - 1)); continue ;;
                 *) devorq_auto::die 3 "Verification failed — abortado" ;;

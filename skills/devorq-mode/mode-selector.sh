@@ -96,7 +96,7 @@ show_project_status() {
     if [ -f "${PROJECT_ROOT}/prd.json" ]; then
         local total pending
         total=$(jq '.stories | length' "${PROJECT_ROOT}/prd.json" 2>/dev/null || echo "0")
-        pending=$(jq '[.stories[] | select(.passes==false)] | length' "${PROJECT_ROOT}/prd.json" 2>/dev/null || echo "0")
+        pending=$(jq '[.stories[] | select((.passes != true) and (.status != "done" and .status != "complete"))] | length' "${PROJECT_ROOT}/prd.json" 2>/dev/null || echo "0")
         echo " Stories: $pending pendentes / $total total"
     fi
 
