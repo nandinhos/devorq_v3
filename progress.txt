@@ -1,0 +1,3 @@
+# devorq-auto progress — devorq_v3
+# Formato: [HH:MM] ✅|❌|⏭️  Story Title — PASSED|FAILED|SKIPPED
+[22:35] PASSED sec-001: Corrigir credenciais expostas em variáveis de ambiente — PASSED

@@ -21,6 +21,7 @@ devorq_v3/
 ├── bin/
 │   └── devorq                    # CLI entry point (source libs)
 ├── lib/
+│   ├── commands/                # Subcomandos CLI (workflow, lessons, context, …)
 │   ├── lessons.sh               # Módulo de lições aprendidas
 │   ├── gates.sh                 # Sistema de 8 gates bloqueantes
 │   ├── compact.sh               # Geração de handoff JSON
@@ -45,7 +46,8 @@ devorq_v3/
 │   ├── devorq-auto/            # Modo autônomo
 │   ├── devorq-mode/            # Seletor de modo AUTO/CLASSIC
 │   ├── devorq-code-review/     # Code review multi-agente
-│   └── learned-lesson/          # Skills geradas de lições
+│   ├── security-hardening/     # Padrões de segurança Bash/Python
+│   └── learned-lesson/          # Gerada em runtime (gitignored); ver docs/SPEC-LESSONS-SKILLS-LOOP.md
 ├── .devorq/                    # Estado local do projeto
 │   └── state/
 │       ├── context.json         # Contexto atual do projeto
@@ -56,6 +58,8 @@ devorq_v3/
 │           └── downloaded/      # Lições do HUB
 └── docs/                       # Documentação adicional
 ```
+
+**Nota sobre a árvore:** `skills/learned-lesson/` não vem no clone: é criada por fluxos de compilação de lições e está listada em `.gitignore`. O núcleo da CLI também expõe subcomandos via `lib/commands/` (ver [SPEC.md](../SPEC.md) §2).
 
 ### 1.2 Tecnologias e Dependências
 

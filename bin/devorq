@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/devorq — DEVORQ v3.5 CLI
+# bin/devorq — DEVORQ v3.6 CLI
 #
 # LOCALINSTALL: Este repo é ~/.devorq/ (global)
 # PROJETO: .devorq/ no projeto (só config/state)
@@ -27,7 +27,20 @@ set -euo pipefail
 
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION="3.6.0"
+DEVORQ_VERSION="3.6.1"
+
+# HELPERS: Carregar funcoes utilitarias
+if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
+    source "${DEVORQ_LIB}/helpers.sh"
+fi
+
+
+
+
+# HELPERS: Carregar funcoes utilitarias
+if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
+    source "${DEVORQ_LIB}/helpers.sh"
+fi
 
 # MODULAR: Carregar módulos de comandos
 if [ -d "${DEVORQ_LIB}/commands" ]; then
@@ -1200,6 +1213,16 @@ devorq::cmd_auto() {
     local count="${1:-1}"
     local force_continue=false
 
+    # Tratamento de help
+    for arg in "$@"; do
+        case "$arg" in
+            -h|--help)
+                bash "${DEVORQ_ROOT}/skills/devorq-auto/scripts/loop-auto.sh" --help "$PWD"
+                return 0
+                ;;
+        esac
+    done
+
     while [ $# -gt 0 ]; do
         case "$1" in
             --force-continue) force_continue=true; shift ;;
@@ -1209,10 +1232,10 @@ devorq::cmd_auto() {
     done
 
     local auto_root="${DEVORQ_ROOT}/skills/devorq-auto"
-    local loop_script="${auto_root}/loop-auto.sh"
+    local loop_script="${auto_root}/scripts/loop-auto.sh"
 
     if [ ! -f "$loop_script" ]; then
-        devorq::error "loop-auto.sh não encontrado em ${auto_root}"
+        devorq::error "loop-auto.sh não encontrado em ${auto_root}/scripts/"
     fi
 
     devorq::info "Executando AUTO mode ($count stories)..."
@@ -1222,7 +1245,7 @@ devorq::cmd_auto() {
     elif [ "$force_continue" = "true" ]; then
         bash "$loop_script" "$PWD" --force-continue
     else
-        bash "$loop_script" "$PWD" "$count"
+        bash "$loop_script" "$PWD" --iterations "${count:-1}"
     fi
 }
 

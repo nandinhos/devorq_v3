@@ -12,8 +12,8 @@ e2e-tests/
 │   ├── devorq-cli.spec.ts   # Testes de comandos CLI
 │   ├── gates.spec.ts         # Testes de gates
 │   ├── lessons.spec.ts       # Testes de lições
-│   ├── context.spec.ts       # Testes de contexto
-│   └── flows.spec.ts         # Testes de fluxo completo
+│   ├── debug.spec.ts         # Testes de debug
+│   └── modes-classic-auto.spec.ts  # CLASSIC vs AUTO, prd.json, loop-auto
 ├── tests-vscode/            # Testes para VS Code Extension
 │   ├── extension.spec.ts     # Testes de extensão
 │   └── recorder.spec.ts      # Testes de gravação
