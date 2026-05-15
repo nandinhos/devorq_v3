@@ -1213,6 +1213,16 @@ devorq::cmd_auto() {
     local count="${1:-1}"
     local force_continue=false
 
+    # Tratamento de help
+    for arg in "$@"; do
+        case "$arg" in
+            -h|--help)
+                bash "${DEVORQ_ROOT}/skills/devorq-auto/scripts/loop-auto.sh" --help "$PWD"
+                return 0
+                ;;
+        esac
+    done
+
     while [ $# -gt 0 ]; do
         case "$1" in
             --force-continue) force_continue=true; shift ;;
