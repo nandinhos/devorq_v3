@@ -1,19 +1,19 @@
 {
   "project": "devorq_v3",
   "version": "3.6.0",
-  "description": "PRD para correções de Code Review - Prioridade 100% verde",
+  "description": "PRD para corre\u00e7\u00f5es de Code Review - Prioridade 100% verde",
   "stories": [
     {
       "id": "sec-001",
-      "title": "Corrigir credenciais expostas em variáveis de ambiente",
+      "title": "Corrigir credenciais expostas em vari\u00e1veis de ambiente",
       "priority": 10,
-      "status": "pending",
+      "status": "done",
       "type": "security",
       "acceptance_criteria": [
-        "Credenciais não aparecem em logs",
-        "Credenciais não aparecem em ps aux",
-        "Usar arquivo com permissões 600 para credenciais",
-        "cripts/sync-*.py não expõem variáveis sensíveis",
+        "Credenciais n\u00e3o aparecem em logs",
+        "Credenciais n\u00e3o aparecem em ps aux",
+        "Usar arquivo com permiss\u00f5es 600 para credenciais",
+        "cripts/sync-*.py n\u00e3o exp\u00f5em vari\u00e1veis sens\u00edveis",
         "Todos os testes passam"
       ],
       "files_to_check": [
@@ -21,11 +21,12 @@
         "scripts/sync-pull.py",
         "lib/vps.sh",
         "lib/integration.sh"
-      ]
+      ],
+      "passes": true
     },
     {
       "id": "sec-002",
-      "title": "Implementar validação de host SSH para VPS",
+      "title": "Implementar valida\u00e7\u00e3o de host SSH para VPS",
       "priority": 20,
       "status": "pending",
       "type": "security",
@@ -33,7 +34,7 @@
         "SSH usa StrictHostKeyChecking=yes",
         "SSH usa UserKnownHostsFile",
         "cripts/sync-*.py validam host antes de conectar",
-        "cripts/sync-*.py não aceitam host key changes automaticamente",
+        "cripts/sync-*.py n\u00e3o aceitam host key changes automaticamente",
         "cripts/sync-*.py verificam fingerprint do VPS"
       ],
       "files_to_check": [
@@ -44,15 +45,15 @@
     },
     {
       "id": "sec-003",
-      "title": "Implementar validação e sanitização de inputs",
+      "title": "Implementar valida\u00e7\u00e3o e sanitiza\u00e7\u00e3o de inputs",
       "priority": 30,
       "status": "pending",
       "type": "security",
       "acceptance_criteria": [
-        "Todas as funções validam inputs",
+        "Todas as fun\u00e7\u00f5es validam inputs",
         "Scripts/sync-*.py sanitizam inputs",
-        "lib/commands/*.sh validam parâmetros",
-        "Função sanitize_input implementada",
+        "lib/commands/*.sh validam par\u00e2metros",
+        "Fun\u00e7\u00e3o sanitize_input implementada",
         "Nenhum caracteres perigosos aceitos: ; & | ` $ ( ) { } [ ] < > ! \\\\"
       ],
       "files_to_check": [
@@ -63,14 +64,14 @@
     },
     {
       "id": "sec-004",
-      "title": "Implementar validação de paths (prevenir path traversal)",
+      "title": "Implementar valida\u00e7\u00e3o de paths (prevenir path traversal)",
       "priority": 40,
       "status": "pending",
       "type": "security",
       "acceptance_criteria": [
-        "Função validate_path implementada",
-        "Paths são normalizados com realpath",
-        "Scripts verificam se path está dentro de base_dir",
+        "Fun\u00e7\u00e3o validate_path implementada",
+        "Paths s\u00e3o normalizados com realpath",
+        "Scripts verificam se path est\u00e1 dentro de base_dir",
         "Scripts/sync-*.py validam todos os paths",
         "lib/commands/*.sh validam paths antes de acessar arquivos"
       ],
@@ -82,16 +83,16 @@
     },
     {
       "id": "code-005",
-      "title": "Padronizar nomenclatura de funções para devorq::*",
+      "title": "Padronizar nomenclatura de fun\u00e7\u00f5es para devorq::*",
       "priority": 50,
       "status": "pending",
       "type": "refactor",
       "acceptance_criteria": [
-        "Todas funções com prefixo devorq::*",
+        "Todas fun\u00e7\u00f5es com prefixo devorq::*",
         "Nomenclatura consistente: devorq::cmd_*, devorq::lessons::*, devorq::context::*",
-        "Scripts/sync-*.py seguem convenção",
-        "Nenhuma função com nome genérico (f, a, temp)",
-        "Todos os testes passam após refatoração"
+        "Scripts/sync-*.py seguem conven\u00e7\u00e3o",
+        "Nenhuma fun\u00e7\u00e3o com nome gen\u00e9rico (f, a, temp)",
+        "Todos os testes passam ap\u00f3s refatora\u00e7\u00e3o"
       ],
       "files_to_check": [
         "lib/*.sh",
@@ -107,9 +108,9 @@
       "status": "pending",
       "type": "refactor",
       "acceptance_criteria": [
-        "Constantes declaradas no início de cada script",
+        "Constantes declaradas no in\u00edcio de cada script",
         "EXIT_SUCCESS=0, EXIT_ERROR=1, EXIT_INVALID_ARGS=2, etc",
-        "Todas funções usam constantes em vez de números",
+        "Todas fun\u00e7\u00f5es usam constantes em vez de n\u00fameros",
         "cripts/sync-*.py usam constantes Python",
         "Todos os testes passam"
       ],
@@ -122,16 +123,16 @@
     },
     {
       "id": "code-007",
-      "title": "Implementar validação de inputs em todas funções",
+      "title": "Implementar valida\u00e7\u00e3o de inputs em todas fun\u00e7\u00f5es",
       "priority": 70,
       "status": "pending",
       "type": "refactor",
       "acceptance_criteria": [
-        "Cada função tem validação no início",
+        "Cada fun\u00e7\u00e3o tem valida\u00e7\u00e3o no in\u00edcio",
         "Mensagens de erro claras e consistentes",
         "Valores default definidos quando apropriado",
         "cripts/sync-*.py validam args de entrada",
-        "cripts/sync-*.py mostram usage quando inválido"
+        "cripts/sync-*.py mostram usage quando inv\u00e1lido"
       ],
       "files_to_check": [
         "lib/commands/*.sh",
@@ -148,8 +149,8 @@
       "acceptance_criteria": [
         "Testes para edge cases",
         "Testes para erros",
-        "Testes para segurança",
-        "Testes para validação de inputs",
+        "Testes para seguran\u00e7a",
+        "Testes para valida\u00e7\u00e3o de inputs",
         "Cobertura > 80% em scripts principais",
         "Todos os novos testes passam"
       ],
@@ -160,16 +161,16 @@
     },
     {
       "id": "test-009",
-      "title": "Implementar testes de segurança",
+      "title": "Implementar testes de seguran\u00e7a",
       "priority": 90,
       "status": "pending",
       "type": "test",
       "acceptance_criteria": [
-        "Testes para injeção de comandos",
+        "Testes para inje\u00e7\u00e3o de comandos",
         "Testes para path traversal",
-        "Testes para validação de inputs",
+        "Testes para valida\u00e7\u00e3o de inputs",
         "Testes para credenciais",
-        "cripts/sync-*.py têm testes unitários"
+        "cripts/sync-*.py t\u00eam testes unit\u00e1rios"
       ],
       "files_to_check": [
         "scripts/ci-test.sh",
@@ -208,7 +209,7 @@
     "Testes E2E: 100% passando",
     "shellcheck: 0 warnings",
     "Credenciais: 0 expostas",
-    "Segurança: 0 vulnerabilidades críticas",
+    "Seguran\u00e7a: 0 vulnerabilidades cr\u00edticas",
     "Cobertura: > 80%",
     "Code review: Aprovado"
   ]
