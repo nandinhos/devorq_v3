@@ -114,12 +114,12 @@ wizard_5w2h() {
     # Converter vírgulas em array JSON
     local examples_json="[]"
     if [ -n "$what_ex" ]; then
-        examples_json=$(echo "$what_ex" | jq -R 'split(",")' 2>/dev/null || echo "[\"$what_ex\"]")
+        examples_json=$(echo "$what_ex" | jq -R 'split(",") | map(gsub("^\\s+|\\s+$"; ""))' 2>/dev/null || echo "[\"$what_ex\"]")
     fi
 
     local stakeholders_json="[]"
     if [ -n "$who_stake" ]; then
-        stakeholders_json=$(echo "$who_stake" | jq -R 'split(",")' 2>/dev/null || echo "[\"$who_stake\"]")
+        stakeholders_json=$(echo "$who_stake" | jq -R 'split(",") | map(gsub("^\\s+|\\s+$"; ""))' 2>/dev/null || echo "[\"$who_stake\"]")
     fi
 
     # Gerar JSON
@@ -249,7 +249,7 @@ wizard_premissas() {
     if command -v jq &>/dev/null; then
         arr_json=$(printf '%s\n' "${premissas[@]}" | jq -s '.')
     else
-        arr_json=$(IFS=,; echo "[${premissas[*]}]")
+        arr_json=$(IFS=,; echo "[${premissas[*]}]" | sed 's/\s*,\s*/,/g')
     fi
 
     local out="${FOUNDATION_DIR}/premissas.json"
@@ -351,7 +351,7 @@ wizard_riscos() {
     if command -v jq &>/dev/null; then
         arr_json=$(printf '%s\n' "${riscos[@]}" | jq -s '.')
     else
-        arr_json=$(IFS=,; echo "[${riscos[*]}]")
+        arr_json=$(IFS=,; echo "[${riscos[*]}]" | sed 's/\s*,\s*/,/g')
     fi
 
     local out="${FOUNDATION_DIR}/riscos.json"
@@ -472,7 +472,7 @@ wizard_requisitos() {
     if command -v jq &>/dev/null; then
         arr_json=$(printf '%s\n' "${requisitos[@]}" | jq -s '.')
     else
-        arr_json=$(IFS=,; echo "[${requisitos[*]}]")
+        arr_json=$(IFS=,; echo "[${requisitos[*]}]" | sed 's/\s*,\s*/,/g')
     fi
 
     local out="${FOUNDATION_DIR}/requisitos.json"
@@ -562,7 +562,7 @@ wizard_restricoes() {
     if command -v jq &>/dev/null; then
         arr_json=$(printf '%s\n' "${restricoes[@]}" | jq -s '.')
     else
-        arr_json=$(IFS=,; echo "[${restricoes[*]}]")
+        arr_json=$(IFS=,; echo "[${restricoes[*]}]" | sed 's/\s*,\s*/,/g')
     fi
 
     local out="${FOUNDATION_DIR}/restricoes.json"
