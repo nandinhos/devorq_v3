@@ -10,6 +10,7 @@ set -euo pipefail
 
 MODE="${1:-all}"
 FOUNDATION_DIR="${DEVORQ_FOUNDATION_DIR:-.devorq/state}"
+# shellcheck disable=SC2034
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
@@ -36,10 +37,10 @@ ask() {
     local result
 
     if [ -n "$default" ]; then
-        read -p "$(echo -e "${CYAN}[?]${RESET} ${prompt} [${default}]: ")" result
+        read -r -p "$(echo -e "${CYAN}[?]${RESET} ${prompt} [${default}]: ")" result
         result="${result:-$default}"
     else
-        read -p "$(echo -e "${CYAN}[?]${RESET} ${prompt}: ")" result
+        read -r -p "$(echo -e "${CYAN}[?]${RESET} ${prompt}: ")" result
     fi
 
     echo "$result"
@@ -58,7 +59,7 @@ ask_array() {
 
     local item
     while true; do
-        read -p "$(echo -e "${CYAN}[+]${RESET} Item: ")" item
+        read -r -p "$(echo -e "${CYAN}[+]${RESET} Item: ")" item
         if [ -z "$item" ]; then
             break
         fi
@@ -89,7 +90,7 @@ wizard_5w2h() {
     echo ""
     who_desc=$(ask "WHO — Para quem é este projeto?")
     echo -e "${CYAN}---${RESET}"
-    read -p "$(echo -e "${CYAN}[+]${RESET} Stakeholders (Enter para finalizar): ")" who_stake
+    read -r -p "$(echo -e "${CYAN}[+]${RESET} Stakeholders (Enter para finalizar): ")" who_stake
 
     local when_desc when_timeline
     echo ""
@@ -214,10 +215,10 @@ wizard_premissas() {
     local item owner
     local id=1
     while true; do
-        read -p "$(echo -e "${CYAN}[+]${RESET} Premissa: ")" item
+        read -r -p "$(echo -e "${CYAN}[+]${RESET} Premissa: ")" item
         [ -z "$item" ] && break
 
-        read -p "$(echo -e "${CYAN}[+]${RESET}   Owner (opcional): ")" owner
+        read -r -p "$(echo -e "${CYAN}[+]${RESET}   Owner (opcional): ")" owner
 
         local pre_json
         if command -v jq &>/dev/null; then
@@ -293,25 +294,25 @@ wizard_riscos() {
     local id=1
     while true; do
         echo -e "${CYAN}[+] Risco #${id}${RESET}"
-        read -p "  Descrição: " item
+        read -r -p "  Descrição: " item
         [ -z "$item" ] && break
 
         echo "  Severity: $(IFS=,; echo "${severities[*]}")"
-        read -p "  Severity [MEDIUM]: " severity
+        read -r -p "  Severity [MEDIUM]: " severity
         severity="${severity:-MEDIUM}"
 
         echo "  Probability: $(IFS=,; echo "${severities[*]}")"
-        read -p "  Probability [MEDIUM]: " probability
+        read -r -p "  Probability [MEDIUM]: " probability
         probability="${probability:-MEDIUM}"
 
         echo "  Impact: $(IFS=,; echo "${severities[*]}")"
-        read -p "  Impact [MEDIUM]: " impact
+        read -r -p "  Impact [MEDIUM]: " impact
         impact="${impact:-MEDIUM}"
 
-        read -p "  Mitigação: " mitigation
-        read -p "  Contingency (plano B): " contingency
+        read -r -p "  Mitigação: " mitigation
+        read -r -p "  Contingency (plano B): " contingency
         echo "  Status: $(IFS=,; echo "${statuses[*]}")"
-        read -p "  Status [OPEN]: " status
+        read -r -p "  Status [OPEN]: " status
         status="${status:-OPEN}"
 
         local risk_json
@@ -397,23 +398,23 @@ wizard_requisitos() {
     local id=1
     while true; do
         echo -e "${CYAN}[+] Requisito #${id}${RESET}"
-        read -p "  Título: " title
+        read -r -p "  Título: " title
         [ -z "$title" ] && break
 
-        read -p "  Descrição: " desc
+        read -r -p "  Descrição: " desc
 
         echo "  Tipo: $(IFS=,; echo "${types[*]}")"
-        read -p "  Tipo [FUNCTIONAL]: " type
+        read -r -p "  Tipo [FUNCTIONAL]: " type
         type="${type:-FUNCTIONAL}"
 
         echo "  Prioridade: $(IFS=,; echo "${priorities[*]}")"
-        read -p "  Prioridade [MUST]: " priority
+        read -r -p "  Prioridade [MUST]: " priority
         priority="${priority:-MUST}"
 
-        read -p "  Source: " source
+        read -r -p "  Source: " source
 
         echo "  Status: $(IFS=,; echo "${req_statuses[*]}")"
-        read -p "  Status [DRAFT]: " status
+        read -r -p "  Status [DRAFT]: " status
         status="${status:-DRAFT}"
 
         echo ""
@@ -421,7 +422,7 @@ wizard_requisitos() {
         criteria=()
         local crit
         while true; do
-            read -p "    Critério: " crit
+            read -r -p "    Critério: " crit
             [ -z "$crit" ] && break
             criteria+=("$crit")
         done
@@ -517,17 +518,17 @@ wizard_restricoes() {
     local id=1
     while true; do
         echo -e "${CYAN}[+] Restrição #${id}${RESET}"
-        read -p "  Descrição: " desc
+        read -r -p "  Descrição: " desc
         [ -z "$desc" ] && break
 
         echo "  Tipo: $(IFS=,; echo "${types[*]}")"
-        read -p "  Tipo [TECHNICAL]: " type
+        read -r -p "  Tipo [TECHNICAL]: " type
         type="${type:-TECHNICAL}"
 
-        read -p "  Source/Origem: " source
+        read -r -p "  Source/Origem: " source
 
         echo "  Flexibilidade: $(IFS=,; echo "${flexibilities[*]}")"
-        read -p "  Flexibilidade [FIXED]: " flexibility
+        read -r -p "  Flexibilidade [FIXED]: " flexibility
         flexibility="${flexibility:-FIXED}"
 
         local rest_json
@@ -624,7 +625,6 @@ main() {
             ;;
         *)
             error "Modo inválido: $MODE"
-            error "Use: 5w2h | premissas | riscos | requisitos | restricoes | all"
             ;;
     esac
 }

@@ -35,6 +35,7 @@ if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
 fi
 
 # MODULAR: Carregar módulos de comandos
+# shellcheck source=/dev/null
 if [ -d "${DEVORQ_LIB}/commands" ]; then
     for module in "${DEVORQ_LIB}"/commands/*.sh; do
         if [ -f "$module" ]; then
@@ -60,7 +61,7 @@ devorq::error() { echo "[ERROR] $*" >&2; exit 1; }
 devorq::fail() { echo "[FAIL] $*"; return 1; }
 
 # Cores para output (sem ANSI — compatibilidade máxima)
-GREEN='[OK]' CYAN='[SKILLS]' RED='[ERROR]' YELLOW='[!]' RESET='' BOLD=''
+GREEN='[OK]' CYAN='[SKILLS]' RESET=''
 
 # ============================================================
 # HELP
@@ -255,7 +256,6 @@ devorq::cmd_foundation() {
             local valid_docs="5w2h premissas riscos requisitos restricoes"
             if ! echo "$valid_docs" | grep -qw "$doc"; then
                 devorq::error "Doc inválido: $doc"
-                devorq::info "Docs válidos: $valid_docs"
             fi
             local f="${foundation_dir}/${doc}.json"
             if [ ! -f "$f" ]; then
@@ -304,7 +304,6 @@ devorq::cmd_flow() {
         devorq::info "--- GATE ${gate} ---"
         if ! devorq::cmd_gate "$gate" 2>&1; then
             devorq::error "Gate ${gate} falhou"
-            break
         fi
     done
 
@@ -321,6 +320,7 @@ devorq::cmd_gate() {
         return 0
     fi
 
+    # shellcheck source=/dev/null
     source "$lib_gate"
     # Captura exit code explicitamente — evita conflito com set -e
     local rv=0
@@ -347,6 +347,7 @@ devorq::cmd_lessons() {
                 devorq::info "LESSON: title=${title}"
                 return 0
             fi
+            # shellcheck source=/dev/null
             source "$lib_lessons"
             lessons::capture "$title" "$problem" "$solution"
             ;;
@@ -581,7 +582,7 @@ _devorq_lessons_auto_commit() {
 
     local confirm="Y"
     if [ "$auto_mode" != "true" ] && [ "$force_mode" != "true" ]; then
-        read -p "Commit + push skill '$skill_name'? [Y/n]: " confirm
+        read -r -p "Commit + push skill '$skill_name'? [Y/n]: " confirm
         confirm="${confirm:-Y}"
     fi
 
@@ -609,9 +610,9 @@ _devorq_lessons_auto_commit() {
     fi
 }
 
+# shellcheck disable=SC2120
 devorq::cmd_context() {
     local ctx_file="${PWD}/.devorq/state/context.json"
-    local sub="${1:-}"
 
     source "${DEVORQ_LIB}/context.sh" 2>/dev/null || {
         # Fallback: apenas mostra arquivo

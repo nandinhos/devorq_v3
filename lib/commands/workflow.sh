@@ -152,6 +152,7 @@ devorq::cmd_gate() {
         return 0
     fi
 
+    # shellcheck source=/dev/null
     source "$lib_gate"
     
     local rv=0
