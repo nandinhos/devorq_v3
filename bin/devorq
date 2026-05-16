@@ -34,14 +34,6 @@ if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
     source "${DEVORQ_LIB}/helpers.sh"
 fi
 
-
-
-
-# HELPERS: Carregar funcoes utilitarias
-if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
-    source "${DEVORQ_LIB}/helpers.sh"
-fi
-
 # MODULAR: Carregar módulos de comandos
 if [ -d "${DEVORQ_LIB}/commands" ]; then
     for module in "${DEVORQ_LIB}"/commands/*.sh; do
@@ -65,7 +57,7 @@ devorq::info()  { echo "[DEVORQ] $*"; }
 devorq::success() { echo "[OK] $*"; }
 devorq::warn()  { echo "[!] $*"; }
 devorq::error() { echo "[ERROR] $*" >&2; exit 1; }
-devorq::fail() { echo "[FAIL] $*"; }
+devorq::fail() { echo "[FAIL] $*"; return 1; }
 
 # Cores para output (sem ANSI — compatibilidade máxima)
 GREEN='[OK]' CYAN='[SKILLS]' RED='[ERROR]' YELLOW='[!]' RESET='' BOLD=''
@@ -310,9 +302,9 @@ devorq::cmd_flow() {
     # GATE-0 (optional) → GATE-0.5 (foundation) → GATE-1-7
     for gate in 0 0.5 1 2 3 4 5 6 7; do
         devorq::info "--- GATE ${gate} ---"
-        # Sem || aqui — set -e do gates.sh não propaga pro caller
         if ! devorq::cmd_gate "$gate" 2>&1; then
             devorq::error "Gate ${gate} falhou"
+            break
         fi
     done
 
