@@ -241,6 +241,7 @@ devorq::cmd_spec() {
 
     source "${DEVORQ_LIB}/spec.sh" 2>/dev/null || {
         devorq::error "lib/spec.sh nao encontrado"
+        return 1
     }
 
     case "$sub" in
@@ -282,6 +283,7 @@ devorq::cmd_unify() {
 
     source "${DEVORQ_LIB}/unify.sh" 2>/dev/null || {
         devorq::error "lib/unify.sh nao encontrado"
+        return 1
     }
 
     unify::run "$feature" "$auto"
