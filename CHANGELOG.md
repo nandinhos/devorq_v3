@@ -2,7 +2,21 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
-## [3.6.1] — 2026-05-15
+## [3.6.3] — 2026-05-18
+
+### Added
+- **skills/grill-with-docs** — Skill de sparring terminológico (Matt Pocock) integrada ao DEVORQ v3.6.3
+  - GATE-0: Validação de vocabulário contra glossário (CONTEXT.md)
+  - GERA template inicial de CONTEXT.md (com placeholders para refinamento orquestrador-guided)
+  - BREAK/warn forte (não-bloqueante) com recomendação forte de executar grill antes de prosseguir
+  - Scripts: `grill-detect.sh`, `grill-init-context.sh`, `grill-refine.sh`, `grill-suggest-adr.sh`, `grill-create-adr.sh`
+  - Referências: `CONTEXT-FORMAT.md`, `ADR-FORMAT.md` (Matt Pocock)
+  - Integração: `lib/gates.sh` modificado (GATE-0, pós DDD)
+  - ADR numbering: scan `docs/adr/` → highest 000N → next = 000(N+1)
+  - Skip: bugfix, hotfix, debug, init, lessons, compact, sync, version, stats, test
+  - AUTO mode: grill entre sprints (pré prd-from-spec.sh)
+
+## [3.6.2] — 2026-05-18
 
 ### Added
 - **docs/AUTO-MODE.md** — Documentação oficial do AUTO mode

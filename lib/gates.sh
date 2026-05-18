@@ -87,6 +87,24 @@ gate_0() {
         gate::info 0 "DDD não detectado — skip"
     fi
 
+    # ============================================================
+    # GATE-0 — grill-with-docs (OPCIONAL, pós DDD)
+    # Não-bloqueante com BREAK/warn forte
+    # Executado pelo agente (não bloqueia fluxo do devorq flow)
+    # ============================================================
+
+    if ! echo "$intent" | grep -qiE "bug|fix|corrigir|typo|erro|hotfix|debug|init|lessons|compact|sync|version|stats|test"; then
+        if echo "$intent" | grep -qiE "implementar|criar|adicionar|feature|novo|domínio"; then
+            local grill_script="${DEVORQ_ROOT}/skills/grill-with-docs/scripts/grill-detect.sh"
+            if [ -f "$grill_script" ]; then
+                gate::info 0 "grill-with-docs: verificando contexto..."
+                bash "$grill_script" "${PWD}" "$intent" 2>&1 || true
+            else
+                gate::warn 0 "grill-detect.sh não encontrado — skipping grill-with-docs"
+            fi
+        fi
+    fi
+
     gate::pass 0 "GATE-0 completo (env-context: ${env_context_run})"
     return 0
 }
