@@ -211,13 +211,37 @@ devorq_v3/
 └── lib/                        # Bibliotecas bash compartilhadas
 ```
 
-| Skill | Descrição |
+|| Skill | Descrição ||
 |-------|-----------|
 | **devorq** | Core framework — gates, lessons, context, compact, debug |
 | **devorq-mode** | Seletor interativo — detecta intent e pergunta modo |
 | **devorq-auto** | Ralph-style — loop autônomo story-by-story via delegate_task |
 | **devorq-code-review** | UltraReview — multi-agent review com gates de aprovação |
 | **grill-with-docs** | Sparring terminológico — valida vocabulário contra CONTEXT.md, cria ADRs |
+
+---
+
+## Token Economy — Laravel PAO (Recomendado)
+
+Para máxima economia de tokens em ambientes de agente de IA, recomendamos instalar `laravel/pao`:
+
+```bash
+composer require laravel/pao --dev
+```
+
+**O que faz:** PAO intercepta automaticamente PHPUnit, Pest, Paratest, PHPStan, Pint e Rector, convertendo output verbose em JSON estruturado.
+
+**Benefício:** Até **99.8% menos tokens** em suites de teste grandes. Output constante independent do número de testes.
+
+**Importante:**
+- PAO **NÃO** é dependência do DEVORQ. O DEVORQ funciona **100% sem ele**.
+- PAO é uma **recomendação** para quem roda em ambiente de agente (Claude Code, Cursor, Devin, Gemini CLI).
+- PAO ativa automaticamente via Composer's autoloader — zero configuração.
+- Quando developers rodam ferramentas diretamente no terminal, o output é **idêntico** — sem impacto no workflow humano.
+
+```bash
+devorq info   # Mostra status do PAO no ambiente
+```
 
 ---
 

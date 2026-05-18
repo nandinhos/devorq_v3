@@ -66,14 +66,13 @@ devorq_v3/
 ├── skills/                     # Skills do ecossistema
 │   ├── project-foundation/    # 5W2H, Premissas, Riscos, Requisitos, Restrições
 │   ├── env-context/           # Detecção automática de ambiente
-│   ├── scope-guard/          # Contrato de escopo
+│   ├── scope-guard/          # Contrato de escopo explícito
 │   ├── ddd-deep-domain/       # Domain-Driven Design
 │   ├── devorq-auto/          # Modo autônomo (loop-auto.sh + auto.sh)
 │   ├── devorq-mode/          # Seletor AUTO/CLASSIC
 │   ├── devorq-code-review/   # Code review multi-agente
-│   ├── security-hardening/   # Padrões de segurança Bash/Python
-│   ├── grill-with-docs/      # Sparring terminológico — CONTEXT.md + ADRs
-│   └── learned-lesson/        # Gerada em runtime (gitignored); ver docs/SPEC-LESSONS-SKILLS-LOOP.md
+│   ├── grill-with-docs/        # Sparring terminológico — CONTEXT.md + ADRs
+│   └── learned-lesson/        # Gerada em runtime (gitignored)
 ├── scripts/
 │   ├── sync-push.py          # local → HUB PostgreSQL
 │   ├── sync-pull.py           # HUB PostgreSQL → local
