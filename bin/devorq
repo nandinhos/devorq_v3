@@ -27,7 +27,7 @@ set -euo pipefail
 
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION="3.6.1"
+DEVORQ_VERSION="3.6.3"
 
 # HELPERS: Carregar funcoes utilitarias
 if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
