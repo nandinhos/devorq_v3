@@ -390,7 +390,8 @@ test_unify() {
 
     local output
     if output=$(bash bin/devorq unify auth-login --auto 2>&1); then
-        if echo "$output" | grep -q "UNIFY gerado" && [ -f ".devorq/state/unify/"*_auth-login_unify.md ]; then
+        if echo "$output" | grep -q "UNIFY gerado" && \
+           find .devorq/state/unify/ -maxdepth 1 -name "*_auth-login_unify.md" -type f | grep -q .; then
             pass "unify: gera UNIFY.md corretamente"
         else
             fail "unify: arquivo não gerado"
