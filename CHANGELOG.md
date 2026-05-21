@@ -36,6 +36,27 @@ All notable changes to DEVORQ v3 are documented here.
 ### Fixed
 - **Regras não eram aplicadas** — Sistema de regras agora carrega e aplica automaticamente
 - **Hierarquia global > local** — .devorq/rules/ sobrescreve global quando existe
+- **Bug fix: devorq init** — `devorq::rules::init()` não cria mais `.devorq/` prematuramente
+- **Bug fix: compact::generate** — `compact::generate()` agora redireciona JSON para arquivo `$output` (antes ignorava e输出va para stdout)
+- **Bug fix: GATE-5** — `handoff.json` agora é gerado corretamente
+
+---
+
+## [3.6.7] — 2026-05-21
+
+### Fixed
+- **Bug fix: sandbox.spec.ts** — Arquivo de testes E2E para sandbox isolado criado
+- **Bug fix: E2E tests** — Correções de case sensitivity e expectativas de output
+- **Bug fix: lessons compile** — Adicionado `validate --auto` antes de `approve` (aprovação requer validação prévia)
+
+### Changed
+- **Sandbox isolation** — Cada suite de teste E2E agora usa sandbox próprio:
+  - devorq-cli: `/tmp/devorq-e2e-cli`
+  - lessons: `/tmp/devorq-e2e-lessons`
+  - gates: `/tmp/devorq-e2e-gates`
+  - sandbox: `/tmp/devorq-e2e-sandbox`
+  - modes: `/tmp/devorq-e2e-modes-sandbox`
+- **E2E test suite** — 70 testes passando (anteriormente 54-60 com flakiness)
 
 ---
 

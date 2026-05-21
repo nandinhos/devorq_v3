@@ -28,8 +28,9 @@ devorq::rules::init() {
     local project_root="${PWD}"
     local devorq_dir="${project_root}/.devorq"
 
-    # Criar diretório de regras local se não existir
-    mkdir -p "${devorq_dir}/rules" 2>/dev/null || true
+    if [ -d "$devorq_dir" ]; then
+        mkdir -p "${devorq_dir}/rules" 2>/dev/null || true
+    fi
 
     # Carregar regras globais (DEVORQ_ROOT/rules/)
     devorq::rules::load_global

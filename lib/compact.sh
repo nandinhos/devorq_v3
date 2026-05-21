@@ -62,11 +62,11 @@ compact::generate() {
                     untracked_files: ($untracked | if . == "" then [] else split("\n") end),
                     timestamp: $ts
                 }
-            }'
+            }' > "$output"
     else
         # Fallback JSON manual (sem jq)
         printf '{"handoff":{"project":"%s","stack":"%s","intent":"%s","gates_completed":[],"pending_gates":[],"untracked_files":[],"timestamp":"%s"}}\n' \
-            "$project" "$stack" "$intent" "$ts"
+            "$project" "$stack" "$intent" "$ts" > "$output"
     fi
 }
 
