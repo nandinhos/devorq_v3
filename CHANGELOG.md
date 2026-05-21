@@ -2,6 +2,43 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.6.6] — 2026-05-21
+
+### Added
+- **lib/rules.sh** — Sistema de regras enforced
+  - `devorq::rules::init()` carrega regras global + local (hierarquia)
+  - `devorq::cmd_rules()` com ações: list, check, apply, help
+  - `devorq::rules::enforce_commit()` valida mensagens de commit
+  - `devorq::rules::install_pre_commit_hook()` instala hook em .git/hooks/
+  - `devorq::rules::check_commit_convention()` valida últimos 10 commits
+  - `devorq::rules::check_brainstorm()` e `devorq::rules::check_grill()`
+- **lib/commands/brainstorm.sh** — Comando `devorq brainstorm`
+  - Sessão interativa com 5 gates: SCOPE_DEFINED, ENTITIES_IDENTIFIED, RISKS_RAISED, STACK_DECIDED, SESSION_COMPLETE
+  - Captura entidades, riscos e decisões de stack
+  - Salva sessão em .devorq/state/sessions/brainstorm_*.json
+- **lib/commands/grill.sh** — Comando `devorq grill`
+  - Sessão de sparring estruturado (demolição estruturada)
+  - Gates: PREMISSA_QUESTIONADA, DESIGN_FLAW_FOUND, TRADE-OFF_ACCEPTED, GRILL_COMPLETE
+  - Auto-capture de lição quando falha de design detectada
+  - Três strikes = trigger para criar regra permanente
+  - Salva sessão em .devorq/state/sessions/grill_*.json
+- **`devorq rules`** — Sistema de regras (list, check, apply, help)
+- **`devorq brainstorm <topic>`** — Brainstorm com gates de captura
+- **`devorq grill <topic>`** — Sparring estruturado
+
+### Changed
+- **bin/devorq** — Adicionados comandos `rules`, `brainstorm`, `grill` ao dispatch
+- **bin/devorq** — Carrega `lib/rules.sh` no bootstrap com `devorq::rules::init()`
+- **bin/devorq** — `devorq init` agora copia regras globais para .devorq/rules/
+- **bin/devorq** — Cria .devorq/state/sessions/ na inicialização
+- **README.md** — Versão atualizada para 3.6.6
+
+### Fixed
+- **Regras não eram aplicadas** — Sistema de regras agora carrega e aplica automaticamente
+- **Hierarquia global > local** — .devorq/rules/ sobrescreve global quando existe
+
+---
+
 ## [3.6.5] — 2026-05-21
 
 ### Added
