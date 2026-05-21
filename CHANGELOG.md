@@ -48,15 +48,11 @@ All notable changes to DEVORQ v3 are documented here.
 - **Bug fix: sandbox.spec.ts** — Arquivo de testes E2E para sandbox isolado criado
 - **Bug fix: E2E tests** — Correções de case sensitivity e expectativas de output
 - **Bug fix: lessons compile** — Adicionado `validate --auto` antes de `approve` (aprovação requer validação prévia)
+- **Bug fix: SC2168 shellcheck** — Removidos 9x `local` fora de função em `scripts/validate-rules.sh` (linhas 121, 139, 174, 218, 223, 228, 272, 291, 311)
+- **Bug fix: SC2144 shellcheck** — Corrigido glob com `-f` em `scripts/e2e-test.sh:393` (substituído por `find | grep -q`)
 
-### Changed
-- **Sandbox isolation** — Cada suite de teste E2E agora usa sandbox próprio:
-  - devorq-cli: `/tmp/devorq-e2e-cli`
-  - lessons: `/tmp/devorq-e2e-lessons`
-  - gates: `/tmp/devorq-e2e-gates`
-  - sandbox: `/tmp/devorq-e2e-sandbox`
-  - modes: `/tmp/devorq-e2e-modes-sandbox`
-- **E2E test suite** — 70 testes passando (anteriormente 54-60 com flakiness)
+### Documentation
+- **docs/DEVORQ-COMMIT-VISUAL-SPEC.md** — Atualizado status para `IMPLEMENTADO v3.6.5` com histórico completo de todas as 12 features implementadas desde v3.6.5 (visual.sh, commit.sh, debug-systematic.sh, rules, brainstorm, grill, shellcheck 0 errors)
 
 ---
 
