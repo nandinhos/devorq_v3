@@ -24,6 +24,29 @@ DEVORQ_HUB_HOST="${DEVORQ_HUB_HOST:-}"
 DEVORQ_HUB_PORT="${DEVORQ_HUB_PORT:-5432}"
 
 # ============================================================
+# sanitize_input — Remove caracteres perigosos de inputs
+# ============================================================
+
+devorq::sanitize_input() {
+    local input="${1:-}"
+    local max_len="${2:-200}"
+
+    # Usa Python para sanitizacao confiavel
+    if command -v python3 &>/dev/null; then
+        python3 -c "
+import sys
+import re
+dangerous = r'[;\x60\x24\x28\x29\x7b\x7d\x5b\x5d<>!\\\\]'
+text = '$input'[:int('$max_len')]
+print(re.sub(dangerous, ' ', text))
+"
+    else
+        # Fallback: tr (menos preciso)
+        echo "$input" | tr -d ';' | tr -d '&' | tr -d '|' | tr -d '`' | tr -d '$' | head -c "$max_len"
+    fi
+}
+
+# ============================================================
 # capture
 #   $1 = title
 #   $2 = problem
@@ -37,9 +60,11 @@ lessons::capture() {
         return $EXIT_INVALID_ARGS
     fi
 
-    local title="$1"
-    local problem="${2:-}"
-    local solution="${3:-}"
+    # Sanitizar inputs para prevenir injection
+    local title problem solution
+    title=$(devorq::sanitize_input "$1" 200)
+    problem=$(devorq::sanitize_input "${2:-}" 2000)
+    solution=$(devorq::sanitize_input "${3:-}" 5000)
 
     local dir="${DEVORQ_LESSONS_DIR}/captured"
     mkdir -p "$dir"
