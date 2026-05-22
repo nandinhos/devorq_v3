@@ -9,6 +9,13 @@
 
 set -euo pipefail
 
+# Exit codes
+readonly EXIT_SUCCESS=0
+readonly EXIT_ERROR=1
+readonly EXIT_INVALID_ARGS=2
+readonly EXIT_NOT_FOUND=3
+readonly EXIT_VALIDATION_FAILED=4
+
 # Cores (sem ANSI — compatibilidade máxima)
 GREEN='' CYAN='' RED='' YELLOW='' RESET='' BOLD=''
 
@@ -24,9 +31,15 @@ DEVORQ_HUB_PORT="${DEVORQ_HUB_PORT:-5432}"
 # ============================================================
 
 lessons::capture() {
+    # Validação de inputs
+    if [[ -z "${1:-}" ]]; then
+        echo "[ERROR] Title e obrigatorio" >&2
+        return $EXIT_INVALID_ARGS
+    fi
+
     local title="$1"
-    local problem="$2"
-    local solution="$3"
+    local problem="${2:-}"
+    local solution="${3:-}"
 
     local dir="${DEVORQ_LESSONS_DIR}/captured"
     mkdir -p "$dir"
@@ -90,6 +103,12 @@ lessons::capture() {
 # ============================================================
 
 lessons::search() {
+    # Validação
+    if [[ -z "${1:-}" ]]; then
+        echo "[ERROR] Query e obrigatoria" >&2
+        return $EXIT_INVALID_ARGS
+    fi
+
     local query="$1"
     local dir="${DEVORQ_LESSONS_DIR}/captured"
 

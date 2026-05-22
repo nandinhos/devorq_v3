@@ -774,13 +774,20 @@ main() {
         devorq_auto::info "🔍 Verificando..."
         devorq_auto::log "Running verification for: $story_id"
         if "$SKILL_DIR/scripts/check-story.sh" "$project_root"; then
-            devorq_auto::success "Verification passed"
-            devorq_auto::git_commit "$project_root" "$story_id" "$story_title"
-            devorq_auto::success "Commit: feat(${story_id}): ${story_title}"
+            devorq_auto::success "✅ Verification PASSED — ${story_id}"
+            devorq_auto::warn "=============================================="
+            devorq_auto::warn "⚠️  COMMIT MANUAL NECESSÁRIO"
+            devorq_auto::warn "=============================================="
+            echo ""
+            echo "  Para commitar esta story, execute:"
+            echo "  git add -A && git commit -m 'feat(${story_id}): ${story_title}'"
+            echo ""
+            # TODO: Solicitar commit manual via AskUserQuestionTool
+            # devorq_auto::git_commit "$project_root" "$story_id" "$story_title"
             devorq_auto::mark_pass "$project_root" "$story_id"
             devorq_auto::append_progress "$project_root" "$story_id" "$story_title" "PASSED"
             devorq_auto::lessons_capture "$project_root" "$story_id" "$story_title" "success" ""
-            devorq_auto::log "PASSED: $story_id"
+            devorq_auto::log "PASSED (pending manual commit): $story_id"
 
             local done total
             done=$(devorq_auto::completed_count "$project_root")
