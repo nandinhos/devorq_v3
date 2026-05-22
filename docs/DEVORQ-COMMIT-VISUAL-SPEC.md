@@ -1,10 +1,10 @@
 # DEVORQ — Commit Manual + Verificação Visual + Debug Sistemático
 
-**Versão:** 1.0.1
+**Versão:** 1.0.2
 **Data:** 2026-05-21
 **Autor:** Fernando Dos Santos (Nando)
-**Versão DEVORQ:** 3.6.5
-**Status:** Validado — aguardando implementação
+**Versão DEVORQ:** 3.6.7
+**Status:** IMPLEMENTADO v3.6.5 — todas as features entregues e em produção
 
 ---
 
@@ -516,4 +516,37 @@ Contém:
 
 ---
 
-*Documento gerado em 2026-05-21 — para análise e validação*
+## 12. Histórico de Implementação
+
+| Fase | Ação | Versão | Status |
+|------|------|--------|--------|
+| SPEC | Criar SPEC.md (este documento) | — | ✅ Validado |
+| 1 | Atualizar `rules/commit-convention.md` com novo formato | 3.6.5 | ✅ Entregue |
+| 2 | Criar `lib/visual.sh` com `devorq::verify()` | 3.6.5 | ✅ Entregue |
+| 3 | Criar `lib/commit.sh` com `devorq::cmd_commit()` | 3.6.5 | ✅ Entregue |
+| 4 | Modificar `lib/auto.sh` — remover git_commit() calls | 3.6.5 | ✅ Entregue |
+| 5 | Modificar `bin/devorq` — adicionar comando `verify` e `commit` | 3.6.5 | ✅ Entregue |
+| 6 | Criar `rules/visual-verification.md` | 3.6.5 | ✅ Entregue |
+| 7 | Criar `scripts/commit-hint.sh` | 3.6.5 | ✅ Entregue |
+| 8 | Criar `scripts/debug-systematic.sh` | 3.6.5 | ✅ Entregue |
+| 9 | Sistema de regras enforced (`lib/rules.sh`) | 3.6.6 | ✅ Entregue |
+| 10 | `devorq brainstorm` + brainstorm.sh | 3.6.6 | ✅ Entregue |
+| 11 | `devorq grill` + grill.sh | 3.6.6 | ✅ Entregue |
+| 12 | Shellcheck 0 errors (`validate-rules.sh`, `e2e-test.sh`) | 3.6.7 | ✅ Entregue |
+
+---
+
+## 13. Referências de Implementação
+
+| Feature | Arquivo | Comando |
+|---------|---------|---------|
+| Verificação visual | `lib/visual.sh` | `devorq verify` |
+| Commit manual | `lib/commit.sh` | `devorq commit --story <id>` |
+| Debug sistemático | `scripts/debug-systematic.sh` | (trigger automático em failure) |
+| Sistema de regras | `lib/rules.sh` | `devorq rules list` |
+| Brainstorm | `lib/commands/brainstorm.sh` | `devorq brainstorm <topic>` |
+| Grill | `lib/commands/grill.sh` | `devorq grill <topic>` |
+
+---
+
+*Documento gerado em 2026-05-21 — atualizado 2026-05-21 com status IMPLEMENTADO*
