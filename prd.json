@@ -1,8 +1,32 @@
 {
   "project": "devorq_v3",
-  "version": "3.7.0",
+  "version": "3.7.1",
   "description": "PRD para corre\u00e7\u00f5es de Code Review - Prioridade 100% verde",
   "stories": [
+    {
+      "id": "orch-002",
+      "title": "Restaurar dispatch commit/verify/rules + enforcement git hook",
+      "priority": 3,
+      "status": "done",
+      "type": "orchestrator",
+      "acceptance_criteria": [
+        "devorq commit --help funciona via bin",
+        "devorq verify --help funciona via bin",
+        "devorq rules list e bootstrap funcionam",
+        "devorq init executa bootstrap de regras idempotente",
+        "commit-msg hook rejeita formato feat(id):",
+        "scripts/verify-dispatch.sh passa smoke commit/verify/rules"
+      ],
+      "files_to_check": [
+        "bin/devorq",
+        "lib/commands/commit.sh",
+        "lib/commands/rules.sh",
+        "lib/commit.sh",
+        "lib/rules.sh",
+        "scripts/verify-dispatch.sh"
+      ],
+      "passes": true
+    },
     {
       "id": "orch-001",
       "title": "Restaurar dispatch CLI v3.7 (auto, mode, init, gate)",

@@ -29,6 +29,10 @@ devorq::rules::init() {
     local project_root="${PWD}"
     local devorq_dir="${project_root}/.devorq"
 
+    if ! declare -p DEVORQ_RULES &>/dev/null; then
+        declare -gA DEVORQ_RULES
+    fi
+
     if [ -d "$devorq_dir" ]; then
         mkdir -p "${devorq_dir}/rules" 2>/dev/null || true
     fi
@@ -398,20 +402,32 @@ devorq::cmd_rules() {
         init)
             devorq::rules::init
             ;;
+        install-hook)
+            devorq::rules::install_commit_msg_hook
+            ;;
+        uninstall-hook)
+            devorq::rules::uninstall_commit_msg_hook
+            ;;
+        bootstrap)
+            devorq::rules::bootstrap_project "${PWD}"
+            ;;
         "")
             echo "Uso: devorq rules <action> [args]"
             echo ""
             echo "Ações:"
-            echo "  list                    Lista todas as regras"
-            echo "  check <rule> [--strict] Valida se regra está sendo seguida"
-            echo "  apply <rule>            Copia regra global para .devorq/rules/"
-            echo "  help <rule>             Mostra documentação da regra"
+            echo "  list                      Lista todas as regras"
+            echo "  check <rule> [--strict]   Valida se regra está sendo seguida"
+            echo "  apply <rule>              Copia regra global para .devorq/rules/"
+            echo "  bootstrap                 Aplica regras essenciais + commit-msg hook"
+            echo "  install-hook              Instala git commit-msg hook (formato commit)"
+            echo "  uninstall-hook            Remove git commit-msg hook"
+            echo "  help <rule>               Mostra documentação da regra"
             echo ""
             echo "Exemplos:"
             echo "  devorq rules list"
+            echo "  devorq rules bootstrap"
             echo "  devorq rules check commit-convention"
             echo "  devorq rules apply commit-convention"
-            echo "  devorq rules help grill"
             ;;
         *)
             echo "[ERROR] Ação '$action' desconhecida."
@@ -460,25 +476,61 @@ devorq::rules::enforce_commit() {
 }
 
 # ============================================================
-# devorq::rules::install_pre_commit_hook
+# devorq::rules::bootstrap_project
 # ============================================================
-# Instala pre-commit hook no projeto atual
 
-devorq::rules::install_pre_commit_hook() {
+devorq::rules::bootstrap_project() {
+    local project_root="${1:-$PWD}"
+
+    if [[ ! -d "${project_root}/.devorq" ]]; then
+        echo "[WARN] .devorq/ não encontrado — execute 'devorq init' primeiro"
+        return 1
+    fi
+
+    (
+        cd "$project_root"
+        devorq::rules::init
+        mkdir -p ".devorq/rules"
+
+        for rule in commit-convention manual-commit; do
+            if [[ -f "${DEVORQ_ROOT}/rules/${rule}.md" ]]; then
+                cp "${DEVORQ_ROOT}/rules/${rule}.md" ".devorq/rules/${rule}.md"
+                DEVORQ_RULES["$rule"]="$(cat ".devorq/rules/${rule}.md")"
+                echo "[OK] Regra aplicada: ${rule}"
+            fi
+        done
+
+        if [[ -d ".git" ]]; then
+            devorq::rules::install_commit_msg_hook
+        else
+            echo "[INFO] Sem .git — commit-msg hook não instalado"
+        fi
+    )
+
+    echo "[OK] Bootstrap de regras concluído"
+}
+
+# ============================================================
+# devorq::rules::install_commit_msg_hook
+# ============================================================
+
+devorq::rules::install_commit_msg_hook() {
     local project_root="${PWD}"
     local hooks_dir="${project_root}/.git/hooks"
 
     mkdir -p "$hooks_dir"
 
-    cat > "${hooks_dir}/pre-commit" << 'HOOK'
+    cat > "${hooks_dir}/commit-msg" << 'HOOK'
 #!/usr/bin/env bash
-# DEVORQ pre-commit hook
-# Valida mensagem de commit contra rules/commit-convention.md
+# DEVORQ commit-msg hook — valida rules/commit-convention.md
 
 COMMIT_MSG_FILE="$1"
-COMMIT_MSG="$(cat "$COMMIT_MSG_FILE")"
+COMMIT_MSG="$(head -1 "$COMMIT_MSG_FILE")"
 
-# Validar formato: escopo(fase): descrição
+if [[ "$COMMIT_MSG" =~ ^Merge|^Revert|^fixup!|^squash! ]]; then
+    exit 0
+fi
+
 if ! echo "$COMMIT_MSG" | grep -qE '^[a-z]+\([a-z]+\):'; then
     echo ""
     echo "[DEVORQ RULES] Mensagem de commit fora do formato."
@@ -486,40 +538,49 @@ if ! echo "$COMMIT_MSG" | grep -qE '^[a-z]+\([a-z]+\):'; then
     echo "Formato esperado:"
     echo "  escopo(fase): descrição (detalhamento)"
     echo ""
-    echo "Escopos: core, models, services, livewire, notifications, routes, config,"
-    echo "         database, tests, bdd, gates, unify, docs, debug, spec, lessons,"
-    echo "         compact, vps, hub, context"
+    echo "Use: devorq commit --story <id>"
+    echo "Consulte: devorq rules help commit-convention"
     echo ""
-    echo "Fases: impl, test, verify, docs, unify, debug, fix, refactor"
-    echo ""
-    echo "Consulte: rules/commit-convention.md"
-    echo ""
-    echo "Abortar commit."
     exit 1
 fi
 
 exit 0
 HOOK
 
-    chmod +x "${hooks_dir}/pre-commit"
+    chmod +x "${hooks_dir}/commit-msg"
 
-    echo "[OK] Pre-commit hook instalado."
-    echo "Local: ${hooks_dir}/pre-commit"
-    echo ""
-    echo "Agora commits serão validados automaticamente."
+    echo "[OK] commit-msg hook instalado."
+    echo "Local: ${hooks_dir}/commit-msg"
 }
 
 # ============================================================
-# devorq::rules::uninstall_pre_commit_hook
+# devorq::rules::uninstall_commit_msg_hook
+# ============================================================
+
+devorq::rules::uninstall_commit_msg_hook() {
+    local hooks_dir="${PWD}/.git/hooks"
+
+    if [[ -f "${hooks_dir}/commit-msg" ]] && grep -q "DEVORQ commit-msg hook" "${hooks_dir}/commit-msg" 2>/dev/null; then
+        rm "${hooks_dir}/commit-msg"
+        echo "[OK] commit-msg hook removido."
+    else
+        echo "[INFO] commit-msg hook DEVORQ não estava instalado."
+    fi
+}
+
+# ============================================================
+# devorq::rules::install_pre_commit_hook (legado)
+# ============================================================
+
+devorq::rules::install_pre_commit_hook() {
+    devorq::warn "install_pre_commit_hook obsoleto — use: devorq rules install-hook"
+    devorq::rules::install_commit_msg_hook
+}
+
+# ============================================================
+# devorq::rules::uninstall_pre_commit_hook (legado)
 # ============================================================
 
 devorq::rules::uninstall_pre_commit_hook() {
-    local hooks_dir="${PWD}/.git/hooks"
-
-    if [ -f "${hooks_dir}/pre-commit" ]; then
-        rm "${hooks_dir}/pre-commit"
-        echo "[OK] Pre-commit hook removido."
-    else
-        echo "[INFO] Pre-commit hook não estava instalado."
-    fi
+    devorq::rules::uninstall_commit_msg_hook
 }

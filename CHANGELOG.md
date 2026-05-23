@@ -2,6 +2,25 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.7.1] — 2026-05-23
+
+### Added
+- **orch-002** — Restaura dispatch de `commit`, `verify` e `rules` no CLI v3.7 modular
+- **`lib/commands/commit.sh`** e **`lib/commands/rules.sh`** — wrappers de dispatch
+- **`devorq rules bootstrap`** — aplica commit-convention + manual-commit + commit-msg hook
+- **`devorq rules install-hook`** / **`uninstall-hook`** — git commit-msg hook (substitui pre-commit incorreto)
+- **`commit_mode: manual`** em context.json template do `devorq init`
+- Smoke tests em `verify-dispatch.sh` para commit, verify, rules
+
+### Fixed
+- **`lib/commit.sh`** — lógica invertida que abortava commit quando havia mudanças
+- **`loop-auto.sh`** — remove sugestão `feat(story_id):`; delega para `devorq commit --story`
+- **`git commit-msg` hook** — validação no hook correto (antes era pre-commit, sem acesso à mensagem)
+- **`devorq init`** — executa bootstrap de regras mesmo se `.devorq/` já existir
+
+### Changed
+- **`devorq_auto::git_commit`** — usa formato `escopo(impl): título (story_id)` quando auto-commit habilitado
+
 ## [3.7.0] — 2026-05-22
 
 ### Added

@@ -132,8 +132,8 @@ devorq::commit::run() {
     fi
 
     # Verificar se há changes
-    if ! git -C "$project_root" diff --cached --quiet 2>/dev/null && \
-       ! git -C "$project_root" diff --quiet 2>/dev/null; then
+    if git -C "$project_root" diff --cached --quiet 2>/dev/null && \
+       git -C "$project_root" diff --quiet 2>/dev/null; then
         devorq::warn "Nenhum change para commitar"
         return 0
     fi

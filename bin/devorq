@@ -18,7 +18,7 @@
 readonly DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 readonly DEVORQ_LIB="${DEVORQ_ROOT}/lib"
 readonly DEVORQ_BIN="${DEVORQ_ROOT}/bin"
-readonly DEVORQ_VERSION="3.7.0"
+readonly DEVORQ_VERSION="3.7.1"
 
 # Load libraries
 source "${DEVORQ_LIB}/helpers.sh"
@@ -68,6 +68,9 @@ Comandos:
   unify         Unificar artefatos
   mode          Selecionar modo (AUTO/CLASSIC)
   auto          Executar modo AUTO (story-by-story)
+  commit        Commit manual com convenção escopo(fase):
+  verify        Verificação visual / E2E antes do commit
+  rules         Regras enforced (list, check, apply, bootstrap)
   
   info          Informações do sistema
   stats         Estatísticas de uso
@@ -159,6 +162,9 @@ main() {
         unify)      source "${DEVORQ_LIB}/commands/exploration.sh" && devorq::cmd_unify "$@" ;;
         mode)       source "${DEVORQ_LIB}/commands/mode.sh" && devorq::cmd_mode "$@" ;;
         auto)       source "${DEVORQ_LIB}/commands/auto.sh" && devorq::cmd_auto "$@" ;;
+        commit)     source "${DEVORQ_LIB}/commands/commit.sh" && devorq::cmd_commit_dispatch "$@" ;;
+        verify)     devorq::cmd_verify "$@" ;;
+        rules)      source "${DEVORQ_LIB}/commands/rules.sh" && devorq::cmd_rules_dispatch "$@" ;;
         review)     source "${DEVORQ_LIB}/commands/review.sh" && devorq::cmd_review "$@" ;;
         build)      source "${DEVORQ_LIB}/commands/utils.sh" && devorq::cmd_build ;;
         stats)      source "${DEVORQ_LIB}/commands/utils.sh" && devorq::cmd_stats ;;

@@ -471,8 +471,13 @@ devorq_auto::git_commit() {
         return 0
     fi
 
+    local scope="core"
+    if command -v devorq &>/dev/null && declare -f devorq::verify::detect_scope &>/dev/null; then
+        scope="$(devorq::verify::detect_scope "$project" 2>/dev/null || echo "core")"
+    fi
+    local message="${scope}(impl): ${story_title} (${story_id})"
     git -C "$project" add -A
-    git -C "$project" commit -m "feat(${story_id}): ${story_title}" --no-verify 2>/dev/null || true
+    git -C "$project" commit -m "$message" 2>/dev/null || true
 }
 
 #-----------------------------------------------------------
@@ -780,7 +785,8 @@ main() {
             devorq_auto::warn "=============================================="
             echo ""
             echo "  Para commitar esta story, execute:"
-            echo "  git add -A && git commit -m 'feat(${story_id}): ${story_title}'"
+            echo "  devorq commit --story ${story_id}"
+            echo "  (formato: escopo(fase): descrição — ver rules/commit-convention.md)"
             echo ""
             # TODO: Solicitar commit manual via AskUserQuestionTool
             # devorq_auto::git_commit "$project_root" "$story_id" "$story_title"

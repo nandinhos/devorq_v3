@@ -31,9 +31,7 @@ devorq::cmd_init() {
 
     if [ -d "$devorq_dir" ]; then
         devorq::warn "Ja existe .devorq/ em ${project_root}"
-        return 0
-    fi
-
+    else
     mkdir -p "$devorq_dir/state/lessons/captured"
     mkdir -p "$devorq_dir/skills"
     mkdir -p "$devorq_dir/rules"
@@ -47,6 +45,7 @@ devorq::cmd_init() {
   "project": "",
   "stack": [],
   "intent": "",
+  "commit_mode": "manual",
   "gates_completed": [],
   "last_updated": ""
 }
@@ -69,6 +68,16 @@ EOFS
         if bash "$foundation_init" "$devorq_dir/state" "$(basename "$project_root")" 2>/dev/null; then
             devorq::info "Foundation docs criados em .devorq/state/"
             devorq::info "Execute: devorq foundation create para preencher"
+        fi
+    fi
+    fi
+
+    # Bootstrap regras + commit-msg hook (idempotente)
+    if [ -f "${DEVORQ_LIB}/rules.sh" ]; then
+        # shellcheck disable=SC1091
+        source "${DEVORQ_LIB}/rules.sh"
+        if declare -f devorq::rules::bootstrap_project &>/dev/null; then
+            devorq::rules::bootstrap_project "$project_root" || devorq::warn "Bootstrap de regras falhou parcialmente"
         fi
     fi
 }

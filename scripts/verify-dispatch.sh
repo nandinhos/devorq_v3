@@ -44,6 +44,9 @@ smoke "version" bash "$BIN" version
 smoke "info" bash "$BIN" info
 smoke "mode classic" bash "$BIN" mode classic
 smoke "auto --help" bash "$BIN" auto --help
+smoke "commit --help" bash "$BIN" commit --help
+smoke "verify --help" bash "$BIN" verify --help
+smoke "rules list" bash "$BIN" rules list
 
 if [[ $FAIL -gt 0 ]]; then
     echo ""
