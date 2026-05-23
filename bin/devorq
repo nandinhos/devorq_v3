@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/devorq — DEVORQ v3.2 CLI
+# bin/devorq — DEVORQ v3.5 CLI
 #
 # LOCALINSTALL: Este repo é ~/.devorq/ (global)
 # PROJETO: .devorq/ no projeto (só config/state)
@@ -27,7 +27,7 @@ set -euo pipefail
 
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION="3.2.1"
+DEVORQ_VERSION="3.5.0"
 
 # jq no ~/bin (instalado via curl sem root)
 if [ -d "${HOME}/bin" ] && [[ ":$PATH:" != *":${HOME}/bin:"* ]]; then
@@ -188,7 +188,11 @@ devorq::cmd_gate() {
 
     source "$lib_gate"
     # Captura exit code explicitamente — evita conflito com set -e
-    "gate_${gate_num}"; local rv=$?
+    local rv=0
+    case "$gate_num" in
+        5.5) gate_5_5; rv=$? ;;
+        *) "gate_${gate_num}"; rv=$? ;;
+    esac
     return $rv
 }
 
@@ -957,6 +961,166 @@ devorq::cmd_ddd() {
 }
 
 # ============================================================
+# devorq::cmd_env — Environment detection (env-context)
+# ============================================================
+
+devorq::cmd_env() {
+    local sub="${1:-detect}"
+
+    case "$sub" in
+        detect)
+            local env_root="${DEVORQ_ROOT}/skills/env-context"
+            local env_detect="${env_root}/scripts/env-detect.sh"
+            if [ ! -f "$env_detect" ]; then
+                devorq::error "env-detect.sh não encontrado em ${env_root}"
+            fi
+            bash "$env_detect"
+            ;;
+        *)
+            devorq::error "Uso: devorq env detect"
+            ;;
+    esac
+}
+
+# ============================================================
+# devorq::cmd_spec — SPEC.md validation with BDD
+# ============================================================
+
+devorq::cmd_spec() {
+    local sub="${1:-}"
+
+    if [ -z "$sub" ]; then
+        devorq::error "Uso: devorq spec validate|template|check-ac"
+    fi
+
+    source "${DEVORQ_LIB}/spec.sh" 2>/dev/null || {
+        devorq::error "lib/spec.sh não encontrado"
+    }
+
+    case "$sub" in
+        validate)
+            shift
+            spec::validate "$@"
+            ;;
+        template)
+            shift
+            local feature="${1:-new-feature}"
+            local output="${2:-SPEC.md}"
+            spec::template "$feature" "$output"
+            ;;
+        check-ac)
+            spec::check_ac
+            ;;
+        *)
+            devorq::error "Uso: devorq spec validate|template|check-ac"
+            ;;
+    esac
+}
+
+# ============================================================
+# devorq::cmd_unify — UNIFY phase execution
+# ============================================================
+
+devorq::cmd_unify() {
+    local feature="${1:-}"
+    local auto=""
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --auto) auto="--auto"; shift ;;
+            --lessons) auto="--lessons"; shift ;;
+            -*) shift ;;
+            *) feature="$1"; shift ;;
+        esac
+    done
+
+    source "${DEVORQ_LIB}/unify.sh" 2>/dev/null || {
+        devorq::error "lib/unify.sh não encontrado"
+    }
+
+    unify::run "$feature" "$auto"
+}
+
+# ============================================================
+# devorq::cmd_mode — Mode selector (AUTO vs CLASSIC)
+# ============================================================
+
+devorq::cmd_mode() {
+    local mode="${1:-}"
+    local mode_root="${DEVORQ_ROOT}/skills/devorq-mode"
+
+    if [ -z "$mode" ]; then
+        # Sem argumento — mostra menu
+        if [ ! -f "${mode_root}/mode-selector.sh" ]; then
+            devorq::error "mode-selector.sh não encontrado"
+        fi
+        bash "${mode_root}/mode-selector.sh"
+    else
+        # Argumento fornecido — executa detecção
+        bash "${mode_root}/mode-selector.sh" "$mode" "$PWD"
+    fi
+}
+
+# ============================================================
+# devorq::cmd_auto — AUTO mode story-by-story
+# ============================================================
+
+devorq::cmd_auto() {
+    local count="${1:-1}"
+    local force_continue=false
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --force-continue) force_continue=true; shift ;;
+            all) count="all"; shift ;;
+            *) count="$1"; shift ;;
+        esac
+    done
+
+    local auto_root="${DEVORQ_ROOT}/skills/devorq-auto"
+    local loop_script="${auto_root}/loop-auto.sh"
+
+    if [ ! -f "$loop_script" ]; then
+        devorq::error "loop-auto.sh não encontrado em ${auto_root}"
+    fi
+
+    devorq::info "Executando AUTO mode ($count stories)..."
+
+    if [ "$count" = "all" ]; then
+        bash "$loop_script" "$PWD" --all
+    elif [ "$force_continue" = "true" ]; then
+        bash "$loop_script" "$PWD" --force-continue
+    else
+        bash "$loop_script" "$PWD" "$count"
+    fi
+}
+
+# ============================================================
+# devorq::cmd_review — Code review multi-agente
+# ============================================================
+
+devorq::cmd_review() {
+    local branch="HEAD"
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --branch) branch="$2"; shift 2 ;;
+            *) shift ;;
+        esac
+    done
+
+    local review_root="${DEVORQ_ROOT}/skills/devorq-code-review"
+    local review_script="${review_root}/scripts/review.sh"
+
+    if [ ! -f "$review_script" ]; then
+        devorq::error "review.sh não encontrado em ${review_root}"
+    fi
+
+    devorq::info "Executando Code Review (branch: $branch)..."
+    bash "$review_script" "$PWD" --branch "$branch"
+}
+
+# ============================================================
 # MAIN DISPATCH
 # ============================================================
 
@@ -975,6 +1139,12 @@ main() {
         compact)   devorq::cmd_compact ;;
         scope)     shift; devorq::cmd_scope "$@" ;;
         ddd)       shift; devorq::cmd_ddd "$@" ;;
+        env)       shift; devorq::cmd_env "$@" ;;
+        spec)      shift; devorq::cmd_spec "$@" ;;
+        unify)     shift; devorq::cmd_unify "$@" ;;
+        mode)      shift; devorq::cmd_mode "$@" ;;
+        auto)      shift; devorq::cmd_auto "$@" ;;
+        review)    shift; devorq::cmd_review "$@" ;;
         sync)      shift; devorq::cmd_sync "$@" ;;
         vps)       shift; devorq::cmd_vps "$@" ;;
         context7)  shift; devorq::cmd_context7 "$@" ;;
