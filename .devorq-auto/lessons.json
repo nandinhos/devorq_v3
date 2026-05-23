@@ -1,0 +1,19 @@
+{
+  "project": "",
+  "created": "",
+  "lessons": [
+    {
+      "story_id": "sec-001",
+      "story_title": "Corrigir credenciais expostas em vari\u00e1veis de ambiente",
+      "type": "success",
+      "details": "",
+      "timestamp": "2026-05-14T22:35:23.783165"
+    }
+  ],
+  "stats": {
+    "total": 1,
+    "delegate_failed": 0,
+    "verification_failed": 0,
+    "complex_detected": 0
+  }
+}

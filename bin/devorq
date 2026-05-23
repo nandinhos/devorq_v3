@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/devorq — DEVORQ v3.5 CLI
+# bin/devorq — DEVORQ v3.6 CLI
 #
 # LOCALINSTALL: Este repo é ~/.devorq/ (global)
 # PROJETO: .devorq/ no projeto (só config/state)
@@ -27,7 +27,22 @@ set -euo pipefail
 
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION="3.6.0"
+DEVORQ_VERSION="3.6.1"
+
+# HELPERS: Carregar funcoes utilitarias
+if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
+    source "${DEVORQ_LIB}/helpers.sh"
+fi
+
+# MODULAR: Carregar módulos de comandos
+# shellcheck source=/dev/null
+if [ -d "${DEVORQ_LIB}/commands" ]; then
+    for module in "${DEVORQ_LIB}"/commands/*.sh; do
+        if [ -f "$module" ]; then
+            source "$module"
+        fi
+    done
+fi
 
 # jq no ~/bin (instalado via curl sem root)
 if [ -d "${HOME}/bin" ] && [[ ":$PATH:" != *":${HOME}/bin:"* ]]; then
@@ -43,10 +58,10 @@ devorq::info()  { echo "[DEVORQ] $*"; }
 devorq::success() { echo "[OK] $*"; }
 devorq::warn()  { echo "[!] $*"; }
 devorq::error() { echo "[ERROR] $*" >&2; exit 1; }
-devorq::fail() { echo "[FAIL] $*"; }
+devorq::fail() { echo "[FAIL] $*"; return 1; }
 
 # Cores para output (sem ANSI — compatibilidade máxima)
-GREEN='[OK]' CYAN='[SKILLS]' RED='[ERROR]' YELLOW='[!]' RESET='' BOLD=''
+GREEN='[OK]' CYAN='[SKILLS]' RESET=''
 
 # ============================================================
 # HELP
@@ -241,7 +256,6 @@ devorq::cmd_foundation() {
             local valid_docs="5w2h premissas riscos requisitos restricoes"
             if ! echo "$valid_docs" | grep -qw "$doc"; then
                 devorq::error "Doc inválido: $doc"
-                devorq::info "Docs válidos: $valid_docs"
             fi
             local f="${foundation_dir}/${doc}.json"
             if [ ! -f "$f" ]; then
@@ -288,7 +302,6 @@ devorq::cmd_flow() {
     # GATE-0 (optional) → GATE-0.5 (foundation) → GATE-1-7
     for gate in 0 0.5 1 2 3 4 5 6 7; do
         devorq::info "--- GATE ${gate} ---"
-        # Sem || aqui — set -e do gates.sh não propaga pro caller
         if ! devorq::cmd_gate "$gate" 2>&1; then
             devorq::error "Gate ${gate} falhou"
         fi
@@ -307,6 +320,7 @@ devorq::cmd_gate() {
         return 0
     fi
 
+    # shellcheck source=/dev/null
     source "$lib_gate"
     # Captura exit code explicitamente — evita conflito com set -e
     local rv=0
@@ -333,6 +347,7 @@ devorq::cmd_lessons() {
                 devorq::info "LESSON: title=${title}"
                 return 0
             fi
+            # shellcheck source=/dev/null
             source "$lib_lessons"
             lessons::capture "$title" "$problem" "$solution"
             ;;
@@ -567,7 +582,7 @@ _devorq_lessons_auto_commit() {
 
     local confirm="Y"
     if [ "$auto_mode" != "true" ] && [ "$force_mode" != "true" ]; then
-        read -p "Commit + push skill '$skill_name'? [Y/n]: " confirm
+        read -r -p "Commit + push skill '$skill_name'? [Y/n]: " confirm
         confirm="${confirm:-Y}"
     fi
 
@@ -595,9 +610,9 @@ _devorq_lessons_auto_commit() {
     fi
 }
 
+# shellcheck disable=SC2120
 devorq::cmd_context() {
     local ctx_file="${PWD}/.devorq/state/context.json"
-    local sub="${1:-}"
 
     source "${DEVORQ_LIB}/context.sh" 2>/dev/null || {
         # Fallback: apenas mostra arquivo
@@ -1191,6 +1206,16 @@ devorq::cmd_auto() {
     local count="${1:-1}"
     local force_continue=false
 
+    # Tratamento de help
+    for arg in "$@"; do
+        case "$arg" in
+            -h|--help)
+                bash "${DEVORQ_ROOT}/skills/devorq-auto/scripts/loop-auto.sh" --help "$PWD"
+                return 0
+                ;;
+        esac
+    done
+
     while [ $# -gt 0 ]; do
         case "$1" in
             --force-continue) force_continue=true; shift ;;
@@ -1200,10 +1225,10 @@ devorq::cmd_auto() {
     done
 
     local auto_root="${DEVORQ_ROOT}/skills/devorq-auto"
-    local loop_script="${auto_root}/loop-auto.sh"
+    local loop_script="${auto_root}/scripts/loop-auto.sh"
 
     if [ ! -f "$loop_script" ]; then
-        devorq::error "loop-auto.sh não encontrado em ${auto_root}"
+        devorq::error "loop-auto.sh não encontrado em ${auto_root}/scripts/"
     fi
 
     devorq::info "Executando AUTO mode ($count stories)..."
@@ -1213,7 +1238,7 @@ devorq::cmd_auto() {
     elif [ "$force_continue" = "true" ]; then
         bash "$loop_script" "$PWD" --force-continue
     else
-        bash "$loop_script" "$PWD" "$count"
+        bash "$loop_script" "$PWD" --iterations "${count:-1}"
     fi
 }
 

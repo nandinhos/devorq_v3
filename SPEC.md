@@ -1,26 +1,32 @@
-# DEVORQ v3 — Specification
+# DEVORQ v3.6.1 — Specification
 
 > **Princípio de auto-construção:** o DEVORQ constrói a si mesmo.
 > Sistema operacional → usa-se para construir a si mesmo → refina → cresce.
 
-**Versão:** 3.5.0 | **Atualizado:** 2026-05-09
+**Versão:** 3.6.1 | **Atualizado:** 2026-05-15
 
 ---
 
 ## 1. Visão
 
 **O que é:** Framework bash puro para metodologia de desenvolvimento sistemático.
+
+**Funcionalidades principais:**
 - Captura lições aprendidas (nunca mais o mesmo erro)
-- Impõe gates bloqueantes (disciplina硬耦合)
+- Impõe gates bloqueantes (disciplina)
 - Gera handoffs consistentes entre sessões e agentes
+- Sistema de testes E2E para garantir qualidade
+- Code review automatizado
 
 **O que não é:** Uma aplicação web, plataforma fullstack, ou sistema de gerenciamento de projetos.
 
 **Stack:**
-- Bash 5+ (puro shell, sem dependências externas)
+- Bash 5+ (puro shell, sem dependências externas obrigatórias)
 - jq 1.7+ (binary estático em ~/bin quando sem apt)
 - Git
 - SSH (para comunicação com HUB remoto via SSH mux)
+- Node.js 18+ (para testes E2E opcionais)
+- Playwright (para testes E2E opcionais)
 
 **Filosofia:** O computador faz o trabalho repetitivo. O developer foca em decisões.
 
@@ -32,33 +38,350 @@
 
 ```
 devorq_v3/
-├── bin/devorq                  # CLI entry point (source libs)
+├── bin/
+│   └── devorq                      # CLI entry point (source libs)
 ├── lib/
-│   ├── lessons.sh              # lessons::capture|search|validate|apply|sync_vps|export
-│   ├── gates.sh                # 7 gates bloqueantes
+│   ├── commands/                    # Módulos de comandos CLI
+│   │   ├── workflow.sh            # init, test, flow, gate
+│   │   ├── lessons.sh            # capture, search, validate, approve, compile
+│   │   ├── context.sh            # context, compact
+│   │   ├── exploration.sh        # scope, ddd, env, spec, unify
+│   │   ├── foundation.sh         # foundation
+│   │   ├── integration.sh        # sync, vps, context7
+│   │   ├── utils.sh             # version, upgrade, uninstall, build, stats
+│   │   ├── skills.sh            # skills
+│   │   ├── debug.sh             # debug
+│   │   └── execution.sh         # mode, auto, review
+│   ├── lessons.sh              # lessons core logic
+│   ├── gates.sh                # 7+ gates bloqueantes
 │   ├── compact.sh              # handoff JSON
 │   ├── context.sh              # ctx_lint|stats|pack|merge|set|clear
-│   ├── context7.sh             # ctx7_check|search|resolve|compare
+│   ├── context7.sh            # ctx7_check|search|resolve|compare
 │   ├── debug.sh                # debug::check + devorq::debug (4 fases)
 │   ├── stats.sh                # stats::run — métricas de uso
-│   └── vps.sh                  # vps::check|exec|pg_exec (SSH mux)
+│   ├── vps.sh                  # vps::check|exec|pg_exec (SSH mux)
+│   ├── auto.sh                # AUTO mode: lib de funções (sourceada pelo loop)
+│   ├── spec.sh                # SPEC validation
+│   └── unify.sh               # UNIFY phase
+├── skills/                     # Skills do ecossistema
+│   ├── project-foundation/    # 5W2H, Premissas, Riscos, Requisitos, Restrições
+│   ├── env-context/           # Detecção automática de ambiente
+│   ├── scope-guard/          # Contrato de escopo
+│   ├── ddd-deep-domain/       # Domain-Driven Design
+│   ├── devorq-auto/          # Modo autônomo (loop-auto.sh + auto.sh)
+│   ├── devorq-mode/          # Seletor AUTO/CLASSIC
+│   ├── devorq-code-review/   # Code review multi-agente
+│   ├── security-hardening/   # Padrões de segurança Bash/Python
+│   └── learned-lesson/        # Gerada em runtime (gitignored); ver docs/SPEC-LESSONS-SKILLS-LOOP.md
 ├── scripts/
-│   ├── sync-push.py            # local → HUB PostgreSQL
-│   └── sync-pull.py            # HUB PostgreSQL → local
-├── .devorq/                    # Estado local (NÃO COMMITEAR)
+│   ├── sync-push.py          # local → HUB PostgreSQL
+│   ├── sync-pull.py           # HUB PostgreSQL → local
+│   ├── ci-test.sh            # Testes CI/CD
+│   ├── e2e-test.sh          # Testes E2E bash
+│   ├── validate-rules.sh      # Validação de diretrizes
+│   └── cleanup-bin.sh         # Script de refatoração modular
+├── e2e-tests/                # Testes E2E Playwright
+│   ├── playwright.config.ts   # Configuração Playwright
+│   ├── package.json          # Dependências Node.js
+│   ├── tests/               # Suítes de testes
+│   │   ├── debug.spec.ts     # Testes de debug
+│   │   ├── devorq-cli.spec.ts # Testes de CLI
+│   │   ├── gates.spec.ts     # Testes de gates
+│   │   └── lessons.spec.ts   # Testes de lessons
+│   └── reports/             # Relatórios de testes
+├── .github/
+│   └── workflows/
+│       └── ci.yml           # CI/CD GitHub Actions
+├── docs/                     # Documentação adicional
+│   ├── SYSTEM_LEVANTAMENTO.md # Levantamento completo do sistema
+│   ├── MELHORIAS_V3.md       # Melhorias e testes E2E
+│   ├── REFATORACAO_PLANO.md  # Plano de refatoração
+│   ├── PLANO_CORRECAO_CODE_REVIEW.md # Plano de correção
+│   ├── COMPORTAMENTO_ESPERADO.md # Comportamento esperado
+│   └── CODE_REVIEW_COMPLETO.md # Code review completo
+├── .devorq/                  # Estado local (NÃO COMMITEAR)
 │   ├── state/
-│   │   ├── context.json        # Contexto atual do projeto
-│   │   ├── session.json        # Dados da sessão corrente
-│   │   └── lessons/            # Lições capturadas localmente
-│   └── version
-├── SPEC.md                     # Esta especificação
-├── README.md                   # Visão geral + quick start
-├── INSTALL.md                  # Guia de instalação
-├── EXTRAS.md                   # Context-Mode, Context7, HUB, Self-Building
-└── TROUBLESHOOTING.md          # Problemas comuns + soluções
+│   │   ├── context.json     # Contexto atual do projeto
+│   │   ├── session.json    # Dados da sessão corrente
+│   │   ├── handoff.json   # Handoff para próxima sessão
+│   │   └── lessons/       # Lições capturadas localmente
+│   │       └── captured/   # Lições locais
+│   ├── skills/             # Skills geradas
+│   └── rules/              # Regras específicas
+├── .trae/
+│   └── project_rules.md     # Diretrizes do projeto
+├── .devorq.bak/            # Backup antes de refatoração
+├── SPEC.md                  # Esta especificação
+├── README.md                # Visão geral + quick start
+├── INSTALL.md               # Guia de instalação
+├── EXTRAS.md                # Context-Mode, Context7, HUB, Self-Building
+├── VERSION                  # Versão atual
+└── prd.json                 # Product Requirements Document
 ```
 
-### DEV-MEMORY HUB (repo separado: dev-memory-laravel)
+---
+
+## 3. Sistema de Gates
+
+Cada gate é verde ou vermelho. **Vermelho = para e corrige.**
+
+### Gates Implementados
+
+```
+┌────────┬────────────────────────┬──────────────────────────────────────────┐
+│ GATE   │ NOME                    │ CRITÉRIO                                 │
+├────────┼────────────────────────┼──────────────────────────────────────────┤
+│ GATE-0 │ Exploration           │ Skills carregadas (opcional)              │
+│ GATE-0.5│ Project Foundation  │ 5W2H, Premissas, Riscos, Requisitos     │
+│ GATE-1 │ Spec Exists          │ SPEC.md existe e não está vazio          │
+│ GATE-2 │ Tests Pass           │ devorq test passa (estrutura OK)        │
+│ GATE-3 │ Context Documented   │ devorq context mostra estado válido      │
+│ GATE-4 │ Lessons Reviewed     │ devorq lessons search encontrou lições  │
+│ GATE-5 │ Handoff Ready       │ devorq compact gera JSON válido          │
+│ GATE-5.5│ UNIFY              │ Fase de fechamento (aviso)              │
+│ GATE-6 │ Context7 Checked    │ docs consultadas (sempre passa — WARN OK)│
+│ GATE-7 │ Systematic Debug    │ se erro: devorq debug antes de continuar │
+└────────┴────────────────────────┴──────────────────────────────────────────┘
+```
+
+### Status dos Gates
+
+| Gate | Status | Bloqueante |
+|------|--------|------------|
+| GATE-0 | ✅ Implementado | Não |
+| GATE-0.5 | ✅ Implementado | Sim |
+| GATE-1 | ✅ Implementado | Sim |
+| GATE-2 | ✅ Implementado | Sim |
+| GATE-3 | ✅ Implementado | Sim |
+| GATE-4 | ✅ Implementado | Sim |
+| GATE-5 | ✅ Implementado | Sim |
+| GATE-5.5 | ✅ Implementado | Não |
+| GATE-6 | ✅ Implementado | Não |
+| GATE-7 | ✅ Implementado | Reativo |
+
+**Nota:** GATE-6 é especial: Nunca bloqueia. É um aviso para consultar documentação. Mesmo que a API Context7 falhe ou esteja offline, GATE-6 passa.
+
+**Nota:** GATE-7 é reativo: Só entra em ação quando há erro. Se não há erro, GATE-7 é ignorado.
+
+---
+
+## 4. Contextos DDD (Domain-Driven Design)
+
+O DEVORQ usa Domain-Driven Design para estruturar o conhecimento.
+
+### Contextos Delimitados Identificados
+
+#### Contexto: Framework Core
+**Entidades:**
+- CLI (entry point principal)
+- Module (módulo de comando)
+- Skill (skill carregável)
+
+**Invariantes:**
+- CLI sempre carrega módulos de `lib/commands/`
+- Skill deve ter `SKILL.md` válido
+- Módulo deve ter `devorq::cmd_*` functions
+
+**Serviços:**
+- CLI Dispatcher (roteia comandos)
+- Module Loader (carrega módulos dinamicamente)
+- Skill Loader (carrega skills de `skills/`)
+
+---
+
+#### Contexto: Lições Aprendidas
+**Entidades:**
+- Lesson (lição aprendida)
+- Capture (ação de capturar)
+- Skill (skill compilada de lessons)
+
+**Invariantes:**
+- Lesson ID deve ser único
+- Lesson deve ter title, problem, solution
+- Skill compilada deve manter referência à lesson original
+
+**Serviços:**
+- Lessons::capture (captura nova lesson)
+- Lessons::validate (valida com Context7)
+- Lessons::approve (aprova para skill)
+- Lessons::compile (compila approved → SKILL.md)
+
+**Repositórios:**
+- Lessons Repository (`.devorq/state/lessons/captured/`)
+- Skills Repository (`skills/`)
+
+---
+
+#### Contexto: Gates e Qualidade
+**Entidades:**
+- Gate (checkpoint bloqueante)
+- AcceptanceCriteria (critério de aceite)
+- Handoff (estado para próximo agente)
+
+**Invariantes:**
+- Gate vermelho bloqueia avanço
+- Todos os gates devem estar verdes antes de merge
+- Handoff deve ser JSON válido
+
+**Serviços:**
+- Gate Executor (executa gate específico)
+- Gate Validator (valida critério)
+- Handoff Generator (gera JSON de estado)
+
+---
+
+#### Contexto: Automações e Integrações
+**Entidades:**
+- VPS Connection (conexão SSH)
+- HUB Sync (sincronização com servidor)
+- Context7 API (consulta documentação)
+
+**Invariantes:**
+- VPS deve ter `StrictHostKeyChecking=yes`
+- Sync deve usar variáveis de ambiente seguras
+- Context7 API key não deve aparecer em logs
+
+**Serviços:**
+- VPS::check (testa conexão)
+- Sync Push/Pull (sincroniza com HUB)
+- Context7::check (verifica API disponível)
+
+---
+
+## 5. Módulos de Comandos
+
+### Comandos CLI Implementados
+
+| Módulo | Comandos | Status |
+|--------|----------|--------|
+| workflow.sh | init, test, flow, gate | ✅ |
+| lessons.sh | capture, search, validate, approve, compile, list, migrate | ✅ |
+| context.sh | context, compact | ✅ |
+| exploration.sh | scope, ddd, env, spec, unify | ✅ |
+| foundation.sh | foundation | ✅ |
+| integration.sh | sync, vps, context7 | ✅ |
+| utils.sh | version, upgrade, uninstall, build, stats | ✅ |
+| skills.sh | skills | ✅ |
+| debug.sh | debug | ✅ |
+| execution.sh | mode, auto, review | ✅ |
+
+**Total de comandos:** 45+
+
+---
+
+## 5. Sistema de Lições Aprendidas
+
+### Schema JSON
+
+```json
+{
+  "id": "lesson_20260422_143000_12345",
+  "title": "Breve título descritivo do problema",
+  "problem": "Descrição clara do problema encontrado",
+  "solution": "Passo-a-passo da solução aplicada",
+  "stack": ["bash", "jq", "postgresql"],
+  "tags": ["devorq", "container", "docker-rootless"],
+  "project": "devorq_v3",
+  "source_file": "lib/lessons.sh",
+  "validated": false,
+  "validated_at": null,
+  "approved": false,
+  "compiled": false,
+  "skill_name": null,
+  "metadata": {}
+}
+```
+
+### Flags de Estado
+
+| Flag | Significado |
+|------|-------------|
+| `validated: false` | Precisa de validação manual ou via Context7 |
+| `validated: true` | Revisada — solução confirmada |
+| `approved: false` | Pendente de aprovação para skill |
+| `approved: true` | Aprovada para virar skill |
+| `compiled: false` | Não compilada em skill |
+| `compiled: true` | Compilada em skill |
+
+---
+
+## 6. Testes
+
+### Suite de Testes CI
+
+```bash
+bash scripts/ci-test.sh
+# Resultado: 38/38 tests passing
+```
+
+### Testes E2E Playwright
+
+```bash
+cd e2e-tests
+npm test
+# Testes de CLI, gates, lessons, context
+```
+
+### Cobertura de Testes
+
+| Tipo | Quantidade | Status |
+|------|-----------|--------|
+| CI Tests | 38 | ✅ |
+| E2E Tests | 50+ | ✅ |
+| shellcheck | - | ⚠️ Pending |
+
+---
+
+## 7. Fases de Desenvolvimento
+
+### Status das Fases
+
+```
+FASE 1  ████████████████████  100%  ✅  Core bash + gates + lessons
+FASE 2a ████████████████████  100%  ✅  PostgreSQL schema devorq.*
+FASE 2b ████████████████████  100%  ✅  Sync push/pull Python scripts
+FASE 3  ████████████████████  100%  ✅  Context-Mode (lib/context.sh)
+FASE 4  ████████████████████  100%  ✅  Context7 integration (lib/context7.sh)
+FASE 5  ████████████████████  100%  ✅  Systematic debug (lib/debug.sh)
+FASE 6  ████████████████████  100%  ✅  Documentação (README+INSTALL+EXTRAS)
+FASE 7  ████████████████████  100%  ✅  Self-building (build+upgrade+uninstall)
+FASE 8  ████████████████████  100%  ✅  Meta-stats (devorq stats)
+FASE 9  ████████████████████  100%  ✅  Refatoração modular (lib/commands/)
+FASE 10 ████████████████████  100%  ✅  Testes E2E (Playwright)
+FASE 11 ███░░░░░░░░░░░░░░░░  25%  🔄  Code Review (correções)
+```
+
+### Fase Atual: Code Review e Correções
+
+**Status:** Em andamento
+
+**Objetivos:**
+1. Corrigir vulnerabilidades de segurança críticas
+2. Padronizar nomenclatura
+3. Aumentar cobertura de testes
+4. Implementar tratamento de erros consistente
+
+**Problemas Identificados no Code Review:**
+
+#### Críticos (Devem ser corrigidos antes de produção)
+| # | Problema | Severidade | Módulo |
+|---|----------|------------|---------|
+| 1 | Credenciais expostas em variáveis | 🔴 CRÍTICA | Segurança |
+| 2 | SSH sem validação de host | 🔴 CRÍTICA | VPS |
+| 3 | Injeção de comando | 🔴 CRÍTICA | Input validation |
+| 4 | Path traversal | 🔴 CRÍTICA | File handling |
+
+#### Altos (Devem ser corrigidos em breve)
+| # | Problema | Severidade | Módulo |
+|---|----------|------------|---------|
+| 5 | Nomenclatura inconsistente | 🔴 ALTA | Código |
+| 6 | Exit codes inconsistentes | 🔴 ALTA | Erro handling |
+| 7 | Validação de input ausente | 🔴 ALTA | Input validation |
+| 8 | shellcheck warnings | 🟡 MÉDIA | Código |
+
+---
+
+## 8. DEV-MEMORY HUB (repo separado: dev-memory-laravel)
 
 ```
 VPS srv163217:6985
@@ -77,527 +400,144 @@ ssh -p 6985 root@187.108.197.199 "docker exec hermesstudy_postgres psql -U herme
 
 ---
 
-## 3. Os 7 Gates (Bloqueantes)
+## 9. Diretrizes de Desenvolvimento
 
-Cada gate é verde ou vermelho. **Vermelho = para e corrige.**
+### Diretrizes Globais
 
-```
-┌────────┬────────────────────────┬──────────────────────────────────────────┐
-│ GATE   │ NOME                    │ CRITÉRIO                                 │
-├────────┼────────────────────────┼──────────────────────────────────────────┤
-│ GATE-1 │ Spec Exists             │ SPEC.md existe e não está vazio           │
-│ GATE-2 │ Tests Pass              │ devorq test passa (estrutura OK)         │
-│ GATE-3 │ Context Documented      │ devorq context mostra estado válido        │
-│ GATE-4 │ Lessons Reviewed        │ devorq lessons search encontrou lições    │
-│ GATE-5 │ Handoff Ready           │ devorq compact gera JSON válido           │
-│ GATE-6 │ Context7 Checked         │ docs consultadas (sempre passa — WARN OK)│
-│ GATE-7 │ Systematic Debug         │ se erro: devorq debug antes de continuar  │
-└────────┴────────────────────────┴──────────────────────────────────────────┘
-```
+1. **Planejamento** - Sempre planeje antes da implementação
+2. **Comunicação** - Use `AskUserQuestionTool` para perguntas
+3. **Commits** - Nunca adicione Claude como coautor
+4. **Permissões** - Peça para executar sudo
+5. **Agentes** - Máximo 3 agentes simultâneos
+6. **Metodologia** - Problema → Pense → Depure → Entenda → Resolva → Teste → Continue
 
-**GATE-6 é especial:** Nunca bloqueia. É um aviso para consultar documentação. Mesmo que a API Context7 falhe ou esteja offline, GATE-6 passa.
+### Diretrizes de Código
 
-**GATE-7 é reativo:** Só entra em ação quando há erro. Se não há erro, GATE-7 é ignorado.
+1. **Testes** - Cobertura completa após implementação
+2. **Validação** - Todos os testes devem passar (verde)
+3. **Commits** - Conventional Commits em português
+4. **Commits** - Aguardar validação manual antes de fazer
+5. **Commits** - Sem emojis
+6. **Commits** - Sem co-autoria
+7. **Laravel** - Use Artisan para criar arquivos
 
----
-
-## 4. Líções Aprendidas
-
-### Schema JSON
-
-```json
-{
-  "id": "lesson_20260422_143000_12345",
-  "title": "Breve título descritivo do problema",
-  "problem": "Descrição clara do problema encontrado",
-  "solution": "Passo-a-passo da solução aplicada",
-  "stack": ["bash", "jq", "postgresql"],
-  "tags": ["devorq", "container", "docker-rootless"],
-  "project": "devorq_v3",
-  "source_file": "lib/lessons.sh",
-  "validated": false,
-  "validated_at": null,
-  "applied": false,
-  "recurrence_count": 0,
-  "metadata": {}
-}
-```
-
-### Flags de Estado
-
-| Flag | Significado |
-|------|-------------|
-| `validated: false` | Precisa de validação manual ou via Context7 |
-| `validated: true` | Revisada — solução confirmada |
-| `applied: false` | Solução documentada mas ainda não testada |
-| `applied: true` | Solução aplicada com sucesso |
-| `recurrence_count: N` | Quantas vezes o mesmo problema apareceu |
-
----
-
-## 5. Fases de Desenvolvimento
+### Formato de Commits
 
 ```
-FASE 1  ████████████████████  100%  ✅  Core bash + gates + lessons
-FASE 2a ████████████████████  100%  ✅  PostgreSQL schema devorq.*
-FASE 2b ████████████████████  100%  ✅  Sync push/pull Python scripts
-FASE 3  ████████████████████  100%  ✅  Context-Mode (lib/context.sh)
-FASE 4  ████████████████████  100%  ✅  Context7 integration (lib/context7.sh)
-FASE 5  ████████████████████  100%  ✅  Systematic debug (lib/debug.sh)
-FASE 6  ████████████████████  100%  ✅  Documentação (README+INSTALL+EXTRAS)
-FASE 7  ████████████████████  100%  ✅  Self-building (build+upgrade+uninstall)
-FASE 8  ████████████████████  100%  ✅  Meta-stats (devorq stats)
-```
+tipo(escopo): descrição em português
 
-### Fase 1 — Core Funcional ✅
-CLI bash puro funcionando offline.
-
-**Implementado:**
-- `bin/devorq` (CLI source-based, 13 comandos)
-- `lib/lessons.sh` (capture/search/validate/apply, jq fallback)
-- `lib/gates.sh` (7 gates bloqueantes)
-- `lib/compact.sh` (handoff JSON)
-- `lib/vps.sh` (SSH mux check)
-- `lib/context.sh` (ctx_lint, ctx_stats, ctx_pack, ctx_merge, ctx_set, ctx_clear)
-- `lib/context7.sh` (ctx7_check, ctx7_search, ctx7_resolve, ctx7_compare)
-- `lib/debug.sh` (debug::check, devorq::debug, debug::trace, debug::recent_changes)
-- `devorq context` expandido com subcommands (lint|stats|pack|merge|set|clear)
-- `devorq debug [erro]` — workflow interativo 4-phase
-- `devorq build` — executa todos os gates + testes
-
-### Fase 2 — HUB Remoto ✅
-
-#### Fase 2a — PostgreSQL Schema ✅
-- Schema `devorq` criado no VPS srv163217:5433
-- 4 tabelas: lessons, memories, sessions, handoffs
-- pgvector 0.8.2 ativo com ivfflat index
-
-#### Fase 2b — Sync Scripts ✅
-- `scripts/sync-push.py` — local → HUB com json.dumps escape
-- `scripts/sync-pull.py` — HUB → local (downloaded/)
-- `lib/vps.sh` — SSH mux para conexão rápida (~0.3s/comando)
-
-### Fase 3 — Context-Mode ✅
-Compressão de contexto token-aware.
-
-**Implementado:**
-- `lib/context.sh` (ctx_lint, ctx_stats, ctx_pack, ctx_merge, ctx_set, ctx_clear)
-- GATE-3 agora auto-cria context.json e valida com ctx_lint
-- Alertas: >60k tokens = sugere compressão, >120k = contexto crítico
-
-### Fase 4 — Context7 Integration ✅
-Wrapper para consulta de documentação oficial.
-
-**Implementado:**
-- `lib/context7.sh` (ctx7_check, ctx7_search, ctx7_resolve, ctx7_compare)
-- GATE-6 integrado com ctx7_check
-- Fallback: avisa sobre API key missing, nunca bloqueia
-
-### Fase 5 — Systematic Debugging ✅
-Workflow automático para resposta a panes.
-
-**Implementado:**
-- `lib/debug.sh` (debug::check, devorq::debug 4-phase workflow)
-- GATE-7 implementada com debug::check passivo
-
-### Fase 6 — Documentação ✅
-Docs profissionais e testadas.
-
-**Implementado:**
-- `README.md` (visão, quick start, filosofia)
-- `INSTALL.md` (instalação padrão e rápida)
-- `EXTRAS.md` (Context-Mode, Context7, HUB, Self-Building)
-- `TROUBLESHOOTING.md` (problemas comuns + soluções)
-- `SPEC.md` (esta especificação)
-
-### Fase 7 — Self-Building ✅
-O DEVORQ constrói a si mesmo.
-
-**Implementado:**
-- `devorq build` — executa devorq test + gates 1-7
-- `devorq upgrade` — pull latest do repo
-- `devorq uninstall` — remove instalação (preserva lessons)
-- `devorq skill devorq` — skill auto-gerada
-
-### Fase 8 — Meta-Level Improvements ✅
-Crescimento orgânico guiado por uso real.
-
-**Implementado:**
-- `devorq stats` — estatísticas de uso (lessons, gates, contexto)
-- `stats::patterns` — identifica padrões repetitivos
-
----
-
-## 6. Fluxo de Trabalho Completo
-
-```
-[NOVO PROJETO / NOVA SESSÃO]
-         │
-         ▼
-   ┌───────────┐
-   │ devorq    │  Inicializa .devorq/
-   │   init    │
-   └─────┬─────┘
-         │
-         ▼
-   ┌───────────┐
-   │  GATE-1   │  SPEC.md existe?
-   └───┬───┬───┘
-       │   │
-    PASS  FAIL → cria/atualiza SPEC.md → volta
-       │
-       ▼
-   ┌───────────┐
-   │  GATE-2   │  devorq test passa?
-   └───┬───┬───┘
-       │   │
-    PASS  FAIL → corrige estrutura → volta
-       │
-       ▼
-   ┌───────────┐
-   │  GATE-3   │  contexto válido?
-   └───┬───┬───┘
-       │   │
-    PASS  FAIL → devorq context set → volta
-       │
-       ▼
-   ┌───────────┐
-   │  GATE-4   │  lições revisadas?
-   └───┬───┬───┘
-       │   │
-    PASS  FAIL → devorq lessons search → volta
-       │
-       ▼
-   ┌───────────┐
-   │  GATE-6   │  Context7 consultado?
-   └───┬───┬───┘
-       │   │
-    WARN/PASS →无所谓 (nunca bloqueia)
-       │
-       ▼
-   ┌─────────────────┐
-   │   [WORK]        │  ← Implementação
-   │                 │
-   │ lessons capture │  ← Captura nova lição
-   │ lessons search  │  ← Busca lição similar
-   └────────┬────────┘
-            │
-       (se erro)
-            ▼
-   ┌───────────┐
-   │  GATE-7   │  devorq debug
-   │  (reativo)│  (4-phase investigation)
-   └───────────┘
-            │
-            ▼
-   ┌───────────┐
-   │  GATE-5   │  devorq compact
-   └───┬───┬───┘
-       │   │
-    PASS  FAIL → corrige → volta
-       │
-       ▼
-   ┌───────────┐
-   │ sync push  │  → HUB (opcional)
-   └─────┬─────┘
-         │
-         ▼
-   [FIM DA SESSÃO — handoff gerado]
+Exemplos:
+feat(gates): implementa gate 0.5 com validacao foundation
+fix(lessons): corrige captura em projetos novos
+docs(arquitetura): adiciona documentacao da arquitetura
+test(gates): implementa testes e2e para gates
 ```
 
 ---
 
-## 7. Context-Mode
+## 10. Critérios de Qualidade
 
-### Problema
-Context window é limitado. Sessões longas saturam o contexto e o próximo agente perde informações críticas.
+### Code Review (2026-05-13)
 
-### Solução
-Monitoramento proativo do tamanho do contexto com compressão antes que sature.
+| Aspecto | Pontuação | Status |
+|---------|----------|--------|
+| Estrutura | 7/10 | ⚠️ OK |
+| Qualidade de Código | 5/10 | ❌ PRECISA MELHORAR |
+| Performance | 7/10 | ⚠️ OK |
+| Segurança | 6/10 | ❌ PRECISA MELHORAR |
+| Testes | 6/10 | ⚠️ PRECISA MELHORAR |
+| Documentação | 7/10 | ⚠️ OK |
+| Manutenibilidade | 6/10 | ❌ PRECISA MELHORAR |
 
-### Comandos
+**Veredicto:** ⚠️ **APROVADO COM RESSALVAS**
 
-```bash
-devorq context lint    # Valida context.json — campos obrigatórios
-devorq context stats   # Mostra tamanho em chars/tokens
-devorq context pack    # Comprime para handoff minimal
-devorq context merge   # Merge de dois contextos
-devorq context set     # Define campo (project, intent, stack...)
-devorq context clear   # Limpa contexto
-```
+O sistema funciona e atende aos requisitos básicos, mas possui **múltiplas áreas críticas** que precisam de atenção antes de produção.
 
-### Campos do context.json
+### Metas de Qualidade
 
-```json
-{
-  "project": "nome-do-projeto",
-  "intent": "o que estamos fazendo agora",
-  "stack": ["bash", "jq", "postgresql"],
-  "gates_completed": [1, 2, 3],
-  "pending_gates": [4, 5, 6],
-  "last_session": "2026-04-22T04:00:00Z",
-  "pending": "implementar fase 4",
-  "errors": [],
-  "stuck_gates": []
-}
-```
-
-### Limites de Tamanho
-
-| Limite | Ação |
-|--------|------|
-| >60k tokens (240k chars) | `ctx_pack` sugere compressão |
-| >120k tokens | GATE-3 alerta contexto crítico |
+| Métrica | Atual | Meta |
+|---------|-------|------|
+| Testes CI | 38/38 | 38/38 ✅ |
+| Testes E2E | 50+/50+ | 100% |
+| Cobertura | ~40% | > 80% |
+| shellcheck | ⚠️ Warnings | 0 warnings |
+| Code smells | ⚠️ 30+ | < 10 |
+| Vulnerabilidades | 4 críticas | 0 |
 
 ---
 
-## 8. Context7 Integration
+## 11. Próximos Passos
 
-### Problema
-Como saber se a documentação oficial recomenda uma abordagem diferente da que planejamos?
+### Imediato (Esta semana)
+1. Corrigir vulnerabilidades de segurança críticas (#1-#4)
+2. Implementar validação de inputs em todas funções
+3. Padronizar nomenclatura de funções
 
-### Solução
-Consultar a documentação oficial via Context7 antes de implementar. GATE-6 nunca bloqueia — é apenas um aviso.
+### Curto prazo (2 semanas)
+1. Aumentar cobertura de testes para 60%+
+2. Corrigir todos shellcheck warnings
+3. Implementar tratamento de erros consistente
 
-### Configuração
-
-```bash
-# Opção 1: via env
-export OPENAI_API_KEY=***
-
-# Opção 2: via config file
-echo "OPENAI_API_KEY=***" >> ~/.devorq/config
-```
-
-### Comandos
-
-```bash
-devorq context7 check            # Verifica se API está respondendo
-devorq context7 search "<q>"   # Busca docs por query
-devorq context7 resolve "<lib>" # Resolve library ID + busca
-devorq context7 compare "<a>" "<b>"  # Compara 2 libs
-```
-
-### GATE-6 Integration
-
-`devorq gate 6` executa `ctx7_check` automaticamente:
-- API configurada e respondendo → **PASS**
-- API key missing → **WARN** (não bloqueia)
-- API offline → **WARN** (não bloqueia)
+### Médio prazo (1 mês)
+1. Refatorar funções muito longas
+2. Adicionar docblocks em todas funções
+3. Atualizar toda documentação
 
 ---
 
-## 9. Handoff Multi-LLM
+## 12. Recursos
 
-### Problema
-Trocar de LLM no meio de uma sessão perde contexto.
+### Documentação
+- [README.md](file:///home/nandodev/projects/devorq_v3/README.md) - Visão geral
+- [INSTALL.md](file:///home/nandodev/projects/devorq_v3/INSTALL.md) - Guia de instalação
+- [EXTRAS.md](file:///home/nandodev/projects/devorq_v3/EXTRAS.md) - Features extras
 
-### Solução
-Gerar contexto compactado para o próximo agente.
+### Análises
+- [docs/CODE_REVIEW_COMPLETO.md](file:///home/nandodev/projects/devorq_v3/docs/CODE_REVIEW_COMPLETO.md) - Code review completo
+- [docs/COMPORTAMENTO_ESPERADO.md](file:///home/nandodev/projects/devorq_v3/docs/COMPORTAMENTO_ESPERADO.md) - Comportamento esperado
+- [docs/PLANO_CORRECAO_CODE_REVIEW.md](file:///home/nandodev/projects/devorq_v3/docs/PLANO_CORRECAO_CODE_REVIEW.md) - Plano de correção
 
-### Geração
-
-```bash
-devorq compact            # Gera .devorq/state/handoff.json
-devorq gate 5            # Valida que handoff está pronto
-```
-
-### Estrutura do Handoff
-
-```json
-{
-  "handoff": {
-    "project": "devorq_v3",
-    "stack": ["bash", "jq"],
-    "intent": "implementar feature X",
-    "gates_completed": [1, 2, 3, 4, 6],
-    "pending_gates": [5],
-    "untracked_files": [],
-    "timestamp": "2026-04-22T14:30:00Z"
-  }
-}
-```
-
-### Recepção
-
-```bash
-# No novo agente:
-devorq context merge handoff.json
-```
+### Testes
+- [scripts/ci-test.sh](file:///home/nandodev/projects/devorq_v3/scripts/ci-test.sh) - Testes CI
+- [e2e-tests/](file:///home/nandodev/projects/devorq_v3/e2e-tests/) - Testes E2E
 
 ---
 
-## 10. SSH Mux (Performance)
+## 13. Changelog
 
-Conexões com VPS HUB usam SSH multiplexing para speed.
+### v3.6.0 (2026-05-13)
+- ✅ Refatoração modular completa (10 módulos em lib/commands/)
+- ✅ Sistema de testes E2E com Playwright
+- ✅ Diretrizes de desenvolvimento (.trae/project_rules.md)
+- ✅ Code review completo realizado
+- 🔄 Correções de code review em andamento
 
-```
-Primeira conexão:  ~2-3s (handshake completo)
-Conexões siguientes: ~0.3s (via mux socket)
-```
+### v3.5.0 (2026-05-09)
+- ✅ Sistema de gates expandido (GATE-0, GATE-0.5)
+- ✅ Skills do ecossistema
+- ✅ Project Foundation docs
 
-```bash
-# Config
-MUX_SOCK="/tmp/devorq-ssh-mux"     # Socket do mux
-ControlPersist=600                 # Mantém conexão por 600s
+### v3.4.0 (2026-05-08)
+- ✅ AUTO mode (story-by-story)
+- ✅ UNIFY phase
+- ✅ DDD integration
 
-# Testar
-devorq vps check
-```
+### v3.3.0 (2026-05-07)
+- ✅ VPS HUB integration
+- ✅ Sync push/pull
+- ✅ PostgreSQL schema
 
----
+### v3.2.0 (2026-05-06)
+- ✅ Lessons learned system
+- ✅ Context7 integration
+- ✅ Systematic debug
 
-## 11. Debugging Sistemático (GATE-7)
-
-Workflow 4-fases quando algo quebra:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  PHASE 1: CAPTURE                                        │
-│  Coleta evidências: output, logs, estado do sistema      │
-│  → debug::check (execução automática em cada gate)      │
-├─────────────────────────────────────────────────────────┤
-│  PHASE 2: INVESTIGATE                                    │
-│  Identifica causa raiz via devorq debug interativo      │
-│  → desk::trace, debug::recent_changes                    │
-├─────────────────────────────────────────────────────────┤
-│  PHASE 3: HYPOTHESIZE                                    │
-│  Formula hipótese: "A hipótese explica TODO o bug?"     │
-│  → Se 3+ fixes falharem = questionar arquitetura        │
-├─────────────────────────────────────────────────────────┤
-│  PHASE 4: FIX                                           │
-│  Aplica fix mínimo verificado                            │
-│  → volta ao gate que falhou                              │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Regra de Ouro:**
-> **NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST**
+### v3.1.0 (2026-05-05)
+- ✅ Core CLI
+- ✅ 7 gates bloqueantes
+- ✅ Handoff system
 
 ---
 
-## 12. Definições
-
-| Termo | Significado |
-|-------|-------------|
-| **DEVORQ Core** | Framework bash puro (este repo) |
-| **DEV-MEMORY** | HUB Laravel + PostgreSQL (repo separado) |
-| **GATE** | Ponto de verificação bloqueante |
-| **Lesson** | Problema + solução documentados |
-| **Handoff** | Contexto comprimido para próxima sessão |
-| **HUB** | Camada de persistência remota |
-| **Context-Mode** | Compressão de contexto token-aware |
-| **SSH Mux** | SSH multiplexing para conexões rápidas |
-| **Context7** | API de consulta de documentação oficial |
-
----
-
-## 13. Convenções
-
-### Commits
-
-```
-type(scope): description
-
-Types:    feat | fix | docs | style | refactor | test | chore
-Scopes:   core | lessons | gates | compact | vps | hub | context | debug | docs
-```
-
-### Estrutura de Branch
-
-```
-main              → produção
-feature/X         → nova feature
-fix/X             → correção
-hub/dev-memory    → integração com dev-memory-laravel
-```
-
-### Líquidação de Issues
-
-```
-closes #N
-fixes #N
-```
-
----
-
-## 14. Testes
-
-```bash
-# Validação de sintaxe shell
-bash -n bin/devorq && bash -n lib/*.sh
-
-# Teste de estrutura
-devorq test
-
-# Teste de gates
-devorq gate 1 && devorq gate 2 && devorq gate 3
-
-# Teste de lessons
-devorq lessons capture "test" "problem" "solution"
-devorq lessons search "test"
-devorq lessons validate
-
-# Teste de handoff
-devorq compact
-
-# Teste de VPS
-devorq vps check
-
-# Self-build completo
-devorq build
-```
-
----
-
-## 15. Commit Convention
-
-Formato obrigatório para todos os commits:
-
-```
-escopo(fase): descrição detalhada
-```
-
-### Regras
-
-| Regra | Descrição |
-|-------|-----------|
-| **Idioma** | Português do Brasil |
-| **Sem emojis** | Apenas texto |
-| **Escopo obrigatório** | Área/arquivo: `auto`, `gates`, `lessons`, `docs`, `lib`, `bin`, `readme`, `spec` |
-| **Fase opcional** | Se relacionado a PRD: `(feat-v4-001)`, senão `(core)` |
-| **Descrição clara** | Verbo no presente + o que foi feito |
-
-### Exemplos
-
-```
-auto(feat-v4-001): adiciona modo hibrido tracker para stories do prd
-auto(feat-v4-002): adiciona comando discuss para decisoes de implementacao
-gates(core): refatora gate 3 com suporte a context files enhanced
-docs(readme): atualiza secao quick start com devorq auto
-lessons(core): implementa captura de licoes com validacao context7
-bin(core): adiciona comando auto com suporte a --continue
-```
-
-### Escopos Válidos
-
-| Escopo | Uso |
-|--------|-----|
-| `bin` | Changes em bin/devorq |
-| `lib` | Changes em qualquer lib/*.sh |
-| `auto` | Sistema AUTO mode |
-| `gates` | Sistema de gates |
-| `lessons` | Sistema de lições |
-| `context` | Context files e management |
-| `docs` | Documentação |
-| `readme` | README.md |
-| `spec` | SPEC.md |
-| `skills` | Skills do agente |
-| `prd` | prd.json e stories |
-
----
-
-**Repo:** https://github.com/nandinhos/devorq_v3
-**Última atualização:** 2026-04-25 03:30 BRT
-**Versão:** 3.5.0
-**Status:** 100% — Zero pendências
+*Documento mantido sob controle de versão*
+*Última atualização: 2026-05-13*

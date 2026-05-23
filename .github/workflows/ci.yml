@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev, master]
   pull_request:
-    branches: [main]
+    branches: [main, dev, master]
 
 jobs:
   test:
@@ -47,5 +47,7 @@ jobs:
         run: |
           which shellcheck && bash -c 'shellcheck --version' || echo "shellcheck not installed — skipping"
           if which shellcheck >/dev/null 2>&1; then
-            shellcheck bin/devorq lib/*.sh scripts/*.sh skills/*/scripts/*.sh 2>&1 || true
+            shellcheck bin/devorq lib/*.sh scripts/*.sh skills/*/scripts/*.sh 2>&1
+          else
+            echo "ShellCheck not available — skipping lint"
           fi

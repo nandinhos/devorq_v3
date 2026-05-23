@@ -130,12 +130,12 @@ devorq::auto::generate_prd() {
 
 devorq::auto::next_story() {
     local prd="$1/prd.json"
-    jq -r '.stories | sort_by(.priority) | .[] | select(.passes==false) | @json' "$prd" 2>/dev/null | head -1
+    jq -c '.stories | sort_by(.priority // 999) | map(select((.passes != true) and (.status != "done" and .status != "complete"))) | .[0] // empty' "$prd" 2>/dev/null
 }
 
 devorq::auto::pending_count() {
     local prd="$1/prd.json"
-    jq '.stories | map(select(.passes==false)) | length' "$prd" 2>/dev/null
+    jq '.stories | map(select((.passes != true) and (.status != "done" and .status != "complete"))) | length' "$prd" 2>/dev/null
 }
 
 devorq::auto::total_count() {
@@ -145,7 +145,7 @@ devorq::auto::total_count() {
 
 devorq::auto::completed_count() {
     local prd="$1/prd.json"
-    jq '.stories | map(select(.passes==true)) | length' "$prd" 2>/dev/null
+    jq '.stories | map(select(.passes == true or .status == "done" or .status == "complete")) | length' "$prd" 2>/dev/null
 }
 
 devorq::auto::mark_pass() {
@@ -163,6 +163,7 @@ with open('$prd') as f:
 for s in data['stories']:
     if s['id'] == '$story_id':
         s['passes'] = True
+        s['status'] = 'done'
         break
 with open('$tmp', 'w') as f:
     json.dump(data, f, indent=2)
@@ -190,7 +191,7 @@ devorq::auto::show_status() {
     echo "-----------------------------------------------------------"
 
     if command -v jq >/dev/null 2>&1; then
-        jq -r '.stories | sort_by(.priority) | .[] | "[", .priority, "] ", .title, " [", .passes, "]" ' "$project/prd.json" 2>/dev/null
+        jq -r '.stories | sort_by(.priority // 999) | .[] | "[", (.priority // 0), "] ", .title, " [", (.passes // false), "]" ' "$project/prd.json" 2>/dev/null
     fi
 }
 
@@ -208,7 +209,7 @@ devorq::auto::show_story() {
     echo "   Priority: $priority"
     echo "   Desc: $desc"
     echo "   Criteria:"
-    echo "$story_json" | jq -r '.acceptanceCriteria[] | "     - \(.)"' 2>/dev/null || true
+    echo "$story_json" | jq -r '(.acceptanceCriteria // .acceptance_criteria // [])[] | "     - \(.)"' 2>/dev/null || true
 }
 
 devorq::auto::ensure_branch() {

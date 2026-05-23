@@ -3,7 +3,7 @@
 > **Framework bash puro** para metodologia de desenvolvimento sistemático.
 > Captura lições aprendidas, impõe gates bloqueantes, gera handoffs consistentes.
 
-**Versão:** 3.5.0 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
+**Versão:** 3.6.0 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
 
 ---
 
@@ -48,23 +48,43 @@ devorq sync push
 
 ---
 
-## Os 7 Gates (Bloqueantes)
+## Os Gates (Bloqueantes)
 
 ```
-┌────────┬────────────────────────┬───────────────────────────────────┐
-│ GATE   │ NOME                    │ CRITÉRIO                          │
-├────────┼────────────────────────┼───────────────────────────────────┤
-│  G-1   │ Spec Exists             │  SPEC.md existe e não vazio       │
-│  G-2   │ Tests Pass              │  devorq test passa                │
-│  G-3   │ Context Documented      │  devorq context mostra estado     │
-│  G-4   │ Lessons Reviewed        │  lições relevantes encontradas    │
-│  G-5   │ Handoff Ready            │  devorq compact gera JSON válido  │
-│  G-6   │ Context7 Checked         │  docs consultadas (nunca bloqueia)│
-│  G-7   │ Systematic Debug         │  se erro: devorq debug primeiro   │
-└────────┴────────────────────────┴───────────────────────────────────┘
+┌────────┬──────────────────────────────────────┬───────────────────────────────────────────────┐
+│ GATE   │ NOME                                  │ CRITÉRIO                                      │
+├────────┼──────────────────────────────────────┼───────────────────────────────────────────────┤
+│  G-0   │ Exploration (opcional)               │  env-context + DDD keywords                   │
+│  G-0.5 │ Project Foundation (NOVO!)           │  5W2H, Premissas, Riscos, Requisitos OK     │
+│  G-1   │ Spec Exists                          │  SPEC.md existe e não vazio                  │
+│  G-2   │ Tests Pass                            │  devorq test passa                           │
+│  G-3   │ Context Documented                   │  devorq context mostra estado                  │
+│  G-4   │ Lessons Reviewed                     │  lições relevantes encontradas                 │
+│  G-5   │ Handoff Ready                        │  devorq compact gera JSON válido              │
+│  G-6   │ Context7 Checked                      │  docs consultadas (nunca bloqueia)            │
+│  G-7   │ Systematic Debug                      │  se erro: devorq debug primeiro              │
+└────────┴──────────────────────────────────────┴───────────────────────────────────────────────┘
 ```
 
 **Regra:** Vermelho = para e corrige. Verde = segue em frente.
+
+### GATE-0.5 — Project Foundation
+
+Antes de qualquer implementação, o DEVORQ valida **5 documentos de contexto de projeto**:
+
+| Doc | Propósito |
+|-----|-----------|
+| `5w2h.json` | Análise 5W2H completa |
+| `premissas.json` | Premissas e suposições |
+| `riscos.json` | Riscos com severidade e mitigação |
+| `requisitos.json` | Requisitos funcionais/não-funcionais |
+| `restricoes.json` | Restrições do projeto |
+
+```bash
+devorq foundation status     # Ver status
+devorq foundation create    # Criar docs (wizard)
+devorq foundation validate  # Validar (GATE-0.5)
+```
 
 ---
 
@@ -394,3 +414,6 @@ FASE 9  ████████████████████  100%  ✅ 
 | [EXTRAS.md](EXTRAS.md) | Context-Mode, Context7, HUB, Self-Building |
 | [INSTALL.md](INSTALL.md) | Guia de instalação |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Problemas e soluções |
+| [docs/SYSTEM_LEVANTAMENTO.md](docs/SYSTEM_LEVANTAMENTO.md) | Anexo: levantamento longo (fluxos ASCII, gates, tecnologias) |
+
+Para diagramas, auditoria do sistema ou integração com outra documentação técnica, use o anexo acima; o README e o SPEC cobrem o uso diário e a versão canônica.
