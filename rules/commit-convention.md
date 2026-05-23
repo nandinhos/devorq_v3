@@ -1,49 +1,68 @@
-# Commit Convention — DEVORQ v3.6+
+# Commit Convention — DEVORQ v3.6.5+
 
 **Formato:**
 ```
-type(scope): descrição
+escopo(fase): descrição (detalhamento)
 ```
 
-**Types válidos:**
-
-| Type | Uso |
-|------|-----|
-| `feat` | Funcionalidade nova |
-| `fix` | Correção de bug |
-| `refactor` | Refatoração sem mudança de comportamento |
-| `docs` | Documentação |
-| `test` | Testes |
-| `style` | Formatação, lint (não afeta código) |
-| `perf` | Performance |
-| `chore` | Tarefas gerais (deps, config, CI) |
-
-**Scopes DEVORQ:**
-
+**Exemplo:**
 ```
-core | lessons | gates | compact | vps | hub | context | debug | docs | bdd | unify | auto | review | spec | gate0 | mode
+feat(bdd): adiciona validação BDD Given/When/Then (lib/spec.sh migrado)
+fix(livewire): corrige Alpine duplicado em x-data (remove CDN inline)
+refactor(core): extrai devorq::verify para lib/visual.sh
+docs(gates): documenta GATE-6 manual verification gate
 ```
 
-**Exemplos:**
-```
-feat(bdd): adiciona lib/spec.sh com validacao BDD Given/When/Then
-feat(unify): adiciona lib/unify.sh e fase de fechamento
-feat(auto): adiciona devorq-mode e devorq-auto com loop story-by-story
-feat(review): adiciona code review multi-agente com scoring 0-100
-feat(gate0): adiciona GATE-0 suite com scope-guard e ddd-deep-domain
-gates(core): adiciona GATE-5.5 nao bloqueante para UNIFY check
-docs(bdd-template): adiciona BDD-TEMPLATE.md com template Given/When/Then
-fix(lessons): corrige infer_skill para paths com underscore
-refactor(core): extrai lib/environment.sh de devorq-init
-chore(deps): atualiza jq para 1.7+
-```
-
-**Regras de aplicação (GATE-5+):**
-- Commits são feitos **após cada story verificada**, não no fim da sprint
-- Cada commit deve representar **uma unidade lógica de mudança**
-- Mensagem deve ser atômica: `type(scope): ação exata no que foi feito`
+**Regras:**
+- Sem emojis
+- Sem Co-Authored-By
+- Em português do Brasil
+- Escopo deve ser um dos escopos válidos
+- Fase deve ser uma das fases válidas
 - NUNCA usar commits do tipo "WIP", "temp", "debug"
 
-**Recursos:**
-- [Conventional Commits](https://www.conventionalcommits.org/)
-- [BDD (Given-When-Then)](https://cucumber.io/docs/gherkin/)
+**Escopos válidos:**
+
+| Escopo | Uso |
+|--------|-----|
+| `core` | Core do DEVORQ, libs principais |
+| `models` | Models Eloquent, migrations |
+| `services` | Services, repositories |
+| `livewire` | Componentes Livewire |
+| `notifications` | Notifications, emails |
+| `routes` | Rotas, controllers |
+| `config` | Configurações, environment |
+| `database` | Schema, migrations |
+| `tests` | Testes (Unit, Feature, E2E/Playwright) |
+| `bdd` | Validação BDD, Gherkin, specs |
+| `gates` | Gates DEVORQ |
+| `unify` | Fase UNIFY |
+| `docs` | Documentação |
+| `debug` | Debug sistemático |
+| `spec` | SPEC.md, requisitos |
+| `lessons` | Lições aprendidas |
+| `compact` | Handoff, compact |
+| `vps` | VPS, infraestrutura |
+| `hub` | HUB, sincronização |
+| `context` | Contexto, estado |
+
+**Fases válidas:**
+
+| Fase | Uso |
+|------|-----|
+| `impl` | Implementação (default) |
+| `test` | Testes |
+| `verify` | Verificação visual |
+| `docs` | Documentação |
+| `unify` | UNIFY |
+| `debug` | Debug |
+| `fix` | Correção |
+| `refactor` | Refatoração |
+
+**Quando commitar:**
+- Após `devorq verify` passar (100% verde)
+- NUNCA commitar com teste vermelho
+- Um commit por story (unidade lógica)
+
+**Trigger automático de debug:**
+Quando teste falha (Playwright, PHPUnit), systematic-debugging entra em ação automaticamente — ver `rules/visual-verification.md`

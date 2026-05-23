@@ -2,6 +2,50 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.6.5] — 2026-05-21
+
+### Added
+- **lib/visual.sh** — Verificação visual com Playwright + manual
+  - `devorq::verify::run()` executa gates + verificação visual
+  - `devorq::verify::playwright()` executa suite E2E
+  - `devorq::verify::manual()` pede confirmação manual
+  - `devorq::verify::trigger_debug()` trigger systematic-debugging quando falha
+- **lib/commit.sh** — Commit interativo com convenção
+  - `devorq::cmd_commit()` com formato `escopo(fase): descrição (detalhamento)`
+  - Suporte a `--story`, `--scope`, `--phase`, `--message`, `--push`, `--dry-run`
+- **scripts/debug-systematic.sh** — Trigger automático de debug sistemático
+  - Phase 0: Classify failure mode (CAT A/B/C/D)
+  - Phase 1: Root cause investigation
+  - Phase 2: Pattern analysis
+  - Phase 3: Context7 validation
+  - Phase 4: Implementation
+- **rules/visual-verification.md** — Documentação do gate de verificação visual
+- **`devorq verify`** — Novo comando (Playwright ou manual)
+- **`devorq commit`** — Novo comando (interativo com convenção)
+
+### Changed
+- **lib/auto.sh** — Removido commit automático após cada story
+  - `devorq::auto::git_commit()` removido das linhas 319 e 400
+  - Substituído por `devorq::verify::run()` + hint de commit manual
+  - `devorq auto --continue` agora pede confirmação antes de commitar
+- **rules/commit-convention.md** — Formato atualizado
+  - Anterior: `type(scope): descrição`
+  - Novo: `escopo(fase): descrição (detalhamento)`
+  - 21 escopos válidos, 8 fases válidas
+  - Sem emojis, sem co-autoria, pt-BR
+- **bin/devorq** — Adicionados comandos `verify` e `commit`
+- **bin/devorq** — Carrega `lib/visual.sh` e `lib/commit.sh` no bootstrap
+
+### Fixed
+- **Commit automático removido** — Developer agora commita manualmente após verificação visual
+- **systematic-debugging trigger** — Quando teste falha (vermelho), debug entra em ação automaticamente
+
+### Removed
+- **`devorq::auto::git_commit()`** — Não existe mais (era automático)
+- **Commits durante implementação** — Não há mais múltiplos commits durante a tarefa
+
+---
+
 ## [3.6.4] — 2026-05-20
 
 ### Added

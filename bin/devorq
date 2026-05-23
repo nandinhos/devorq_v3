@@ -31,7 +31,7 @@ set -euo pipefail
 
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION="3.6.4"
+DEVORQ_VERSION="3.6.5"
 
 # HELPERS: Carregar funcoes utilitarias
 if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
@@ -53,6 +53,16 @@ if [ -d "${DEVORQ_LIB}/commands" ]; then
             source "$module"
         fi
     done
+fi
+
+# VISUAL: Verificação visual (Playwright + manual)
+if [ -f "${DEVORQ_LIB}/visual.sh" ]; then
+    source "${DEVORQ_LIB}/visual.sh"
+fi
+
+# COMMIT: Commit interativo com convenção
+if [ -f "${DEVORQ_LIB}/commit.sh" ]; then
+    source "${DEVORQ_LIB}/commit.sh"
 fi
 
 # jq no ~/bin (instalado via curl sem root)
@@ -120,6 +130,8 @@ COMANDOS:
   vps check                  Testar conexão com VPS HUB
   context7 install           Instalar Context7 (cli|mcp|api)
   debug [erro]               Workflow debug sistemático (4 fases)
+  verify [--playwright|--manual]  Verificação visual obrigatória (Playwright ou manual)
+  commit [--story <id>]       Commit manual com convenção
   build                      Executa devorq test + gates 1-7 (Self-Building)
   stats                      Mostra estatísticas de uso (lessons, gates, contexto)
 
@@ -1445,6 +1457,8 @@ main() {
         unify)     shift; devorq::cmd_unify "$@" ;;
         mode)      shift; devorq::cmd_mode "$@" ;;
         auto)      shift; devorq::cmd_auto "$@" ;;
+        verify)    shift; devorq::cmd_verify "$@" ;;
+        commit)    shift; devorq::cmd_commit "$@" ;;
         review)    shift; devorq::cmd_review "$@" ;;
         foundation) shift; devorq::cmd_foundation "$@" ;;
         sync)      shift; devorq::cmd_sync "$@" ;;

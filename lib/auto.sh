@@ -314,19 +314,23 @@ devorq::auto::run() {
         devorq::auto::show_story "$story_json"
 
         if devorq::auto::execute_flow "$story_title"; then
-            if devorq::auto::verify "$project_root"; then
-                devorq::auto::success "Verification passed"
-                devorq::auto::git_commit "$project_root" "$story_id" "$story_title"
-                devorq::auto::mark_pass "$project_root" "$story_id"
-                devorq::auto::success "Story completa: $story_id"
+            # Executa devorq build + verificação visual (Playwright ou manual)
+            if devorq::verify::run "auto" "" "false"; then
+                devorq::auto::success "Verificação visual passou"
+                devorq::info ""
+                devorq::info "Próximo passo — commit manual:"
+                devorq::info "  devorq commit --story $story_id"
+                devorq::info ""
+                devorq::info "Após commitar, execute: devorq auto --continue"
+                devorq::auto::success "Story aguardando commit: $story_id"
 
                 local done total
                 done=$(devorq::auto::completed_count "$project_root")
                 total=$(devorq::auto::total_count "$project_root")
                 devorq::auto::info "Progress: $done/$total stories"
             else
-                devorq::auto::fail "Verification failed"
-                echo "Press Enter to continue or Ctrl+C to abort"
+                devorq::auto::fail "Verificação visual falhou"
+                echo "Press Enter para continuar (investigar erro) ou Ctrl+C para abortar"
                 read -r _ < /dev/stdin
             fi
         else
@@ -396,8 +400,23 @@ devorq::auto::run_continue() {
 
     devorq::auto::info "Marcando como done: $story_id - $story_title"
 
-    if devorq::auto::verify "$project_root"; then
-        devorq::auto::git_commit "$project_root" "$story_id" "$story_title"
+    # Executa devorq build + verificação visual
+    if devorq::verify::run "auto" "$story_id" "false"; then
+        devorq::auto::success "Verificação visual passou"
+
+        devorq::info ""
+        devorq::info "Story pronta para commit manual:"
+        devorq::info "  devorq commit --story $story_id"
+        devorq::info ""
+        echo -n "Confirmar commit automático (ou Ctrl+C para manual)? [Y/n]: "
+        local confirm
+        read -r confirm
+        confirm="${confirm:-Y}"
+
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            devorq::commit::from_story "$project_root" "$story_id"
+        fi
+
         devorq::auto::mark_pass "$project_root" "$story_id"
         devorq::auto::success "Story completa: $story_id"
 
@@ -407,7 +426,8 @@ devorq::auto::run_continue() {
         pending=$(devorq::auto::pending_count "$project_root")
         devorq::auto::info "Progress: $done/$total stories ($pending pending)"
     else
-        devorq::auto::fail "Verification failed. Corrija e tente novamente."
+        devorq::auto::fail "Verificação visual falhou"
+        devorq::info "Após corrigir, execute: devorq auto --continue"
         return 1
     fi
 }
