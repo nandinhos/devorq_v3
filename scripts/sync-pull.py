@@ -28,49 +28,7 @@ EXIT_INVALID_ARGS = 2
 EXIT_NOT_FOUND = 3
 EXIT_VALIDATION_FAILED = 4
 
-# Config - carrega de arquivo seguro se existir
-def load_config():
-    """Carrega configuração de arquivo seguro."""
-    config_file = Path.home() / ".config" / "devorq" / "config"
-    
-    if config_file.exists():
-        # Verificar permissões (deve ser 600)
-        mode = config_file.stat().st_mode & 0o777
-        if mode & 0o077:
-            print("[WARN] Config file has insecure permissions", file=sys.stderr)
-        else:
-            with open(config_file) as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith('#'):
-                        if '=' in line:
-                            key, _, value = line.partition('=')
-                            os.environ[key.strip()] = value.strip()
-
-# Carregar config
-load_config()
-
-# Validação de path
-def validate_path(path, base_dir):
-    """
-    Valida que path está dentro de base_dir.
-    Retorna path normalizado ou lança ValueError.
-    """
-    try:
-        real_path = Path(path).resolve()
-        real_base = Path(base_dir).resolve()
-        
-        # Verificar se está dentro
-        try:
-            real_path.relative_to(real_base)
-        except ValueError:
-            raise ValueError(f"Path {path} is outside {base_dir}")
-        
-        return real_path
-    except Exception as e:
-        raise ValueError(f"Invalid path: {e}")
-
-# Config (de variáveis de ambiente ou defaults)
+# Config
 VPS_HOST = os.environ.get("DEVORQ_VPS_HOST", "187.108.197.199")
 VPS_PORT = os.environ.get("DEVORQ_VPS_PORT", "6985")
 VPS_USER = os.environ.get("DEVORQ_VPS_USER", "root")
@@ -199,9 +157,6 @@ def download_lessons(project_filter=None):
 
 def save_lessons(lessons, output_dir):
     """Salva lessons baixadas em JSON files."""
-    # Validar output_dir antes de criar
-    base_dir = Path(output_dir).parent.resolve()
-    validate_path(output_dir, str(base_dir))
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
     saved = 0

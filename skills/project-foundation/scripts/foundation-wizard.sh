@@ -10,7 +10,6 @@ set -euo pipefail
 
 MODE="${1:-all}"
 FOUNDATION_DIR="${DEVORQ_FOUNDATION_DIR:-.devorq/state}"
-# shellcheck disable=SC2034
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
@@ -37,10 +36,10 @@ ask() {
     local result
 
     if [ -n "$default" ]; then
-        read -r -p "$(echo -e "${CYAN}[?]${RESET} ${prompt} [${default}]: ")" result
+        read -p "$(echo -e "${CYAN}[?]${RESET} ${prompt} [${default}]: ")" result
         result="${result:-$default}"
     else
-        read -r -p "$(echo -e "${CYAN}[?]${RESET} ${prompt}: ")" result
+        read -p "$(echo -e "${CYAN}[?]${RESET} ${prompt}: ")" result
     fi
 
     echo "$result"
@@ -59,7 +58,7 @@ ask_array() {
 
     local item
     while true; do
-        read -r -p "$(echo -e "${CYAN}[+]${RESET} Item: ")" item
+        read -p "$(echo -e "${CYAN}[+]${RESET} Item: ")" item
         if [ -z "$item" ]; then
             break
         fi
@@ -90,7 +89,7 @@ wizard_5w2h() {
     echo ""
     who_desc=$(ask "WHO — Para quem é este projeto?")
     echo -e "${CYAN}---${RESET}"
-    read -r -p "$(echo -e "${CYAN}[+]${RESET} Stakeholders (Enter para finalizar): ")" who_stake
+    read -p "$(echo -e "${CYAN}[+]${RESET} Stakeholders (Enter para finalizar): ")" who_stake
 
     local when_desc when_timeline
     echo ""
@@ -115,12 +114,12 @@ wizard_5w2h() {
     # Converter vírgulas em array JSON
     local examples_json="[]"
     if [ -n "$what_ex" ]; then
-        examples_json=$(echo "$what_ex" | jq -R 'split(",") | map(gsub("^\\s+|\\s+$"; ""))' 2>/dev/null || echo "[\"$what_ex\"]")
+        examples_json=$(echo "$what_ex" | jq -R 'split(",")' 2>/dev/null || echo "[\"$what_ex\"]")
     fi
 
     local stakeholders_json="[]"
     if [ -n "$who_stake" ]; then
-        stakeholders_json=$(echo "$who_stake" | jq -R 'split(",") | map(gsub("^\\s+|\\s+$"; ""))' 2>/dev/null || echo "[\"$who_stake\"]")
+        stakeholders_json=$(echo "$who_stake" | jq -R 'split(",")' 2>/dev/null || echo "[\"$who_stake\"]")
     fi
 
     # Gerar JSON
@@ -215,10 +214,10 @@ wizard_premissas() {
     local item owner
     local id=1
     while true; do
-        read -r -p "$(echo -e "${CYAN}[+]${RESET} Premissa: ")" item
+        read -p "$(echo -e "${CYAN}[+]${RESET} Premissa: ")" item
         [ -z "$item" ] && break
 
-        read -r -p "$(echo -e "${CYAN}[+]${RESET}   Owner (opcional): ")" owner
+        read -p "$(echo -e "${CYAN}[+]${RESET}   Owner (opcional): ")" owner
 
         local pre_json
         if command -v jq &>/dev/null; then
@@ -250,7 +249,7 @@ wizard_premissas() {
     if command -v jq &>/dev/null; then
         arr_json=$(printf '%s\n' "${premissas[@]}" | jq -s '.')
     else
-        arr_json=$(IFS=,; echo "[${premissas[*]}]" | sed 's/\s*,\s*/,/g')
+        arr_json=$(IFS=,; echo "[${premissas[*]}]")
     fi
 
     local out="${FOUNDATION_DIR}/premissas.json"
@@ -294,25 +293,25 @@ wizard_riscos() {
     local id=1
     while true; do
         echo -e "${CYAN}[+] Risco #${id}${RESET}"
-        read -r -p "  Descrição: " item
+        read -p "  Descrição: " item
         [ -z "$item" ] && break
 
         echo "  Severity: $(IFS=,; echo "${severities[*]}")"
-        read -r -p "  Severity [MEDIUM]: " severity
+        read -p "  Severity [MEDIUM]: " severity
         severity="${severity:-MEDIUM}"
 
         echo "  Probability: $(IFS=,; echo "${severities[*]}")"
-        read -r -p "  Probability [MEDIUM]: " probability
+        read -p "  Probability [MEDIUM]: " probability
         probability="${probability:-MEDIUM}"
 
         echo "  Impact: $(IFS=,; echo "${severities[*]}")"
-        read -r -p "  Impact [MEDIUM]: " impact
+        read -p "  Impact [MEDIUM]: " impact
         impact="${impact:-MEDIUM}"
 
-        read -r -p "  Mitigação: " mitigation
-        read -r -p "  Contingency (plano B): " contingency
+        read -p "  Mitigação: " mitigation
+        read -p "  Contingency (plano B): " contingency
         echo "  Status: $(IFS=,; echo "${statuses[*]}")"
-        read -r -p "  Status [OPEN]: " status
+        read -p "  Status [OPEN]: " status
         status="${status:-OPEN}"
 
         local risk_json
@@ -352,7 +351,7 @@ wizard_riscos() {
     if command -v jq &>/dev/null; then
         arr_json=$(printf '%s\n' "${riscos[@]}" | jq -s '.')
     else
-        arr_json=$(IFS=,; echo "[${riscos[*]}]" | sed 's/\s*,\s*/,/g')
+        arr_json=$(IFS=,; echo "[${riscos[*]}]")
     fi
 
     local out="${FOUNDATION_DIR}/riscos.json"
@@ -398,23 +397,23 @@ wizard_requisitos() {
     local id=1
     while true; do
         echo -e "${CYAN}[+] Requisito #${id}${RESET}"
-        read -r -p "  Título: " title
+        read -p "  Título: " title
         [ -z "$title" ] && break
 
-        read -r -p "  Descrição: " desc
+        read -p "  Descrição: " desc
 
         echo "  Tipo: $(IFS=,; echo "${types[*]}")"
-        read -r -p "  Tipo [FUNCTIONAL]: " type
+        read -p "  Tipo [FUNCTIONAL]: " type
         type="${type:-FUNCTIONAL}"
 
         echo "  Prioridade: $(IFS=,; echo "${priorities[*]}")"
-        read -r -p "  Prioridade [MUST]: " priority
+        read -p "  Prioridade [MUST]: " priority
         priority="${priority:-MUST}"
 
-        read -r -p "  Source: " source
+        read -p "  Source: " source
 
         echo "  Status: $(IFS=,; echo "${req_statuses[*]}")"
-        read -r -p "  Status [DRAFT]: " status
+        read -p "  Status [DRAFT]: " status
         status="${status:-DRAFT}"
 
         echo ""
@@ -422,7 +421,7 @@ wizard_requisitos() {
         criteria=()
         local crit
         while true; do
-            read -r -p "    Critério: " crit
+            read -p "    Critério: " crit
             [ -z "$crit" ] && break
             criteria+=("$crit")
         done
@@ -473,7 +472,7 @@ wizard_requisitos() {
     if command -v jq &>/dev/null; then
         arr_json=$(printf '%s\n' "${requisitos[@]}" | jq -s '.')
     else
-        arr_json=$(IFS=,; echo "[${requisitos[*]}]" | sed 's/\s*,\s*/,/g')
+        arr_json=$(IFS=,; echo "[${requisitos[*]}]")
     fi
 
     local out="${FOUNDATION_DIR}/requisitos.json"
@@ -518,17 +517,17 @@ wizard_restricoes() {
     local id=1
     while true; do
         echo -e "${CYAN}[+] Restrição #${id}${RESET}"
-        read -r -p "  Descrição: " desc
+        read -p "  Descrição: " desc
         [ -z "$desc" ] && break
 
         echo "  Tipo: $(IFS=,; echo "${types[*]}")"
-        read -r -p "  Tipo [TECHNICAL]: " type
+        read -p "  Tipo [TECHNICAL]: " type
         type="${type:-TECHNICAL}"
 
-        read -r -p "  Source/Origem: " source
+        read -p "  Source/Origem: " source
 
         echo "  Flexibilidade: $(IFS=,; echo "${flexibilities[*]}")"
-        read -r -p "  Flexibilidade [FIXED]: " flexibility
+        read -p "  Flexibilidade [FIXED]: " flexibility
         flexibility="${flexibility:-FIXED}"
 
         local rest_json
@@ -563,7 +562,7 @@ wizard_restricoes() {
     if command -v jq &>/dev/null; then
         arr_json=$(printf '%s\n' "${restricoes[@]}" | jq -s '.')
     else
-        arr_json=$(IFS=,; echo "[${restricoes[*]}]" | sed 's/\s*,\s*/,/g')
+        arr_json=$(IFS=,; echo "[${restricoes[*]}]")
     fi
 
     local out="${FOUNDATION_DIR}/restricoes.json"
@@ -625,6 +624,7 @@ main() {
             ;;
         *)
             error "Modo inválido: $MODE"
+            error "Use: 5w2h | premissas | riscos | requisitos | restricoes | all"
             ;;
     esac
 }

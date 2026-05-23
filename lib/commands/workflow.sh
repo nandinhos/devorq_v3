@@ -152,22 +152,13 @@ devorq::cmd_gate() {
         return 0
     fi
 
-    # shellcheck source=/dev/null
     source "$lib_gate"
     
     local rv=0
     case "$gate_num" in
-        0)   gate_0;   rv=$? ;;
         0.5) gate_0_5; rv=$? ;;
-        1)   gate_1;   rv=$? ;;
-        2)   gate_2;   rv=$? ;;
-        3)   gate_3;   rv=$? ;;
-        4)   gate_4;   rv=$? ;;
-        5)   gate_5;   rv=$? ;;
         5.5) gate_5_5; rv=$? ;;
-        6)   gate_6;   rv=$? ;;
-        7)   gate_7;   rv=$? ;;
-        *)   devorq::error "Gate desconhecido: $gate_num"; rv=1 ;;
+        *) "gate_${gate_num}"; rv=$? ;;
     esac
     
     return $rv

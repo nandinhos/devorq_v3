@@ -93,18 +93,15 @@ devorq::cmd_foundation() {
             local doc="${2:-}"
             if [ -z "$doc" ]; then
                 devorq::error "Uso: devorq foundation edit <5w2h|premissas|riscos|requisitos|restricoes>"
-                return 1
             fi
             local valid_docs="5w2h premissas riscos requisitos restricoes"
             if ! echo "$valid_docs" | grep -qw "$doc"; then
                 devorq::error "Doc invalido: $doc"
                 devorq::info "Docs validos: $valid_docs"
-                return 1
             fi
             local f="${foundation_dir}/${doc}.json"
             if [ ! -f "$f" ]; then
                 devorq::error "${doc}.json nao existe - use devorq foundation create"
-                return 1
             fi
             devorq::info "Editando ${doc}.json..."
             devorq::info "Para editar diretamente: $EDITOR $f"

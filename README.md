@@ -3,7 +3,7 @@
 > **Framework bash puro** para metodologia de desenvolvimento sistemático.
 > Captura lições aprendidas, impõe gates bloqueantes, gera handoffs consistentes.
 
-**Versão:** 3.6.0 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
+**Versão:** 3.6.3 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
 
 ---
 
@@ -206,16 +206,42 @@ devorq_v3/
 │   ├── devorq/                 # Core — gates 1-7 + comandos CLI
 │   ├── devorq-mode/            # Seletor interativo AUTO/CLASSIC/AUTO[N]
 │   ├── devorq-auto/            # Loop autônomo story-by-story
-│   └── devorq-code-review/     # Review multi-agente ultra thorough
+│   ├── devorq-code-review/     # Review multi-agente ultra thorough
+│   └── grill-with-docs/        # Sparring terminológico — CONTEXT.md + ADRs
 └── lib/                        # Bibliotecas bash compartilhadas
 ```
 
-| Skill | Descrição |
+|| Skill | Descrição ||
 |-------|-----------|
 | **devorq** | Core framework — gates, lessons, context, compact, debug |
 | **devorq-mode** | Seletor interativo — detecta intent e pergunta modo |
 | **devorq-auto** | Ralph-style — loop autônomo story-by-story via delegate_task |
 | **devorq-code-review** | UltraReview — multi-agent review com gates de aprovação |
+| **grill-with-docs** | Sparring terminológico — valida vocabulário contra CONTEXT.md, cria ADRs |
+
+---
+
+## Token Economy — Laravel PAO (Recomendado)
+
+Para máxima economia de tokens em ambientes de agente de IA, recomendamos instalar `laravel/pao`:
+
+```bash
+composer require laravel/pao --dev
+```
+
+**O que faz:** PAO intercepta automaticamente PHPUnit, Pest, Paratest, PHPStan, Pint e Rector, convertendo output verbose em JSON estruturado.
+
+**Benefício:** Até **99.8% menos tokens** em suites de teste grandes. Output constante independent do número de testes.
+
+**Importante:**
+- PAO **NÃO** é dependência do DEVORQ. O DEVORQ funciona **100% sem ele**.
+- PAO é uma **recomendação** para quem roda em ambiente de agente (Claude Code, Cursor, Devin, Gemini CLI).
+- PAO ativa automaticamente via Composer's autoloader — zero configuração.
+- Quando developers rodam ferramentas diretamente no terminal, o output é **idêntico** — sem impacto no workflow humano.
+
+```bash
+devorq info   # Mostra status do PAO no ambiente
+```
 
 ---
 

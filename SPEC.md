@@ -1,9 +1,9 @@
-# DEVORQ v3.6.1 — Specification
+# DEVORQ v3.6.3 — Specification
 
 > **Princípio de auto-construção:** o DEVORQ constrói a si mesmo.
 > Sistema operacional → usa-se para construir a si mesmo → refina → cresce.
 
-**Versão:** 3.6.1 | **Atualizado:** 2026-05-15
+**Versão:** 3.6.3 | **Atualizado:** 2026-05-18
 
 ---
 
@@ -66,13 +66,13 @@ devorq_v3/
 ├── skills/                     # Skills do ecossistema
 │   ├── project-foundation/    # 5W2H, Premissas, Riscos, Requisitos, Restrições
 │   ├── env-context/           # Detecção automática de ambiente
-│   ├── scope-guard/          # Contrato de escopo
+│   ├── scope-guard/          # Contrato de escopo explícito
 │   ├── ddd-deep-domain/       # Domain-Driven Design
 │   ├── devorq-auto/          # Modo autônomo (loop-auto.sh + auto.sh)
 │   ├── devorq-mode/          # Seletor AUTO/CLASSIC
 │   ├── devorq-code-review/   # Code review multi-agente
-│   ├── security-hardening/   # Padrões de segurança Bash/Python
-│   └── learned-lesson/        # Gerada em runtime (gitignored); ver docs/SPEC-LESSONS-SKILLS-LOOP.md
+│   ├── grill-with-docs/        # Sparring terminológico — CONTEXT.md + ADRs
+│   └── learned-lesson/        # Gerada em runtime (gitignored)
 ├── scripts/
 │   ├── sync-push.py          # local → HUB PostgreSQL
 │   ├── sync-pull.py           # HUB PostgreSQL → local
@@ -131,7 +131,7 @@ Cada gate é verde ou vermelho. **Vermelho = para e corrige.**
 ┌────────┬────────────────────────┬──────────────────────────────────────────┐
 │ GATE   │ NOME                    │ CRITÉRIO                                 │
 ├────────┼────────────────────────┼──────────────────────────────────────────┤
-│ GATE-0 │ Exploration           │ Skills carregadas (opcional)              │
+│ GATE-0 │ Exploration (opcional)  │ env-context + DDD + grill-with-docs (se CONTEXT.md existe)  │
 │ GATE-0.5│ Project Foundation  │ 5W2H, Premissas, Riscos, Requisitos     │
 │ GATE-1 │ Spec Exists          │ SPEC.md existe e não está vazio          │
 │ GATE-2 │ Tests Pass           │ devorq test passa (estrutura OK)        │

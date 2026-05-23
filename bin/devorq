@@ -27,7 +27,15 @@ set -euo pipefail
 
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION="3.6.1"
+DEVORQ_VERSION="3.6.3"
+
+# HELPERS: Carregar funcoes utilitarias
+if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
+    source "${DEVORQ_LIB}/helpers.sh"
+fi
+
+
+
 
 # HELPERS: Carregar funcoes utilitarias
 if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
@@ -35,7 +43,6 @@ if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
 fi
 
 # MODULAR: Carregar módulos de comandos
-# shellcheck source=/dev/null
 if [ -d "${DEVORQ_LIB}/commands" ]; then
     for module in "${DEVORQ_LIB}"/commands/*.sh; do
         if [ -f "$module" ]; then
@@ -58,10 +65,10 @@ devorq::info()  { echo "[DEVORQ] $*"; }
 devorq::success() { echo "[OK] $*"; }
 devorq::warn()  { echo "[!] $*"; }
 devorq::error() { echo "[ERROR] $*" >&2; exit 1; }
-devorq::fail() { echo "[FAIL] $*"; return 1; }
+devorq::fail() { echo "[FAIL] $*"; }
 
 # Cores para output (sem ANSI — compatibilidade máxima)
-GREEN='[OK]' CYAN='[SKILLS]' RESET=''
+GREEN='[OK]' CYAN='[SKILLS]' RED='[ERROR]' YELLOW='[!]' RESET='' BOLD=''
 
 # ============================================================
 # HELP
@@ -256,6 +263,7 @@ devorq::cmd_foundation() {
             local valid_docs="5w2h premissas riscos requisitos restricoes"
             if ! echo "$valid_docs" | grep -qw "$doc"; then
                 devorq::error "Doc inválido: $doc"
+                devorq::info "Docs válidos: $valid_docs"
             fi
             local f="${foundation_dir}/${doc}.json"
             if [ ! -f "$f" ]; then
@@ -302,6 +310,7 @@ devorq::cmd_flow() {
     # GATE-0 (optional) → GATE-0.5 (foundation) → GATE-1-7
     for gate in 0 0.5 1 2 3 4 5 6 7; do
         devorq::info "--- GATE ${gate} ---"
+        # Sem || aqui — set -e do gates.sh não propaga pro caller
         if ! devorq::cmd_gate "$gate" 2>&1; then
             devorq::error "Gate ${gate} falhou"
         fi
@@ -320,7 +329,6 @@ devorq::cmd_gate() {
         return 0
     fi
 
-    # shellcheck source=/dev/null
     source "$lib_gate"
     # Captura exit code explicitamente — evita conflito com set -e
     local rv=0
@@ -347,7 +355,6 @@ devorq::cmd_lessons() {
                 devorq::info "LESSON: title=${title}"
                 return 0
             fi
-            # shellcheck source=/dev/null
             source "$lib_lessons"
             lessons::capture "$title" "$problem" "$solution"
             ;;
@@ -582,7 +589,7 @@ _devorq_lessons_auto_commit() {
 
     local confirm="Y"
     if [ "$auto_mode" != "true" ] && [ "$force_mode" != "true" ]; then
-        read -r -p "Commit + push skill '$skill_name'? [Y/n]: " confirm
+        read -p "Commit + push skill '$skill_name'? [Y/n]: " confirm
         confirm="${confirm:-Y}"
     fi
 
@@ -610,9 +617,9 @@ _devorq_lessons_auto_commit() {
     fi
 }
 
-# shellcheck disable=SC2120
 devorq::cmd_context() {
     local ctx_file="${PWD}/.devorq/state/context.json"
+    local sub="${1:-}"
 
     source "${DEVORQ_LIB}/context.sh" 2>/dev/null || {
         # Fallback: apenas mostra arquivo
@@ -761,6 +768,108 @@ devorq::cmd_skills() {
 
 devorq::cmd_version() {
     echo "DEVORQ v${DEVORQ_VERSION}"
+}
+
+# ============================================================
+# devorq::cmd_info — Environment info + PAO status
+# ============================================================
+
+devorq::cmd_info() {
+    local _GREEN='' _YELLOW='' _RED='' _CYAN='' _RESET=''
+    if [ -t 1 ]; then
+        _GREEN='\033[0;32m'
+        _YELLOW='\033[0;33m'
+        _RED='\033[0;31m'
+        _CYAN='\033[0;36m'
+        _RESET='\033[0m'
+    fi
+
+    echo ""
+    echo -e "${_CYAN}=== DEVORQ Environment Info ===${_RESET}"
+    echo ""
+
+    # DEVORQ version
+    echo -e "  DEVORQ        ${_GREEN}v${DEVORQ_VERSION}${_RESET}  (${DEVORQ_ROOT})"
+
+    # PHP version
+    local php_ver
+    php_ver=$(php -r 'echo PHP_VERSION;' 2>/dev/null || echo "não instalado")
+    echo -e "  PHP           ${php_ver}"
+
+    # Composer
+    if command -v composer &>/dev/null; then
+        local composer_ver
+        composer_ver=$(composer --version 2>/dev/null | head -1 || echo "ok")
+        echo -e "  Composer      ${_GREEN}✓${_RESET}  ${composer_ver}"
+    else
+        echo -e "  Composer      ${_YELLOW}não encontrado${_RESET}"
+    fi
+
+    # Git
+    if command -v git &>/dev/null; then
+        echo -e "  Git           ${_GREEN}✓${_RESET}  $(git --version | head -1)"
+    else
+        echo -e "  Git           ${_YELLOW}não encontrado${_RESET}"
+    fi
+
+    echo ""
+    echo -e "${_CYAN}=== Token Economy Tools ===${_RESET}"
+    echo ""
+
+    # Laravel PAO check
+    local pao_status
+    local pao_cmd=""
+    if command -v composer &>/dev/null; then
+        pao_cmd=$(composer show laravel/pao 2>/dev/null | head -1 || echo "")
+    fi
+
+    if [ -n "$pao_cmd" ]; then
+        local pao_ver
+        pao_ver=$(echo "$pao_cmd" | grep -oP 'versions\s*:\s*\K[^*]+' | tr -d ' *' | head -1 || echo "instalado")
+        echo -e "  Laravel PAO   ${_GREEN}✓${_RESET}  ${pao_ver}"
+        echo -e "                ${_YELLOW}Economia de tokens ativa${_RESET}"
+    else
+        echo -e "  Laravel PAO   ${_RED}[NÃO INSTALADO]${_RESET}"
+        echo -e "                Recomendado para economia de tokens em ambientes de agente de IA"
+        echo ""
+        echo -e "  ${_CYAN}→${_RESET} Para instalar: composer require laravel/pao --dev"
+        echo -e "    Ativado automaticamente quando detectado agente de IA (Claude Code, Cursor, etc.)"
+        echo -e "    Output: JSON estruturado em vez de texto verbose (até 99.8% menos tokens)"
+    fi
+
+    echo ""
+    echo -e "${_CYAN}=== Sistema ===${_RESET}"
+    echo ""
+
+    # OS
+    local os_info="Linux"
+    if [ -f /etc/os-release ]; then
+        os_info=$(grep -oP '^PRETTY_NAME="\K[^"]+' /etc/os-release 2>/dev/null || echo "Linux")
+    fi
+    echo -e "  OS            ${os_info}"
+
+    # Memory
+    local mem_avail
+    mem_avail=$(free -h 2>/dev/null | awk '/Mem:/ {print $7}' || echo "N/A")
+    echo -e "  Memória disp. ${mem_avail}"
+
+    # Uptime
+    local uptime_val
+    uptime_val=$(uptime -p 2>/dev/null || uptime | sed 's/.*up /up /' | sed 's/,.*load.*//')
+    echo -e "  Uptime        ${uptime_val}"
+
+    echo ""
+    echo -e "${_CYAN}=== Próximos Passos ===${_RESET}"
+    echo ""
+    echo -e "  ${_GREEN}1.${_RESET} Inicializar projeto:  devorq init"
+    echo -e "  ${_GREEN}2.${_RESET} Ver gates:           devorq flow \"meu intent\""
+    echo -e "  ${_GREEN}3.${_RESET} Capturar lição:      devorq lessons capture \"título\" \"problema\" \"solução\""
+    echo ""
+
+    if [ -z "$pao_cmd" ]; then
+        echo -e "  ${_YELLOW}Dica:${_RESET} composer require laravel/pao --dev  # para economia máxima de tokens"
+        echo ""
+    fi
 }
 
 devorq::cmd_upgrade() {
@@ -1301,6 +1410,7 @@ main() {
         build)     devorq::cmd_build ;;
         stats)     devorq::cmd_stats ;;
         version)   devorq::cmd_version ;;
+        info)      devorq::cmd_info ;;
         upgrade)   devorq::cmd_upgrade ;;
         uninstall) devorq::cmd_uninstall ;;
         *)         devorq::help ;;

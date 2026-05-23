@@ -2,54 +2,32 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
-## [3.6.1] — 2026-05-15
+## [3.6.3] — 2026-05-18
+
+### Added
+- **devorq info** — Environment info + PAO status (Token Economy)
+- **Laravel PAO** — Recomendação documentação (desacoplado, não dependência)
+- **skills/grill-with-docs** — Skill de sparring terminológico (Matt Pocock) integrada ao GATE-0
+  - Referências: `CONTEXT-FORMAT.md`, `ADR-FORMAT.md` (Matt Pocock)
+  - Integração: `lib/gates.sh` modificado (GATE-0, pós DDD)
+  - ADR numbering: scan `docs/adr/` → highest 000N → next = 000(N+1)
+  - Skip: bugfix, hotfix, debug, init, lessons, compact, sync, version, stats, test
+  - AUTO mode: grill entre sprints (pré prd-from-spec.sh)
+
+## [3.6.2] — 2026-05-18
 
 ### Added
 - **docs/AUTO-MODE.md** — Documentação oficial do AUTO mode
-- **GATE-0.5 Project Foundation** — Documentação estruturada de projeto (5W2H, Premissas, Riscos, Requisitos, Restrições)
-  - `devorq foundation create` — wizard interativo
-  - `devorq foundation validate` — validação bloqueante
-  - `devorq foundation edit <doc>` — edição de documento específico
-- **E2E Tests Playwright** — Suite completa de testes end-to-end
-  - `tests/devorq-cli.spec.ts`, `tests/gates.spec.ts`, `tests/lessons.spec.ts`
-  - `tests/modes-classic-auto.spec.ts`, `tests/debug.spec.ts`
-  - `playwright.config.ts`, `RESULTADOS_TESTES.md`, `QUICKSTART.md`
-- **Security Hardening** — Padrões de segurança para Bash e Python
-  - `skills/security-hardening/SKILL.md` — credentials, SSH, input validation
-- **docs/CODE_REVIEW_COMPLETO.md** — 888 linhas de documentação de code review
-- **docs/COMPORTAMENTO_ESPERADO.md** — 1145 linhas de comportamento esperado
-- **docs/MELHORIAS_V3.md** — Melhorias identificadas
-- **docs/PLAYWRIGHT_*.md** — Comparações e extensões Playwright
-- **docs/REFATORACAO_ESTRUTURA.md** — Estrutura modularizada
-- **docs/SYSTEM_LEVANTAMENTO.md** — Levantamento completo do sistema
 
 ### Changed
 - **AUTO mode unificado** — `loop-auto.sh` agora sourceia `lib/auto.sh`
   - Funções compartilhadas: `next_story`, `pending_count`, `mark_pass`, etc.
   - Elimina duplicação de código
 - **v1.2.1** — `loop-auto.sh` atualizado com versão
-- **bin/devorq** — Modularizado com 9 submódulos em `lib/commands/`
-  - `context.sh`, `debug.sh`, `exploration.sh`, `foundation.sh`
-  - `integration.sh`, `lessons.sh`, `skills.sh`, `utils.sh`, `workflow.sh`
-- **lib/helpers.sh** — 79 linhas de helpers de segurança
 
 ### Fixed
 - **fix(bin)** — `--help` no comando `devorq auto` agora funciona corretamente
 - **fix(execution.sh)** — Remoção do arquivo legado que sobrescrevia `cmd_auto`
-- **fix(security)** — 8 commits de correção de segurança
-  - `0fdaf46` — adiciona helpers.sh ao bootstrap
-  - `d8fb426` — corrige ordem de DEVORQ_LIB para evitar unbound variable
-  - `47027e2` — corrige ordem de variáveis no bootstrap
-  - `3786366` — corrige shellcheck em helpers.sh
-  - `a875dfe` — remove arquivo spúrio '{l[story_id]}:'
-  - `8390aaf` — remove lib/commands/execution.sh legado
-  - `9747822` — corrige credenciais expostas em variáveis de ambiente
-  - `e2e0919` — implementa correções de segurança nos scripts sync
-
-### Documentation
-- **.trae/project_rules.md** — 311 linhas de diretrizes do projeto
-- **README.md** — Atualizado para v3.6.0 com GATE-0.5
-- **CHANGELOG.md** — Expandido com todas as mudanças
 
 ---
 
