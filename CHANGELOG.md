@@ -2,6 +2,30 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.6.4] — 2026-05-20
+
+### Added
+- **rules/** — Nova estrutura de regras globais versionadas em `DEVORQ_ROOT/rules/`
+  - `rules/README.md` — Índice central com hierarquia e como sobrescrever
+  - `rules/commit-convention.md` — Convenções de commit migradas do Hermes
+  - `rules/brainstorm.md` — Regras de captura durante sessões brainstorm
+  - `rules/grill.md` — Regras de sparring para sessões grill
+- **skills/README.md** — Índice central de skills com hierarquia local > global
+
+### Changed
+- **INSTALL.md** — Corrigido path de instalação de `~/devorq/` para `~/projects/devorq_v3/`
+  - Evita conflito com instalações antigas
+  - Adicionado alerta sobre instalações concorrentes no troubleshooting
+  - Adicionada seção "Detectando instalações concorrentes"
+- **bin/devorq header** — Comentário atualizado: não usar `~/devorq/`, usar `~/projects/devorq_v3/`
+- **skills/** — Adicionadas `learned-lesson` (migrada de ~/.devorq_v3), `grill-with-docs`, `security-hardening`
+- **devorq skills list** — Agora lista skills do framework corretamente (antes hardcoded parcial)
+
+### Fixed
+- **devorq version** — Detecção automática de instalações concorrentes
+  - Alerta no output quando `~/devorq/` ou `~/.devorq_v3/` existem com versão diferente
+  - Sugere comando de remoção das instalações obsoletas
+
 ## [3.6.3] — 2026-05-18
 
 ### Added

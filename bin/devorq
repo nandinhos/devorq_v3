@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 # bin/devorq — DEVORQ v3.6 CLI
 #
-# LOCALINSTALL: Este repo é ~/.devorq/ (global)
+# INSTALAÇÃO: ~/projects/devorq_v3/ (clone do repositório)
 # PROJETO: .devorq/ no projeto (só config/state)
+# PATH: $HOME/projects/devorq_v3/bin:$PATH
+#
+# AVISO: Não use ~/devorq/ como destino — isso conflita com installations
+# anteriores. Use sempre ~/projects/devorq_v3/.
 #
 # Uso:
 #   devorq init                    Inicializar projeto
@@ -27,7 +31,7 @@ set -euo pipefail
 
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION="3.6.3"
+DEVORQ_VERSION="3.6.4"
 
 # HELPERS: Carregar funcoes utilitarias
 if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
@@ -724,15 +728,27 @@ devorq::cmd_skills() {
             echo -e "${CYAN}[SKILLS]${RESET}"
             echo ""
 
-            # Skills do framework (hardcoded)
+            # Skills do framework (dinâmico — scaneia DEVORQ_ROOT/skills/)
             echo "Framework skills:"
-            echo "  systemic-debugging, github-code-review, github-pr-workflow"
-            echo "  plan, subagent-driven-development, test-driven-development"
-            echo "  scope-guard, env-context, ddd-deep-domain"
+            local skills_dir="${DEVORQ_ROOT}/skills"
+            if [ -d "$skills_dir" ]; then
+                local skill_list
+                skill_list=$(find "$skills_dir" -maxdepth 1 -type d -name '[!.]*' | while read -r d; do
+                    [ -f "$d/SKILL.md" ] && basename "$d"
+                done | sort | tr '\n' ', ')
+                if [ -n "$skill_list" ]; then
+                    # Quebra em linhas de 3
+                    echo "$skill_list" | sed 's/,/\n  /g' | paste -sd '\n' | sed 's/^/  /'
+                else
+                    echo "  (nenhuma skill encontrada em $skills_dir)"
+                fi
+            else
+                echo "  (diretorio skills nao encontrado)"
+            fi
             echo ""
 
             # Skills geradas (do index)
-            local index_file="skills/.index.md"
+            local index_file="${skills_dir}/.index.md"
             if [ -f "$index_file" ]; then
                 echo "Skills geradas:"
                 grep "^| " "$index_file" | grep -v "^| Skill" | grep -v "^|--" | while IFS='|' read -r _ name desc date _; do
@@ -768,6 +784,35 @@ devorq::cmd_skills() {
 
 devorq::cmd_version() {
     echo "DEVORQ v${DEVORQ_VERSION}"
+
+    # Alerta sobre instalações concorrentes
+    local current_bin
+    current_bin="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+
+    local found_conflict=false
+    local known_conflicts="
+        /home/nandodev/devorq/bin/devorq
+        /home/nandodev/.devorq_v3/bin/devorq
+    "
+
+    for conflict in $known_conflicts; do
+        if [ -f "$conflict" ] && [ "$(readlink -f "$conflict" 2>/dev/null || echo "$conflict")" != "$current_bin" ]; then
+            if [ "$found_conflict" = false ]; then
+                echo ""
+                echo "[WARN] Instalações concorrentes detectadas:"
+                found_conflict=true
+            fi
+            local conflict_ver
+            conflict_ver=$(grep 'DEVORQ_VERSION=' "$conflict" | head -1 | cut -d'"' -f2)
+            echo "  - $conflict (v${conflict_ver:-desconhecida})"
+        fi
+    done
+
+    if [ "$found_conflict" = true ]; then
+        echo ""
+        echo "[WARN] Execute: rm -rf ~/devorq ~/.devorq_v3"
+        echo "       Manenha apenas: ~/projects/devorq_v3/"
+    fi
 }
 
 # ============================================================
