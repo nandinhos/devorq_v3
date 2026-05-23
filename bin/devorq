@@ -27,7 +27,7 @@ set -euo pipefail
 
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION="3.5.0"
+DEVORQ_VERSION="3.6.0"
 
 # jq no ~/bin (instalado via curl sem root)
 if [ -d "${HOME}/bin" ] && [[ ":$PATH:" != *":${HOME}/bin:"* ]]; then
@@ -82,6 +82,10 @@ COMANDOS:
   compact                    Gerar handoff para próxima sessão
   scope validate <f>        Validar contrato de escopo
   scope template             Mostrar template de contrato
+  foundation                  Project Foundation (5W2H, Premissas, Riscos, Requisitos, Restrições)
+  foundation create           Wizard interativo para criar foundation docs
+  foundation validate         Valida foundation docs (GATE-0.5)
+
   ddd explore                Workshop interativo de domínio
   ddd validate               Validar SPEC.md (GATE-0)
 
@@ -155,6 +159,122 @@ EOFS
 
     devorq::success "Inicializado .devorq/ em ${project_root}"
     devorq::info "Edite .devorq/state/context.json com project, stack e intent"
+
+    # Project Foundation — criar os 5 foundation docs
+    local foundation_init="${DEVORQ_ROOT}/skills/project-foundation/scripts/foundation-init.sh"
+    if [ -f "$foundation_init" ]; then
+        if bash "$foundation_init" "$devorq_dir/state" "$(basename "$project_root")" 2>/dev/null; then
+            devorq::info "Foundation docs criados em .devorq/state/"
+            devorq::info "Execute: devorq foundation create para preencher"
+        fi
+    fi
+}
+
+devorq::cmd_foundation() {
+    local action="${1:-status}"
+    local foundation_root="${DEVORQ_ROOT}/skills/project-foundation"
+    local scripts_dir="${foundation_root}/scripts"
+    local foundation_dir="${PWD}/.devorq/state"
+
+    # Setup cores para TTY
+    local _GREEN='' _YELLOW='' _CYAN='' _RED='' _RESET=''
+    if [ -t 1 ]; then
+        _GREEN='\033[0;32m'
+        _YELLOW='\033[0;33m'
+        _CYAN='\033[0;36m'
+        _RED='\033[0;31m'
+        _RESET='\033[0m'
+    fi
+
+    case "$action" in
+        status)
+            devorq::info "Project Foundation Status"
+            echo ""
+            for doc in 5w2h premissas riscos requisitos restricoes; do
+                local f="${foundation_dir}/${doc}.json"
+                if [ -f "$f" ]; then
+                    local size
+                    size=$(wc -c < "$f" 2>/dev/null || echo "0")
+                    if [ "$size" -gt 50 ]; then
+                        echo "  ${_GREEN}[OK]${_RESET} ${doc}.json"
+                    else
+                        echo "  ${_YELLOW}[EMPTY]${_RESET} ${doc}.json"
+                    fi
+                else
+                    echo "  ${_RED}[MISSING]${_RESET} ${doc}.json"
+                fi
+            done
+            echo ""
+            devorq::info "Execute: devorq foundation validate"
+            ;;
+        create)
+            local doc_filter="${2:-all}"
+            if [ ! -t 0 ] && [ ! -t 1 ]; then
+                # Não interativo
+                devorq::error "foundation create requer terminal interativo"
+            fi
+            if bash "${scripts_dir}/foundation-wizard.sh" "$doc_filter"; then
+                devorq::success "Foundation docs criados"
+            else
+                devorq::fail "Erro ao criar foundation docs"
+            fi
+            ;;
+        validate)
+            if bash "${scripts_dir}/foundation-validate.sh" "$foundation_dir"; then
+                exit 0
+            else
+                exit 1
+            fi
+            ;;
+        migrate)
+            if bash "${scripts_dir}/foundation-migrate.sh" 2>/dev/null; then
+                devorq::success "Migração concluída"
+            else
+                devorq::warn "Migração com problemas — verifique os docs"
+            fi
+            ;;
+        edit)
+            local doc="${2:-}"
+            if [ -z "$doc" ]; then
+                devorq::error "Uso: devorq foundation edit <5w2h|premissas|riscos|requisitos|restricoes>"
+            fi
+            local valid_docs="5w2h premissas riscos requisitos restricoes"
+            if ! echo "$valid_docs" | grep -qw "$doc"; then
+                devorq::error "Doc inválido: $doc"
+                devorq::info "Docs válidos: $valid_docs"
+            fi
+            local f="${foundation_dir}/${doc}.json"
+            if [ ! -f "$f" ]; then
+                devorq::error "${doc}.json não existe — use devorq foundation create"
+            fi
+            devorq::info "Editando ${doc}.json..."
+            devorq::info "Para editar diretamente: $EDITOR $f"
+            if command -v "${EDITOR:-nano}" &>/dev/null; then
+                "${EDITOR:-nano}" "$f"
+            else
+                cat "$f"
+            fi
+            ;;
+        *)
+            devorq::info "DEVORQ Project Foundation"
+            echo ""
+            echo "USO: devorq foundation <comando>"
+            echo ""
+            echo "COMANDOS:"
+            echo "  status              Mostra status dos 5 foundation docs"
+            echo "  create [doc]        Wizard interativo (doc=all|5w2h|premissas|riscos|requisitos|restricoes)"
+            echo "  validate            Valida todos os 5 docs (GATE-0.5)"
+            echo "  migrate             Migra de SPEC.md existente"
+            echo "  edit <doc>          Abre doc para edição (5w2h|premissas|riscos|requisitos|restricoes)"
+            echo ""
+            echo "EXEMPLOS:"
+            echo "  devorq foundation status"
+            echo "  devorq foundation create"
+            echo "  devorq foundation create 5w2h"
+            echo "  devorq foundation validate"
+            echo ""
+            ;;
+    esac
 }
 
 devorq::cmd_flow() {
@@ -162,10 +282,11 @@ devorq::cmd_flow() {
     [ -z "$intent" ] && devorq::error "Uso: devorq flow \"<intent>\""
 
     devorq::log "Intent: ${intent}"
-    devorq::log "Executando gates 1-7..."
+    devorq::log "Executando gates 0 → 0.5 → 1-7..."
 
     local failed=0
-    for gate in 1 2 3 4 5 6 7; do
+    # GATE-0 (optional) → GATE-0.5 (foundation) → GATE-1-7
+    for gate in 0 0.5 1 2 3 4 5 6 7; do
         devorq::info "--- GATE ${gate} ---"
         # Sem || aqui — set -e do gates.sh não propaga pro caller
         if ! devorq::cmd_gate "$gate" 2>&1; then
@@ -190,6 +311,7 @@ devorq::cmd_gate() {
     # Captura exit code explicitamente — evita conflito com set -e
     local rv=0
     case "$gate_num" in
+        0.5) gate_0_5; rv=$? ;;
         5.5) gate_5_5; rv=$? ;;
         *) "gate_${gate_num}"; rv=$? ;;
     esac
@@ -1145,6 +1267,7 @@ main() {
         mode)      shift; devorq::cmd_mode "$@" ;;
         auto)      shift; devorq::cmd_auto "$@" ;;
         review)    shift; devorq::cmd_review "$@" ;;
+        foundation) shift; devorq::cmd_foundation "$@" ;;
         sync)      shift; devorq::cmd_sync "$@" ;;
         vps)       shift; devorq::cmd_vps "$@" ;;
         context7)  shift; devorq::cmd_context7 "$@" ;;
