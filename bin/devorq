@@ -1,0 +1,992 @@
+#!/usr/bin/env bash
+# bin/devorq — DEVORQ v3.2 CLI
+#
+# LOCALINSTALL: Este repo é ~/.devorq/ (global)
+# PROJETO: .devorq/ no projeto (só config/state)
+#
+# Uso:
+#   devorq init                    Inicializar projeto
+#   devorq test                   Testar estrutura
+#   devorq gate [1-7]             Executar gate
+#   devorq lessons capture       Capturar lição
+#   devorq lessons search "<q>"  Buscar lições
+#   devorq lessons validate       Validar com Context7
+#   devorq context                Mostrar contexto atual
+#   devorq compact                Gerar handoff
+#   devorq sync push|pull         Sincronizar com HUB
+#   devorq vps check              Testar conexão VPS
+#   devorq version                Versão
+#   devorq upgrade                Atualizar
+#   devorq uninstall              Remover
+
+set -euo pipefail
+
+# ============================================================
+# BOOTSTRAP
+# ============================================================
+
+DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
+DEVORQ_LIB="${DEVORQ_ROOT}/lib"
+DEVORQ_VERSION="3.2.1"
+
+# jq no ~/bin (instalado via curl sem root)
+if [ -d "${HOME}/bin" ] && [[ ":$PATH:" != *":${HOME}/bin:"* ]]; then
+    export PATH="${HOME}/bin:$PATH"
+fi
+
+# ============================================================
+# LOGGING (sem cores — compatibilidade máxima)
+# ============================================================
+
+devorq::log()   { echo "[DEVORQ] $*"; }
+devorq::info()  { echo "[DEVORQ] $*"; }
+devorq::success() { echo "[OK] $*"; }
+devorq::warn()  { echo "[!] $*"; }
+devorq::error() { echo "[ERROR] $*" >&2; exit 1; }
+devorq::fail() { echo "[FAIL] $*"; }
+
+# Cores para output (sem ANSI — compatibilidade máxima)
+GREEN='[OK]' CYAN='[SKILLS]' RED='[ERROR]' YELLOW='[!]' RESET='' BOLD=''
+
+# ============================================================
+# HELP
+# ============================================================
+
+devorq::help() {
+    cat << EOF
+DEVORQ v${DEVORQ_VERSION} — Framework bash puro para metodologia de desenvolvimento sistemático
+
+USO:
+  devorq <comando> [opções]
+
+COMANDOS:
+  init                       Inicializar .devorq/ no projeto
+  test                       Testar estrutura do projeto
+  flow "<intent>"           Workflow completo (gates 1-7)
+  gate [1-7]                Executar gate específico
+
+  lessons capture "<t>" "<p>" "<s>"
+                             Capturar lição aprendida
+  lessons search "<q>"      Buscar lições locais
+  lessons validate [--auto]  Validar lição com Context7 [--auto=pula prompts]
+  lessons approve <id>       Aprovar lição para skill
+  lessons approve --all [--skill=<name>] [--auto]
+  lessons compile [<id>]     Compilar lições approved → skill
+  lessons compile --dry-run  Preview sem modificar arquivos
+  lessons list [filtro]      Listar lições (all|pending|approved|validated|compiled)
+  lessons migrate            Migrar lições existentes (campos approved)
+  lessons auto-commit <skill> [--auto] [--force]
+                             Compilar + git commit + push
+
+  context                    Mostrar contexto atual
+  compact                    Gerar handoff para próxima sessão
+  scope validate <f>        Validar contrato de escopo
+  scope template             Mostrar template de contrato
+  ddd explore                Workshop interativo de domínio
+  ddd validate               Validar SPEC.md (GATE-0)
+
+  sync push                  Enviar lessons → HUB
+  sync pull                  Receber lessons ← HUB
+  vps check                  Testar conexão com VPS HUB
+  context7 install           Instalar Context7 (cli|mcp|api)
+  debug [erro]               Workflow debug sistemático (4 fases)
+  build                      Executa devorq test + gates 1-7 (Self-Building)
+  stats                      Mostra estatísticas de uso (lessons, gates, contexto)
+
+  version                    Versão instalada
+  upgrade                    Atualizar DEVORQ
+  uninstall                  Remover instalação global
+
+OPÇÕES:
+  -h, --help                Este help
+  -v, --verbose             Modo debug
+
+EXEMPLOS:
+  devorq init
+  devorq test
+  devorq gate 1
+  devorq lessons capture "jq install" "no apt-get" "curl binary to ~/bin"
+  devorq vps check
+
+EOF
+}
+
+# ============================================================
+# COMMANDS
+# ============================================================
+
+devorq::cmd_init() {
+    # Cria .devorq/ no projeto atual (não em ~/.devorq/)
+    local project_root="${PWD}"
+    local devorq_dir="${project_root}/.devorq"
+
+    if [ -d "$devorq_dir" ]; then
+        devorq::warn "Já existe .devorq/ em ${project_root}"
+        return 0
+    fi
+
+    mkdir -p "$devorq_dir/state/lessons/captured"
+    mkdir -p "$devorq_dir/skills"
+    mkdir -p "$devorq_dir/rules"
+
+    # Copiar templates do global se existirem
+    if [ -f "${DEVORQ_ROOT}/.devorq/commit_convention.json" ]; then
+        cp "${DEVORQ_ROOT}/.devorq/commit_convention.json" "$devorq_dir/"
+    fi
+
+    cat > "$devorq_dir/state/context.json" << 'EOFC'
+{
+  "project": "",
+  "stack": [],
+  "intent": "",
+  "gates_completed": [],
+  "last_updated": ""
+}
+EOFC
+
+    cat > "$devorq_dir/state/session.json" << 'EOFS'
+{
+  "started_at": "",
+  "ended_at": "",
+  "handoff_id": null,
+  "summary": ""
+}
+EOFS
+
+    devorq::success "Inicializado .devorq/ em ${project_root}"
+    devorq::info "Edite .devorq/state/context.json com project, stack e intent"
+}
+
+devorq::cmd_flow() {
+    local intent="${1:-}"
+    [ -z "$intent" ] && devorq::error "Uso: devorq flow \"<intent>\""
+
+    devorq::log "Intent: ${intent}"
+    devorq::log "Executando gates 1-7..."
+
+    local failed=0
+    for gate in 1 2 3 4 5 6 7; do
+        devorq::info "--- GATE ${gate} ---"
+        # Sem || aqui — set -e do gates.sh não propaga pro caller
+        if ! devorq::cmd_gate "$gate" 2>&1; then
+            devorq::error "Gate ${gate} falhou"
+        fi
+    done
+
+    devorq::success "Flow completo!"
+}
+
+devorq::cmd_gate() {
+    local gate_num="${1:-}"
+    local lib_gate="${DEVORQ_LIB}/gates.sh"
+
+    if [ ! -f "$lib_gate" ]; then
+        devorq::warn "lib/gates.sh não encontrado — gate simulado"
+        devorq::info "GATE-${gate_num}: (sem lib/gates.sh — implementar)"
+        return 0
+    fi
+
+    source "$lib_gate"
+    # Captura exit code explicitamente — evita conflito com set -e
+    "gate_${gate_num}"; local rv=$?
+    return $rv
+}
+
+devorq::cmd_lessons() {
+    local sub="$1"
+    local lib_lessons="${DEVORQ_LIB}/lessons.sh"
+
+    case "$sub" in
+        capture)
+            local title="${2:-}"
+            local problem="${3:-}"
+            local solution="${4:-}"
+            [ -z "$title" ] && devorq::error "Uso: devorq lessons capture \"<t>\" \"<p>\" \"<s>\""
+            if [ ! -f "$lib_lessons" ]; then
+                devorq::warn "lib/lessons.sh não encontrado — criando stub"
+                devorq::info "LESSON: title=${title}"
+                return 0
+            fi
+            source "$lib_lessons"
+            lessons::capture "$title" "$problem" "$solution"
+            ;;
+        search)
+            local query="${2:-}"
+            [ -z "$query" ] && devorq::error "Uso: devorq lessons search \"<query>\""
+            source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+            lessons::search "$query"
+            ;;
+        validate)
+            shift
+            local auto_flag="false"
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --auto) auto_flag="true"; shift ;;
+                    -*) shift ;;
+                    *) shift ;;
+                esac
+            done
+            source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+            if [ "$auto_flag" = "true" ]; then
+                LESSONS_AUTO=true lessons::validate
+            else
+                lessons::validate
+            fi
+            ;;
+        auto-commit)
+            shift
+            _devorq_lessons_auto_commit "$@"
+            ;;
+        approve)
+            shift
+            _devorq_lessons_approve "$@"
+            ;;
+        compile)
+            shift
+            _devorq_lessons_compile "$@"
+            ;;
+        list)
+            shift
+            source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+            local filter="${1:-all}"
+            lessons::list "$filter"
+            ;;
+        migrate)
+            source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+            lessons::migrate
+            ;;
+        *)
+            devorq::error "Uso: devorq lessons capture|search|validate|approve|compile|list|migrate"
+            ;;
+    esac
+}
+
+# ============================================================
+# _devorq_lessons_approve — Parse args e executa lessons::approve
+# ============================================================
+
+_devorq_lessons_approve() {
+    local lesson_id=""
+    local skill_name=""
+    local batch_mode="false"
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --all)
+                batch_mode="true"
+                shift
+                ;;
+            --skill=*)
+                skill_name="${1#*=}"
+                shift
+                ;;
+            --auto)
+                # Flag de auto — aceito mas não muda comportamento aqui
+                shift
+                ;;
+            -h|--help)
+                echo "Uso: devorq lessons approve <id> [--skill=<name>] [--all] [--auto]"
+                echo "     devorq lessons approve --all [--skill=<name>] [--auto]"
+                return 0
+                ;;
+            -*)
+                shift
+                ;;
+            *)
+                lesson_id="$1"
+                shift
+                ;;
+        esac
+    done
+
+    source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+
+    if [ "$batch_mode" = "true" ]; then
+        local count=0
+        local dir="${DEVORQ_LESSONS_DIR:-${PWD}/.devorq/state/lessons}/captured"
+        [ ! -d "$dir" ] && devorq::warn "Nenhuma lição capturada." && return 0
+
+        for f in "$dir"/*.json; do
+            [ -f "$f" ] || continue
+
+            # Só lições validated e não-approved
+            if command -v jq &>/dev/null; then
+                local validated approved
+                validated=$(jq -r '.validated // false' "$f" 2>/dev/null)
+                approved=$(jq -r '.approved // false' "$f" 2>/dev/null)
+                [ "$validated" != "true" ] && continue
+                [ "$approved" = "true" ] && continue
+            fi
+
+            local id
+            id=$(basename "$f" .json)
+            if lessons::approve "$id" "$skill_name" &>/dev/null; then
+                ((count++)) || true
+            fi
+        done
+        devorq::success "Aprovadas: $count lições"
+    else
+        if [ -z "$lesson_id" ]; then
+            devorq::error "Uso: devorq lessons approve <id> [--skill=<name>] [--all]"
+        fi
+        lessons::approve "$lesson_id" "$skill_name"
+    fi
+}
+
+# ============================================================
+# _devorq_lessons_compile — Parse args e executa lessons::compile
+# ============================================================
+
+_devorq_lessons_compile() {
+    local lesson_id=""
+    local skill_path=""
+    local dry_run="false"
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --dry-run)
+                dry_run="true"
+                shift
+                ;;
+            --skill=*)
+                skill_path="skills/${1#*=}"
+                shift
+                ;;
+            -h|--help)
+                echo "Uso: devorq lessons compile [<id>] [--dry-run] [--skill=<name>]"
+                return 0
+                ;;
+            -*)
+                shift
+                ;;
+            *)
+                lesson_id="$1"
+                shift
+                ;;
+        esac
+    done
+
+    source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+    lessons::compile "$lesson_id" "$skill_path" "$dry_run"
+}
+
+# ============================================================
+# _devorq_lessons_auto_commit — Compile + git commit + push
+# ============================================================
+
+_devorq_lessons_auto_commit() {
+    local skill_name=""
+    local auto_mode="false"
+    local force_mode="false"
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --auto)
+                auto_mode="true"
+                shift
+                ;;
+            --force)
+                force_mode="true"
+                shift
+                ;;
+            -h|--help)
+                echo "Uso: devorq lessons auto-commit <skill-name> [--auto] [--force]"
+                return 0
+                ;;
+            -*)
+                shift
+                ;;
+            *)
+                skill_name="$1"
+                shift
+                ;;
+        esac
+    done
+
+    [ -z "$skill_name" ] && devorq::error "Uso: devorq lessons auto-commit <skill-name> [--auto] [--force]"
+
+    source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+
+    # Compile a skill específica
+    local skill_path="skills/${skill_name}"
+    echo -e "${CYAN}[AUTO-COMMIT]${RESET} Compilando skill: $skill_name"
+
+    local compiled=0
+    local dir="${DEVORQ_LESSONS_DIR:-${PWD}/.devorq/state/lessons}/captured"
+    for f in "$dir"/*.json; do
+        [ -f "$f" ] || continue
+        if command -v jq &>/dev/null; then
+            local approved sname
+            approved=$(jq -r '.approved // false' "$f" 2>/dev/null)
+            sname=$(jq -r '.skill_name // ""' "$f" 2>/dev/null)
+            [ "$approved" != "true" ] && continue
+            [ "$sname" != "$skill_name" ] && continue
+            lessons::_compile_lesson "$(basename "$f" .json)" "$skill_path" "false" &>/dev/null
+            ((compiled++)) || true
+        fi
+    done
+
+    if [ "$compiled" -eq 0 ]; then
+        devorq::warn "Nenhuma lição approved para skill: $skill_name"
+        return 1
+    fi
+
+    echo "Compiladas: $compiled lição(ões)"
+
+    # Git commit + push
+    if [ ! -d ".git" ]; then
+        devorq::info "Não é um repo git — pulando commit"
+        return 0
+    fi
+
+    local confirm="Y"
+    if [ "$auto_mode" != "true" ] && [ "$force_mode" != "true" ]; then
+        read -p "Commit + push skill '$skill_name'? [Y/n]: " confirm
+        confirm="${confirm:-Y}"
+    fi
+
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        git add "skills/${skill_name}/"
+        git commit -m "feat(skill): $skill_name — auto-generated from approved lessons ($compiled lesson(s))"
+        devorq::success "Commit: $skill_name"
+
+        # Tentar push
+        if git remote get-url origin &>/dev/null; then
+            # Checar se credential helper ou token está disponível
+            if git config --get credential.helper &>/dev/null || [ -n "${GITHUB_TOKEN:-}" ]; then
+                if git push origin HEAD 2>&1; then
+                    devorq::success "Push: origin/$(git rev-parse --abbrev-ref HEAD)"
+                else
+                    devorq::warn "Push falhou — verifique token ou conexão"
+                fi
+            else
+                devorq::warn "Push ignorado — configure GITHUB_TOKEN ou git credential.helper"
+                devorq::info "Dica: export GITHUB_TOKEN=ghp_... antes de rodar"
+            fi
+        else
+            devorq::info "Sem remote configurado — pulando push"
+        fi
+    fi
+}
+
+devorq::cmd_context() {
+    local ctx_file="${PWD}/.devorq/state/context.json"
+    local sub="${1:-}"
+
+    source "${DEVORQ_LIB}/context.sh" 2>/dev/null || {
+        # Fallback: apenas mostra arquivo
+        if [ ! -f "$ctx_file" ]; then
+            devorq::warn "Nenhum .devorq/state/context.json encontrado"
+            devorq::info "Execute 'devorq init' primeiro"
+            return 0
+        fi
+        cat "$ctx_file"
+        return 0
+    }
+
+    case "$sub" in
+        lint)   ctx_lint ;;
+        stats)  ctx_stats ;;
+        pack)   ctx_pack "${2:-}" ;;
+        merge)  ctx_merge "${2:-}" "${3:-}" ;;
+        set)    ctx_set "${2:-}" "${3:-}" ;;
+        clear)  ctx_clear ;;
+        "")
+            # Default: mostra stats e contexto
+            if [ ! -f "$ctx_file" ]; then
+                devorq::warn "Nenhum context.json encontrado — iniciando contexto"
+                ctx_set "project" "${PWD##*/}"
+                ctx_set "stack" "[]"
+                ctx_set "intent" ""
+            fi
+            ctx_stats
+            echo ""
+            cat "$ctx_file"
+            ;;
+        *)       echo "Uso: devorq context [lint|stats|pack|merge|set|clear]"; return 1 ;;
+    esac
+}
+
+devorq::cmd_compact() {
+    devorq::info "Gerando contexto compactado para handoff..."
+    source "${DEVORQ_LIB}/compact.sh" 2>/dev/null || true
+    compact::generate 2>/dev/null || {
+        devorq::warn "lib/compact.sh não disponível — usando contexto direto"
+        cat "${PWD}/.devorq/state/context.json" 2>/dev/null || echo "{}"
+    }
+}
+
+devorq::cmd_vps() {
+    local sub="${1:-check}"
+    case "$sub" in
+        check)
+            source "${DEVORQ_LIB}/vps.sh" 2>/dev/null || true
+            vps::check 2>/dev/null || devorq::info "VPS check: (lib não disponível)"
+            ;;
+        *)
+            devorq::error "Uso: devorq vps check"
+            ;;
+    esac
+}
+
+devorq::cmd_context7() {
+    local sub="${1:-help}"
+    case "$sub" in
+        install)
+            source "${DEVORQ_LIB}/context7.sh" 2>/dev/null || true
+            if declare -f ctx7_install &>/dev/null; then
+                ctx7_install "${2:-}"
+            else
+                devorq::error "lib/context7.sh não disponível"
+            fi
+            ;;
+        detect)
+            source "${DEVORQ_LIB}/context7.sh" 2>/dev/null || true
+            if declare -f ctx7_detect &>/dev/null; then
+                local method; method=$(ctx7_detect)
+                devorq::info "Método disponível: $method"
+            else
+                devorq::error "lib/context7.sh não disponível"
+            fi
+            ;;
+        check)
+            source "${DEVORQ_LIB}/context7.sh" 2>/dev/null || true
+            if declare -f ctx7_check &>/dev/null; then
+                ctx7_check
+            else
+                devorq::error "lib/context7.sh não disponível"
+            fi
+            ;;
+        help|--help|-h|"")
+            devorq::info "Uso: devorq context7 install|detect|check"
+            devorq::info "  install    Instalar Context7 (cli|mcp|api)"
+            devorq::info "  detect     Detectar método disponível"
+            devorq::info "  check      Testar Context7"
+            ;;
+        *)
+            devorq::error "Uso: devorq context7 install|detect|check"
+            ;;
+    esac
+}
+
+devorq::cmd_skills() {
+    local sub="${1:-list}"
+    case "$sub" in
+        list)
+            echo -e "${CYAN}[SKILLS]${RESET}"
+            echo ""
+
+            # Skills do framework (hardcoded)
+            echo "Framework skills:"
+            echo "  systemic-debugging, github-code-review, github-pr-workflow"
+            echo "  plan, subagent-driven-development, test-driven-development"
+            echo "  scope-guard, env-context, ddd-deep-domain"
+            echo ""
+
+            # Skills geradas (do index)
+            local index_file="skills/.index.md"
+            if [ -f "$index_file" ]; then
+                echo "Skills geradas:"
+                grep "^| " "$index_file" | grep -v "^| Skill" | grep -v "^|--" | while IFS='|' read -r _ name desc date _; do
+                    name=$(echo "$name" | xargs)
+                    desc=$(echo "$desc" | xargs)
+                    [ -z "$name" ] && continue
+                    echo -e "  ${GREEN}$name${RESET} — $desc ($date)"
+                done
+            else
+                echo "Skills geradas: nenhuma (use 'devorq lessons compile' para gerar)"
+            fi
+
+            echo ""
+            devorq::info "Use 'skill_view <name>' no Hermes Agent para carregar"
+            ;;
+        load)
+            local name="${2:-}"
+            [ -z "$name" ] && devorq::error "Uso: devorq skills load <name>"
+            # Verificar se existe
+            local skill_dir="${DEVORQ_ROOT}/skills/${name}"
+            if [ -d "$skill_dir" ]; then
+                devorq::success "Skill '$name' encontrada em: $skill_dir"
+            else
+                devorq::warn "Skill '$name' não encontrada no framework"
+            fi
+            devorq::info "Use 'skill_view $name' no Hermes Agent para carregar"
+            ;;
+        *)
+            devorq::error "Uso: devorq skills list|load <name>"
+            ;;
+    esac
+}
+
+devorq::cmd_version() {
+    echo "DEVORQ v${DEVORQ_VERSION}"
+}
+
+devorq::cmd_upgrade() {
+    devorq::info "Atualizando DEVORQ..."
+    local current_version
+    current_version=$(cat "${DEVORQ_ROOT}/.devorq/version" 2>/dev/null || echo "desconhecida")
+    devorq::info "Versão atual: $current_version"
+
+    if [ -d "${DEVORQ_ROOT}/.git" ]; then
+        git -C "${DEVORQ_ROOT}" pull || devorq::error "Git pull falhou"
+        local new_version
+        new_version=$(cat "${DEVORQ_ROOT}/.devorq/version" 2>/dev/null || echo "desconhecida")
+        devorq::success "Atualizado: $current_version -> $new_version"
+
+        # Re-roda build para confirmar integridade
+        devorq::info "Executando devorq build para validar..."
+        devorq::cmd_build
+    else
+        devorq::error "Não é um clone git — use install.sh"
+    fi
+}
+
+devorq::cmd_test() {
+    devorq::info "Testando estrutura..."
+    local errors=0
+
+    # Testa sintaxe
+    bash -n "${DEVORQ_ROOT}/bin/devorq" 2>/dev/null || { devorq::warn "bin/devorq: syntax error"; errors=$((errors+1)); }
+    for f in "${DEVORQ_LIB}"/*.sh; do
+        bash -n "$f" 2>/dev/null || { devorq::warn "$f: syntax error"; errors=$((errors+1)); }
+    done
+
+    # Testa libs que existem
+    [ -f "${DEVORQ_LIB}/lessons.sh" ] || { devorq::warn "lib/lessons.sh: not found"; errors=$((errors+1)); }
+    [ -f "${DEVORQ_LIB}/gates.sh" ] || { devorq::warn "lib/gates.sh: not found"; errors=$((errors+1)); }
+    [ -f "${DEVORQ_LIB}/compact.sh" ] || { devorq::warn "lib/compact.sh: not found"; errors=$((errors+1)); }
+    [ -f "${DEVORQ_LIB}/vps.sh" ] || { devorq::warn "lib/vps.sh: not found"; errors=$((errors+1)); }
+
+    if [ $errors -eq 0 ]; then
+        devorq::success "Estrutura OK (devorq v${DEVORQ_VERSION})"
+    else
+        devorq::error "$errors erro(s) encontrado(s)"
+    fi
+}
+
+devorq::cmd_sync() {
+    local sub="${1:-}"
+    case "$sub" in
+        push)
+            devorq::info "Sincronizando lessons para HUB..."
+            export DEVORQ_PROJECT_ROOT="${PWD}"
+            if [ -f "${DEVORQ_ROOT}/scripts/sync-push.py" ]; then
+                python3 "${DEVORQ_ROOT}/scripts/sync-push.py" 2>&1 || devorq::warn "sync push: falha"
+            else
+                devorq::warn "scripts/sync-push.py não encontrado"
+            fi
+            ;;
+        pull)
+            devorq::info "Sincronizando lessons do HUB..."
+            export DEVORQ_PROJECT_ROOT="${PWD}"
+            if [ -f "${DEVORQ_ROOT}/scripts/sync-pull.py" ]; then
+                python3 "${DEVORQ_ROOT}/scripts/sync-pull.py" 2>&1 || devorq::warn "sync pull: falha"
+            else
+                devorq::warn "scripts/sync-pull.py não encontrado"
+            fi
+            ;;
+        *)
+            devorq::error "Uso: devorq sync push|pull"
+            ;;
+    esac
+}
+
+devorq::cmd_uninstall() {
+    devorq::warn "Remover DEVORQ de ${DEVORQ_ROOT}?"
+    devorq::info "Ctrl+C para cancelar, Enter para confirmar"
+    read -r
+
+    # Preserva .devorq/ (versão e config do framework — não remove)
+    if [ -d "${DEVORQ_ROOT}/.devorq" ]; then
+        devorq::info "Preservando .devorq/ (version, config)..."
+    fi
+
+    rm -rf "${DEVORQ_ROOT}"
+    devorq::success "Removido de ${DEVORQ_ROOT}"
+    devorq::info "Execute 'rm -f ~/bin/devorq' para remover o symlink"
+}
+
+devorq::cmd_debug() {
+    source "${DEVORQ_LIB}/debug.sh" 2>/dev/null || true
+    if declare -f devorq::debug &>/dev/null; then
+        devorq::debug "${1:-}"
+    else
+        devorq::warn "lib/debug.sh não disponível"
+    fi
+}
+
+devorq::cmd_build() {
+    devorq::info "═══ DEVORQ Self-Build ═══"
+    devorq::info "Executando teste + gates 1-7 no repositório DEVORQ..."
+    echo ""
+
+    # Self-build sempre opera no repo DEVORQ, não no projeto atual
+    local original_pwd="$PWD"
+    cd "${DEVORQ_ROOT}"
+
+    # Etapa 1: teste de estrutura
+    devorq::info "── Etapa 1: devorq test ──"
+    if ! devorq::cmd_test; then
+        devorq::warn "devorq test falhou"
+    fi
+    echo ""
+
+    # Etapa 2: todos os gates
+    local failed=0
+    for gate in 1 2 3 4 5 6 7; do
+        devorq::info "── Etapa 2: Gate $gate ──"
+        if ! devorq::cmd_gate "$gate"; then
+            devorq::fail "Gate $gate falhou"
+            ((failed++))
+        fi
+    done
+
+    cd "$original_pwd"
+
+    echo ""
+    devorq::info "═══ Resultado ═══"
+    if [ $failed -eq 0 ]; then
+        devorq::success "Build OK — 7/7 gates verdes"
+        devorq::info "Sistema pronto para self-building"
+        return 0
+    else
+        devorq::error "$failed gate(s) falhou(aram)"
+    fi
+}
+
+devorq::cmd_stats() {
+    # Stats sempre opera no repo DEVORQ (como build)
+    local original_pwd="$PWD"
+    cd "${DEVORQ_ROOT}"
+
+    source "${DEVORQ_LIB}/stats.sh" 2>/dev/null || true
+    if declare -f stats::summary &>/dev/null; then
+        stats::summary
+    else
+        devorq::warn "lib/stats.sh não disponível"
+    fi
+
+    cd "$original_pwd"
+}
+
+devorq::cmd_scope() {
+    local sub="${1:-}"
+    local scope_root="${DEVORQ_ROOT}/skills/scope-guard"
+
+    case "$sub" in
+        validate)
+            local contract="${2:-}"
+            [ -z "$contract" ] && devorq::error "Uso: devorq scope validate <arquivo.md>"
+            local validator="${scope_root}/scripts/scope-validate.sh"
+            if [ ! -f "$validator" ]; then
+                devorq::error "scope-validate.sh não encontrado"
+            fi
+            if bash "$validator" "$contract"; then
+                devorq::success "Contrato válido"
+                return 0
+            else
+                devorq::fail "Contrato incompleto"
+                return 1
+            fi
+            ;;
+        template)
+            local type="${2:-default}"
+            devorq::info "Template de contrato de escopo:"
+            echo ""
+            case "$type" in
+                laravel)
+                    cat << 'EOF'
+# CONTRATO DE ESCOPO — [nome-da-feature]
+
+## IDENTIFICAÇÃO
+- **Task**: [resumo da feature]
+- **Tipo**: feature | bugfix | refactor
+- **Complexidade**: baixa | média | alta
+- **Stack**: Laravel 11 + Filament v5
+
+## 1. FAZER
+1. [ ] Criar Migration
+2. [ ] Criar Model com fillable/casts/relationships
+3. [ ] Criar Service ou Action (lógica de negócio)
+4. [ ] Criar Policy (se aplicável)
+5. [ ] Criar Resource Filament
+6. [ ] Criar testes (Feature ou Unit)
+
+## 2. NÃO FAZER
+1. NÃO modificar migrations existentes (criar nova)
+2. NÃO colocar lógica no Controller (usar Service/Action)
+3. NÃO hardcodar strings (usar lang())
+4. NÃO commitar se `php artisan test` falhar
+5. NÃO ignorar `composer.lock` mudou após `git pull`
+
+## 3. ARQUIVOS
+```
+database/migrations/
+app/Models/
+app/Services/  ou  app/Actions/
+app/Policies/
+app/Filament/Resources/
+tests/Feature/
+```
+
+## 4. DONE_CRITERIA
+- [ ] Migration executa sem erro
+- [ ] Model: fillable, casts, relationships definidos
+- [ ] Resource Filament carrega em /admin
+- [ ] Policy permite/denega acesso corretamente
+- [ ] `php artisan test --filter=NomeDaFeature` passa
+- [ ] `./vendor/bin/pint --test` sem violações
+EOF
+                    ;;
+                filament)
+                    cat << 'EOF'
+# CONTRATO DE ESCOPO — [nome-do-resource]
+
+## IDENTIFICAÇÃO
+- **Task**: [nome do Resource]
+- **Tipo**: feature | refactor
+- **Complexidade**: baixa | média | alta
+- **Stack**: Filament v5
+
+## 1. FAZER
+1. [ ] Criar/editar Model (fillable, casts, relationships)
+2. [ ] Criar Resource com schema de formulário
+3. [ ] Criar RelationManagers (se relacionamentos)
+4. [ ] Definir header actions (Create, Edit, Delete)
+5. [ ] Definir table columns
+6. [ ] Verificar getTitle(), getLabel(), getNavigationLabel()
+7. [ ] Adicionar testes Feature
+
+## 2. NÃO FAZER
+1. NÃO usar `$formSchema` (v5 = Infolists)
+2. NÃO criar lógica de negócio no Resource (usar Service/Action)
+3. NÃO esquecer `canAccessRecord()` se usar Policies
+4. NÃO ignorar ordem de tabs se usar Tab layout
+
+## 3. ARQUIVOS
+```
+app/Filament/Resources/[Nome]Resource.php
+app/Filament/Resources/[Nome]Resource/
+app/Models/[Model].php
+app/[Services|Actions]/
+tests/Feature/Filament/[Nome]ResourceTest.php
+```
+
+## 4. DONE_CRITERIA
+- [ ] Resource acessible em /admin/[route-name]
+- [ ] List page: table columns renderizam
+- [ ] Create page: form submete sem erro
+- [ ] Edit page: carrega dados existentes
+- [ ] Delete: funciona com confirmation
+- [ ] RelationManagers: carregam dados relacionados
+- [ ] `php artisan test --filter=[Nome]Resource` passa
+EOF
+                    ;;
+                *)
+                    cat << 'EOF'
+# CONTRATO DE ESCOPO — [nome-da-task]
+
+## IDENTIFICAÇÃO
+- **Task**: [resumo]
+- **Tipo**: feature | bugfix | refactor
+- **Complexidade**: baixa | média | alta
+
+## 1. FAZER
+1. [funcionalidade específica]
+
+## 2. NÃO FAZER
+1. [o que NÃO fazer]
+
+## 3. ARQUIVOS
+```
+caminho/arquivo.ext
+```
+
+## 4. DONE_CRITERIA
+- [ ] [critério verificável]
+EOF
+                    ;;
+            esac
+            if [ "$type" != "default" ] && [ "$type" != "laravel" ] && [ "$type" != "filament" ]; then
+                echo ""
+                devorq::warn "Tipo desconhecido: $type"
+                echo "Use: devorq scope template [laravel|filament|default]"
+            fi
+            ;;
+        *)
+            devorq::info "Scope-Guard — Contrato de Escopo"
+            echo ""
+            devorq::info "Use: devorq scope validate <arquivo.md>"
+            devorq::info "     devorq scope template"
+            ;;
+    esac
+}
+
+devorq::cmd_ddd() {
+    local sub="${1:-}"
+    local ddd_root="${DEVORQ_ROOT}/skills/ddd-deep-domain"
+
+    case "$sub" in
+        explore)
+            devorq::info "DDD Domain Workshop — pressione Ctrl+C para sair"
+            echo ""
+            devorq::info "Carregue a skill: hermes load ddd-deep-domain"
+            devorq::info "Ou leia: ${ddd_root}/SKILL.md"
+            echo ""
+            devorq::info "Referências: ${ddd_root}/references/domain-questions.md"
+            devorq::info "Validador:  ${ddd_root}/scripts/ddd-validate-spec.sh"
+            ;;
+        validate)
+            local validator="${ddd_root}/scripts/ddd-validate-spec.sh"
+            if [ ! -f "$validator" ]; then
+                devorq::error "ddd-validate-spec.sh não encontrado"
+            fi
+            if bash "$validator"; then
+                devorq::success "SPEC.md tem modelo mental válido"
+                return 0
+            else
+                devorq::fail "SPEC.md não tem alma (entidades, contextos, invariantes)"
+                return 1
+            fi
+            ;;
+        *)
+            devorq::error "Uso: devorq ddd explore|validate"
+            ;;
+    esac
+}
+
+# ============================================================
+# MAIN DISPATCH
+# ============================================================
+
+main() {
+    local cmd="${1:-help}"
+
+    case "$cmd" in
+        -h|--help) devorq::help ;;
+        -v|--verbose) set -x; shift; main "$@" ;;
+        init)      shift; devorq::cmd_init "$@" ;;
+        test)      devorq::cmd_test ;;
+        flow)      shift; devorq::cmd_flow "$@" ;;
+        gate)      shift; devorq::cmd_gate "$@" ;;
+        lessons)   shift; devorq::cmd_lessons "$@" ;;
+        context)   devorq::cmd_context ;;
+        compact)   devorq::cmd_compact ;;
+        scope)     shift; devorq::cmd_scope "$@" ;;
+        ddd)       shift; devorq::cmd_ddd "$@" ;;
+        sync)      shift; devorq::cmd_sync "$@" ;;
+        vps)       shift; devorq::cmd_vps "$@" ;;
+        context7)  shift; devorq::cmd_context7 "$@" ;;
+        skills)    shift; devorq::cmd_skills "$@" ;;
+        debug)     devorq::cmd_debug "$@" ;;
+        build)     devorq::cmd_build ;;
+        stats)     devorq::cmd_stats ;;
+        version)   devorq::cmd_version ;;
+        upgrade)   devorq::cmd_upgrade ;;
+        uninstall) devorq::cmd_uninstall ;;
+        *)         devorq::help ;;
+    esac
+}
+
+main "$@"

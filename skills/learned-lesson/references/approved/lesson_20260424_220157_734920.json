@@ -1,0 +1,18 @@
+{
+  "id": "lesson_20260424_220157_734920",
+  "title": "Teste jq availability",
+  "problem": "jq nao encontrado no PATH",
+  "solution": "Instalar com apt-get install jq",
+  "stack": "unknown",
+  "tags": [],
+  "timestamp": "20260424_220157",
+  "validated": true,
+  "applied": false,
+  "approved": true,
+  "approved_at": "2026-04-24T22:02:51Z",
+  "approved_by": "user",
+  "skill_path": "skills/learned-lesson",
+  "skill_name": "learned-lesson",
+  "compiled_at": "2026-04-24T22:03:19Z",
+  "validated_at": "2026-04-24T22:00:00Z"
+}
