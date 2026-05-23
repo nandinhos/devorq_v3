@@ -31,7 +31,7 @@ set -euo pipefail
 
 DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
 DEVORQ_LIB="${DEVORQ_ROOT}/lib"
-DEVORQ_VERSION="3.6.5"
+DEVORQ_VERSION="3.6.6"
 
 # HELPERS: Carregar funcoes utilitarias
 if [ -f "${DEVORQ_LIB}/helpers.sh" ]; then
@@ -63,6 +63,13 @@ fi
 # COMMIT: Commit interativo com convenção
 if [ -f "${DEVORQ_LIB}/commit.sh" ]; then
     source "${DEVORQ_LIB}/commit.sh"
+fi
+
+# RULES: Sistema de regras (global + local)
+declare -A DEVORQ_RULES
+if [ -f "${DEVORQ_LIB}/rules.sh" ]; then
+    source "${DEVORQ_LIB}/rules.sh"
+    devorq::rules::init 2>/dev/null || true
 fi
 
 # jq no ~/bin (instalado via curl sem root)
@@ -132,6 +139,9 @@ COMANDOS:
   debug [erro]               Workflow debug sistemático (4 fases)
   verify [--playwright|--manual]  Verificação visual obrigatória (Playwright ou manual)
   commit [--story <id>]       Commit manual com convenção
+  rules [list|check|apply|help]  Sistema de regras enforced
+  brainstorm <topic>          Brainstorm com gates de captura
+  grill <topic>               Sparring estruturado (questiona soluções)
   build                      Executa devorq test + gates 1-7 (Self-Building)
   stats                      Mostra estatísticas de uso (lessons, gates, contexto)
 
@@ -167,13 +177,24 @@ devorq::cmd_init() {
         return 0
     fi
 
-    mkdir -p "$devorq_dir/state/lessons/captured"
-    mkdir -p "$devorq_dir/skills"
     mkdir -p "$devorq_dir/rules"
+    mkdir -p "$devorq_dir/state/lessons/captured"
+    mkdir -p "$devorq_dir/state/sessions"
+    mkdir -p "$devorq_dir/skills"
 
     # Copiar templates do global se existirem
     if [ -f "${DEVORQ_ROOT}/.devorq/commit_convention.json" ]; then
         cp "${DEVORQ_ROOT}/.devorq/commit_convention.json" "$devorq_dir/"
+    fi
+
+    # Copiar regras globais para local (inicialização)
+    if [ -d "${DEVORQ_ROOT}/rules" ]; then
+        for rule_file in "${DEVORQ_ROOT}/rules"/*.md; do
+            if [ -f "$rule_file" ]; then
+                cp "$rule_file" "$devorq_dir/rules/"
+            fi
+        done
+        devorq::info "Regras globais copiadas para .devorq/rules/"
     fi
 
     cat > "$devorq_dir/state/context.json" << 'EOFC'
@@ -1459,6 +1480,9 @@ main() {
         auto)      shift; devorq::cmd_auto "$@" ;;
         verify)    shift; devorq::cmd_verify "$@" ;;
         commit)    shift; devorq::cmd_commit "$@" ;;
+        rules)     shift; devorq::cmd_rules "$@" ;;
+        brainstorm) shift; devorq::cmd_brainstorm "$@" ;;
+        grill)     shift; devorq::cmd_grill "$@" ;;
         review)    shift; devorq::cmd_review "$@" ;;
         foundation) shift; devorq::cmd_foundation "$@" ;;
         sync)      shift; devorq::cmd_sync "$@" ;;
