@@ -2,6 +2,21 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.8.0] — 2026-05-23
+
+### Added
+- **`rules/agent-discipline.md`** — 4 princípios Karpathy adaptados ao DEVORQ (PT)
+- **Bootstrap** — `agent-discipline` incluída em `devorq rules bootstrap` (junto commit-convention)
+- **`success_criteria`** — campo no template `context.json` do `devorq init`
+- **`devorq scope lite "<intent>"`** — contrato mínimo FAZER/NÃO FAZER/VERIFICAR
+- **`.cursor/rules/devorq-discipline.mdc`** — regra Cursor always-on para projetos DEVORQ
+- **`docs/EXEMPLOS-DISCIPLINA-AGENTE.md`** — 4 exemplos bash/DEVORQ
+- **`docs/ANALISE-KARPATHY-DEVORQ.md`** — análise sistemática Karpathy × DEVORQ
+
+### Changed
+- **`ctx_lint`** — avisa se `intent` preenchido sem `success_criteria`
+- **Docs de release** — INSTALL, TROUBLESHOOTING, EXTRAS, COMPORTAMENTO_ESPERADO → v3.8.0
+
 ## [3.7.2] — 2026-05-23
 
 ### Fixed

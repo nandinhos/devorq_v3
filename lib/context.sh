@@ -34,6 +34,21 @@ ctx_lint() {
             echo "[ERROR] context.json não é um objeto JSON válido"
             ((errors++))
         fi
+
+        # success_criteria recomendado quando intent preenchido (v3.8+)
+        local intent_val
+        intent_val=$(jq -r '.intent // ""' "$ctx_file" 2>/dev/null)
+        if [ -n "$intent_val" ] && [ "$intent_val" != "null" ]; then
+            if ! jq -e 'has("success_criteria")' "$ctx_file" >/dev/null 2>&1; then
+                echo "[WARN] Campo 'success_criteria' ausente — defina metas verificáveis (rules/agent-discipline.md)"
+            else
+                local sc_len
+                sc_len=$(jq -r '.success_criteria | length' "$ctx_file" 2>/dev/null || echo "0")
+                if [ "$sc_len" = "0" ]; then
+                    echo "[WARN] success_criteria vazio — transforme intent em critérios verificáveis"
+                fi
+            fi
+        fi
     else
         # Fallback grep
         for field in project intent stack; do

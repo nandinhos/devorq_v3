@@ -4,7 +4,7 @@
 > Captura lições aprendidas, impõe gates bloqueantes, gera handoffs consistentes.
 > **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
 
-**Versão:** 3.7.2
+**Versão:** 3.8.0
 
 ---
 
@@ -20,6 +20,7 @@ Sessão longa → contexto saturado → próximo agente perde informações
 - **Gates bloqueantes** — nada avança sem verificação
 - **Lições aprendidas** — nunca mais o mesmo erro
 - **Handoffs consistentes** — próximo agente começa onde você parou
+- **Disciplina do agente** (v3.8+) — regras Karpathy adaptadas via `devorq rules bootstrap`
 
 ---
 

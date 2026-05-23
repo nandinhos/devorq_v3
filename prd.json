@@ -1,8 +1,30 @@
 {
   "project": "devorq_v3",
-  "version": "3.7.1",
+  "version": "3.8.0",
   "description": "PRD para corre\u00e7\u00f5es de Code Review - Prioridade 100% verde",
   "stories": [
+    {
+      "id": "orch-003",
+      "title": "Disciplina do agente Karpathy + success_criteria + scope lite",
+      "priority": 2,
+      "status": "done",
+      "type": "orchestrator",
+      "acceptance_criteria": [
+        "rules/agent-discipline.md existe e entra no bootstrap",
+        "context.json template inclui success_criteria",
+        "devorq scope lite \"intent\" imprime contrato mínimo",
+        "ctx_lint avisa intent sem success_criteria",
+        "VERSION 3.8.0 alinhada em README/SPEC/CHANGELOG"
+      ],
+      "files_to_check": [
+        "rules/agent-discipline.md",
+        "lib/rules.sh",
+        "lib/commands/workflow.sh",
+        "lib/context.sh",
+        "lib/commands/exploration.sh"
+      ],
+      "passes": true
+    },
     {
       "id": "orch-002",
       "title": "Restaurar dispatch commit/verify/rules + enforcement git hook",

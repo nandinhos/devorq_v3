@@ -10,11 +10,18 @@
 
 | Regra | Descrição |
 |-------|-----------|
+| `agent-discipline.md` | Disciplina do agente (Karpathy adaptado) — always-on via bootstrap |
 | `commit-convention.md` | Convenções de commit (Conventional Commits + scopes DEVORQ) |
+| `manual-commit.md` | Commits e push só com aprovação humana |
+| `visual-verification.md` | Gate de verificação visual antes do commit |
+| `brainstorm.md` | Gates de captura durante brainstorming |
+| `grill.md` | Regras de sparring estruturado |
 
 **Quando uma regra é aplicada:**
 
-- **commit-convention**: ao final de cada gate成功 (GATE-5+), antes do `git commit`
+- **agent-discipline**: bootstrap em todo `devorq init` (comportamento do agente)
+- **commit-convention**: validação no hook commit-msg + `devorq commit`
+- **manual-commit**: antes de commit/push automático
 - **brainstorm/**: ao iniciar sessão `devorq brainstorm`
 - **grill/**: ao iniciar sessão `devorq grill`
 
@@ -29,5 +36,5 @@ mkdir -p .devorq/rules
 - Conflito = mesma regra com lógica contraditória → usar `devorq rules check` para detectar
 
 **Manutenção:**
-- Regras globais são mantidas no repo `nandinhos/devorq_v3`
+- Regras globais são mantidas no repo [nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3)
 - Lições aprendidas podem gerar novas regras via `devorq lessons capture`

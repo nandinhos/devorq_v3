@@ -1,0 +1,15 @@
+---
+description: Disciplina do agente DEVORQ — assumptions explícitas, simplicidade, diffs cirúrgicos, critérios verificáveis (Karpathy adaptado).
+alwaysApply: true
+---
+
+# Disciplina DEVORQ (v3.8+)
+
+Leia `rules/agent-discipline.md` no repo DEVORQ para detalhes. Resumo:
+
+1. **Pensar antes de codar** — assumptions explícitas; perguntar se ambíguo
+2. **Simplicidade** — mínimo código; nada especulativo
+3. **Mudanças cirúrgicas** — só o pedido; não refatorar adjacente
+4. **Metas verificáveis** — critério de sucesso + teste/verify antes de declarar done
+
+Trivial (<5min, typo) → julgamento. Feature nova → `devorq scope --lite`.

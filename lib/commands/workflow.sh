@@ -45,6 +45,7 @@ devorq::cmd_init() {
   "project": "",
   "stack": [],
   "intent": "",
+  "success_criteria": [],
   "commit_mode": "manual",
   "gates_completed": [],
   "last_updated": ""

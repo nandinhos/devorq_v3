@@ -492,7 +492,7 @@ devorq::rules::bootstrap_project() {
         devorq::rules::init
         mkdir -p ".devorq/rules"
 
-        for rule in commit-convention manual-commit; do
+        for rule in commit-convention manual-commit agent-discipline; do
             if [[ -f "${DEVORQ_ROOT}/rules/${rule}.md" ]]; then
                 cp "${DEVORQ_ROOT}/rules/${rule}.md" ".devorq/rules/${rule}.md"
                 DEVORQ_RULES["$rule"]="$(cat ".devorq/rules/${rule}.md")"

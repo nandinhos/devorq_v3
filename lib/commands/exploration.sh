@@ -16,6 +16,7 @@ exploration::help() {
 EXPLORATION COMMANDS:
   scope validate <arquivo>     Validar contrato de escopo
   scope template [tipo]        Template de escopo (laravel|filament|default)
+  scope lite "<intent>"        Contrato mínimo FAZER/NÃO FAZER/VERIFICAR
   ddd explore|validate       Workshop DDD
   env detect                  Detectar ambiente
   spec validate|template     Validar SPEC.md
@@ -160,10 +161,33 @@ EOFDEFAULT
                     ;;
             esac
             ;;
+        lite)
+            local intent="${2:-}"
+            if [ -z "$intent" ]; then
+                devorq::error "Uso: devorq scope lite \"<intent>\""
+            fi
+            devorq::info "Contrato lite — preencha mentalmente antes de codar:"
+            echo ""
+            echo "# ESCOPO LITE — ${intent}"
+            echo ""
+            echo "## FAZER (só isto)"
+            echo "1. [ ] ..."
+            echo ""
+            echo "## NÃO FAZER"
+            echo "1. Refatorar código adjacente"
+            echo "2. Features não pedidas"
+            echo ""
+            echo "## VERIFICAR (success criteria)"
+            echo "1. [ ] ..."
+            echo ""
+            devorq::info "Para contrato completo: devorq scope template"
+            devorq::info "Regras: devorq rules help agent-discipline"
+            ;;
         *)
             devorq::info "Scope-Guard — Contrato de Escopo"
             echo ""
-            devorq::info "Use: devorq scope validate <arquivo.md>"
+            devorq::info "Use: devorq scope lite \"<intent>\""
+            devorq::info "     devorq scope validate <arquivo.md>"
             devorq::info "     devorq scope template"
             ;;
     esac
