@@ -86,6 +86,10 @@ devorq::cmd_build() {
     local original_pwd="$PWD"
     cd "${DEVORQ_ROOT}"
 
+    # Carregar módulos necessários
+    source "${DEVORQ_LIB}/commands/test.sh"
+    source "${DEVORQ_LIB}/commands/workflow.sh"
+
     # Etapa 1: teste de estrutura
     devorq::info "── Etapa 1: devorq test ──"
     if ! devorq::cmd_test; then

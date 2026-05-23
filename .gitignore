@@ -3,8 +3,9 @@
 
 # Dependencies
 node_modules/
-package.json
-package-lock.json
+/package.json
+/package-lock.json
+/e2e-tests/package-lock.json
 
 # Session summaries (ephemeral)
 .devorq/state/sessions/

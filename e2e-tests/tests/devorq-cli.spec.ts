@@ -1,5 +1,5 @@
 import { test, expect, describe } from '@playwright/test';
-import { execSync, spawn } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -21,19 +21,16 @@ const SANDBOX = '/tmp/devorq-e2e-cli';
  * Helper para executar comandos
  */
 function runCommand(cmd: string, cwd: string = DEVORQ_ROOT): { stdout: string; stderr: string; exitCode: number } {
-  // Substitui 'devorq' pelo caminho completo do projeto
   const adjustedCmd = cmd.replace(/\bdevorq\b/g, DEVORQ_BIN);
-  
-  try {
-    const stdout = execSync(adjustedCmd, { encoding: 'utf-8', cwd });
-    return { stdout, stderr: '', exitCode: 0 };
-  } catch (error: any) {
-    return {
-      stdout: error.stdout?.toString() || '',
-      stderr: error.stderr?.toString() || '',
-      exitCode: error.status || 1
-    };
-  }
+  const { stdout, stderr, status } = spawnSync('bash', ['-c', adjustedCmd], {
+    encoding: 'utf-8',
+    cwd,
+  });
+  return {
+    stdout: stdout || '',
+    stderr: stderr || '',
+    exitCode: status ?? 1,
+  };
 }
 
 /**
@@ -108,10 +105,12 @@ describe('DEVORQ CLI - Inicialização', () => {
     // Primeira inicialização
     runCommand('devorq init', projectDir);
     
-    // Segunda inicialização (deve detectar)
+    // Segunda inicialização (deve detectar — warn vai para stderr)
     const result = runCommand('devorq init', projectDir);
-    
-    expect(result.stdout).toMatch(/[Jj]á existe/);
+    const output = `${result.stdout}\n${result.stderr}`;
+
+    expect(output).toMatch(/[Jj][áa] existe/i);
+    expect(output).toMatch(/Bootstrap de regras concluído/);
   });
 
   test('devorq test deve verificar estrutura', () => {

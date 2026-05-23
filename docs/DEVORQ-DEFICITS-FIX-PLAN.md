@@ -4,7 +4,7 @@
 **Data:** 2026-05-21
 **Autor:** Nando (Fernando Dos Santos)
 **Engine:** DEVORQ v3.6.7
-**Status:** PLANO — aguardando validação antes de executar
+**Status:** RESOLVIDO — 2026-05-23 (v3.7.1)
 
 ---
 
@@ -12,14 +12,31 @@
 
 Dois déficits técnicos identificados na análise do artigo do Marcelo Guerra:
 
-| # | Déficit | Prioridade | Esforço |
-|---|---------|-----------|---------|
-| 1 | **SPEC desatualizada** — `DEVORQ-COMMIT-VISUAL-SPEC.md` diz "aguardando implementação" mas features estão em produção há 3 versões | 🔴 Alta | Baixo |
-| 2 | **Observabilidade do agente quebrada** — Loki ingester loop "not ready", push retorna 204 mas queries vaziam | 🔴 Alta | Alto |
+| # | Déficit | Prioridade | Esforço | Status |
+|---|---------|-----------|---------|--------|
+| 1 | **SPEC desatualizada** — `DEVORQ-COMMIT-VISUAL-SPEC.md` diz "aguardando implementação" mas features estão em produção há 3 versões | 🔴 Alta | Baixo | ✅ RESOLVIDO |
+| 2 | **Observabilidade do agente quebrada** — Loki ingester loop "not ready", push retorna 204 mas queries vaziam | 🔴 Alta | Alto | ✅ RESOLVIDO |
+
+### Resolução (2026-05-23)
+
+**Deficit 1:** Merge da branch `origin/main` (commit `fa21549`) trouxe:
+- `lib/visual.sh` — `devorq verify` (Playwright + manual)
+- `lib/commit.sh` — `devorq commit` manual
+- `lib/rules.sh` — sistema de regras enforced
+- `DEVORQ-COMMIT-VISUAL-SPEC.md` → `Status: IMPLEMENTADO v3.7.0`
+- `CHANGELOG.md` → entrada `[3.7.1]` com todas as features documentadas
+
+**Deficit 2:** Pipeline OTel migrado para Prometheus Pushgateway:
+- `~/claude_otel_wrapper.py` → `push_to_gateway("https://observer.fssdev.com.br")` (HTTPS)
+- Pushgateway :9091 → Prometheus :9090 → Grafana :3002
+- Loki abandonado para métricas (stack ainda existe, não removido)
+- Skill `devorq-observability` atualizada com arquitetura Pushgateway
+
+**Resultado:** DEVORQ v3.7.1 — 12/12 stories done, 7/7 gates verdes, merge `origin/main` aplicado
 
 ---
 
-## Deficit 1: SPEC Desatualizada
+## Deficit 1: SPEC Desatualizada — ✅ RESOLVIDO
 
 ### Diagnóstico
 
@@ -73,7 +90,7 @@ CHANGELOG.md                         (entrada [3.6.7] completa)
 
 ---
 
-## Deficit 2: Observabilidade do Agente Quebrada
+## Deficit 2: Observabilidade do Agente Quebrada — ✅ RESOLVIDO
 
 ### Diagnóstico
 

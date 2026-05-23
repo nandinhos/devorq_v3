@@ -123,6 +123,8 @@ test_input_sanitize() {
 test_path_traversal() {
     sec::info "Test: Path Traversal Prevention"
 
+    mkdir -p /tmp/.devorq/state
+
     source "$LIB_DIR/vps.sh" 2>/dev/null || true
 
     local tests=(

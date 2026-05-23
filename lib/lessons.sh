@@ -177,6 +177,10 @@ lessons::search() {
 # ============================================================
 
 lessons::validate() {
+    if [[ "${1:-}" == "--auto" ]]; then
+        LESSONS_AUTO=true
+    fi
+
     local dir="${DEVORQ_LESSONS_DIR}/captured"
 
     if [ ! -d "$dir" ]; then
@@ -462,8 +466,10 @@ lessons::approve() {
     # Validar que existe
     [ ! -f "$file" ] && echo "[ERROR] Lição não encontrada: $id" && return 1
 
-    # Verificar se foi validada
-    if command -v jq &>/dev/null; then
+    # Verificar se foi validada (modo auto interno ou --force bypassam)
+    local force=false
+    [[ "${2:-}" == "--force" || "${3:-}" == "--force" ]] && force=true
+    if [[ "$auto" != "true" && "$force" != "true" ]] && command -v jq &>/dev/null; then
         local validated
         validated=$(jq -r '.validated // false' "$file")
         [ "$validated" != "true" ] && echo "[ERROR] Lição precisa ser validada primeiro (Context7)" && return 1

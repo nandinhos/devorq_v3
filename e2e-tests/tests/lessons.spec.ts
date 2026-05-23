@@ -15,9 +15,13 @@ const DEVORQ_BIN = path.resolve(__dirname, '../..', 'bin/devorq');
 function runCommand(cmd: string, cwd: string = SANDBOX): { stdout: string; stderr: string; exitCode: number } {
   // Substitui 'devorq' pelo caminho completo do projeto
   const adjustedCmd = cmd.replace(/\bdevorq\b/g, DEVORQ_BIN);
-  
+
   try {
-    const stdout = execSync(adjustedCmd, { encoding: 'utf-8', cwd });
+    const stdout = execSync(adjustedCmd, {
+      encoding: 'utf-8',
+      cwd,
+      env: { ...process.env, LESSONS_AUTO: 'true' },
+    });
     return { stdout, stderr: '', exitCode: 0 };
   } catch (error: any) {
     return {
@@ -263,17 +267,21 @@ describe('Lessons - Compilação', () => {
     if (files.length > 0) {
       const lessonId = path.basename(files[0], '.json');
 
-      // Validar com --auto (bypass Context7 quando indisponível)
-      runCommand(`devorq lessons validate --auto`, projectDir);
+      // Validar com --auto (marca validated sem Context7)
+      const validateResult = runCommand(`devorq lessons validate --auto`, projectDir);
+      expect(validateResult.stdout).toMatch(/auto-validada|Validadas:/i);
 
       // Aprovar lição antes de compilar
-      runCommand(`devorq lessons approve ${lessonId}`, projectDir);
+      const approveResult = runCommand(`devorq lessons approve ${lessonId}`, projectDir);
+      expect(`${approveResult.stdout}\n${approveResult.stderr}`).toMatch(/Aprovada|aprovada/i);
 
       const result = runCommand(`devorq lessons compile ${lessonId}`, projectDir);
 
       console.log('Compile output:', result.stdout);
 
       expect(result.stdout).toMatch(/compile|Compile|skill|Skill|Compilad/i);
+    } else {
+      throw new Error('Nenhuma lição capturada para compilar');
     }
   });
 });

@@ -4,7 +4,7 @@
 > Captura lições aprendidas, impõe gates bloqueantes, gera handoffs consistentes.
 > **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
 
-**Versão:** 3.7.0
+**Versão:** 3.7.2
 
 ---
 

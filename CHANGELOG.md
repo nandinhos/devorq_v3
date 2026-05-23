@@ -2,6 +2,23 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.7.2] — 2026-05-23
+
+### Fixed
+- **`devorq build`** — carrega `test.sh` e `workflow.sh` antes de `cmd_test`/`cmd_gate` (fix de `dev`)
+- **`lessons validate --auto`** — flag `--auto` ativa `LESSONS_AUTO` (auto-validação sem Context7)
+- **`lessons approve`** — modo auto interno e `--force` bypassam exigência de validação Context7
+- **`scripts/security-tests.sh`** — cria `/tmp/.devorq/state` antes do teste de path traversal
+- **E2E Playwright** — `devorq init` idempotente (captura stderr); fluxo compile com `validate --auto`
+- **README.md / SPEC.md** — versão alinhada com `VERSION` (estavam em 3.7.0 após release 3.7.1)
+
+### Added
+- **`e2e-tests/package.json`** — dependências Playwright versionadas no repo
+- **`.gitignore`** — permite `e2e-tests/package.json` (ignora apenas root `package.json`)
+
+### Changed
+- **`docs/DEVORQ-DEFICITS-FIX-PLAN.md`** — status RESOLVIDO v3.7.1 (merge de `dev`)
+
 ## [3.7.1] — 2026-05-23
 
 ### Added
