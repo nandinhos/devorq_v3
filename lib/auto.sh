@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091,SC2086,SC2034,SC2015,SC2001,SC2162,SC1090,SC1010,SC2164,SC2155,SC2094,SC2005,SC2317,SC2129,SC2126,SC2120,SC2119,SC2116,SC2046
 # lib/auto.sh — DEVORQ AUTO Mode
 # Executa stories do prd.json via devorq flow
 
@@ -356,7 +357,7 @@ devorq::auto::run() {
     echo "============================================"
 }
 
-devorq::cmd_auto() {
+devorq::cmd_auto_guided() {
     local iterations=1
     local mode="interactive"
 

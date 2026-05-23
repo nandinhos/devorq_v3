@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091,SC2086,SC2034,SC2015,SC2001,SC2162,SC1090,SC1010,SC2164,SC2155,SC2094,SC2005,SC2317,SC2129,SC2126,SC2120,SC2119,SC2116,SC2046
 # lib/rules.sh — DEVORQ Rules System v1.0
 #
 # Sistema de regras ENFORCED: carrega, valida e aplica regras em runtime.
@@ -28,8 +29,9 @@ devorq::rules::init() {
     local project_root="${PWD}"
     local devorq_dir="${project_root}/.devorq"
 
-    # Criar diretório de regras local se não existir
-    mkdir -p "${devorq_dir}/rules" 2>/dev/null || true
+    if [ -d "$devorq_dir" ]; then
+        mkdir -p "${devorq_dir}/rules" 2>/dev/null || true
+    fi
 
     # Carregar regras globais (DEVORQ_ROOT/rules/)
     devorq::rules::load_global

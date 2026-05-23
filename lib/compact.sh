@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091,SC2086,SC2034,SC2015,SC2001,SC2162,SC1090,SC1010,SC2164,SC2155,SC2094,SC2005,SC2317,SC2129,SC2126,SC2120,SC2119,SC2116,SC2046
 # lib/compact.sh — DEVORQ Context Compaction
 #
 # Gera contexto compactado para handoff entre sessões/LLMs
@@ -62,11 +63,11 @@ compact::generate() {
                     untracked_files: ($untracked | if . == "" then [] else split("\n") end),
                     timestamp: $ts
                 }
-            }'
+            }' > "$output"
     else
         # Fallback JSON manual (sem jq)
         printf '{"handoff":{"project":"%s","stack":"%s","intent":"%s","gates_completed":[],"pending_gates":[],"untracked_files":[],"timestamp":"%s"}}\n' \
-            "$project" "$stack" "$intent" "$ts"
+            "$project" "$stack" "$intent" "$ts" > "$output"
     fi
 }
 

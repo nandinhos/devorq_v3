@@ -8,10 +8,17 @@
       "type": "success",
       "details": "",
       "timestamp": "2026-05-14T22:35:23.783165"
+    },
+    {
+      "story_id": "orch-001",
+      "story_title": "Restaurar dispatch CLI v3.7 (auto, mode, init, gate)",
+      "type": "success",
+      "details": "",
+      "timestamp": "2026-05-22T02:12:35.690141"
     }
   ],
   "stats": {
-    "total": 1,
+    "total": 2,
     "delegate_failed": 0,
     "verification_failed": 0,
     "complex_detected": 0

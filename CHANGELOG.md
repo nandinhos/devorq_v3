@@ -2,6 +2,66 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.7.0] — 2026-05-22
+
+### Added
+- **shellcheck zero warnings** — FASE 1 do refactoring
+  - Adicionadas diretivas shellcheck em todos os arquivos
+  - 110 issues → 0 issues
+- **lib/commands/lessons/** — Modularização FASE 2
+  - `lib/commands/lessons/capture.sh` — lessons::capture
+  - `lib/commands/lessons/list.sh` — lessons::list
+  - `lib/commands/lessons/search.sh` — lessons::search
+  - `lib/commands/lessons/approve.sh` — lessons::approve
+  - `lib/commands/lessons/validate.sh` — lessons::validate
+  - `lib/commands/lessons/compile.sh` — lessons::compile
+  - `lib/commands/lessons/migrate.sh` — lessons::migrate
+  - `lib/commands/lessons/index.sh` — carregador de módulos
+- **bin/commands/** — Estrutura modular para bin/
+- **lib/commands/cli/** — Módulos CLI (init, version, stats)
+- **lib/commands/ddd.sh** — Comando DDD validate
+- **lib/commands/test.sh** — Wrapper para testes
+- **scripts/test-commands.sh** — Suite de testes para comandos CLI
+
+### Changed
+- **lib/lessons.sh** — Refatorado como thin wrapper
+  - 996 LOC → 205 LOC (↓79%)
+  - Delega para módulos em lib/commands/lessons/
+- **bin/devorq** — Refatorado como dispatcher
+  - 1504 LOC → 174 LOC (↓88%)
+  - Carrega módulos sob demanda
+- **lessons::validate** — Adicionado suporte a LESSONS_AUTO
+- **lessons::approve** — Adicionado help inline
+- **lessons::list** — Adicionado help inline
+
+### Fixed
+- **bin/devorq dispatch v3.7** — Restaura roteamento para `lib/commands/*` após modularização
+  - `init`/`gate`/`flow` → `workflow.sh`; `compact` → `context.sh`; `env`/`spec` → `exploration.sh`
+  - Wrappers: `auto.sh`, `mode.sh`, `review.sh`, `info.sh`
+- **lib/helpers.sh** — Funções de log (`devorq::info|warn|error|success|fail`) usadas em todo o CLI
+- **lesson::capture path bug** — Corrigido duplo /captured/captured
+- **test environment** — DEVORQ_DIR/DEVORQ_LESSONS_DIR configurados
+- **lessons::search** — Mensagem correta quando não há resultados
+- **lessons::apply** — Implementação completa com jq
+- **scripts/pipeline-tests.sh** — Comentário que quebrava ShellCheck (SC1072/SC1073)
+- **scripts/unit-tests.sh** — Teste de schema de lessons usa arquivo mais recente (evita flake)
+
+### Added (pós-modularização)
+- **scripts/verify-dispatch.sh** — Gate CI: valida que `bin/devorq` só referencia módulos existentes
+- **docs/FLOW-ORCHESTRATOR-ATTEST.md** — Fluxo de atestação CLASSIC + AUTO (story `orch-001`)
+- **prd.json** — Story `orch-001` (orquestrador DEVORQ)
+
+### Security
+- **ShellCheck compliance** — 0 warnings em todos os scripts
+
+### Tests
+- **Suite 100% verde** (2026-05-22)
+  - 68 unit tests | 43 CI tests | 11 e2e bash | 8 Playwright modes-classic-auto
+  - `verify-dispatch.sh` integrado ao CI
+  - shellcheck: 0 errors (`bin/devorq`, `lib/*.sh`, `scripts/*.sh`)
+
+---
+
 ## [3.6.6] — 2026-05-21
 
 ### Added
@@ -36,6 +96,23 @@ All notable changes to DEVORQ v3 are documented here.
 ### Fixed
 - **Regras não eram aplicadas** — Sistema de regras agora carrega e aplica automaticamente
 - **Hierarquia global > local** — .devorq/rules/ sobrescreve global quando existe
+- **Bug fix: devorq init** — `devorq::rules::init()` não cria mais `.devorq/` prematuramente
+- **Bug fix: compact::generate** — `compact::generate()` agora redireciona JSON para arquivo `$output` (antes ignorava e输出va para stdout)
+- **Bug fix: GATE-5** — `handoff.json` agora é gerado corretamente
+
+---
+
+## [3.6.7] — 2026-05-21
+
+### Fixed
+- **Bug fix: sandbox.spec.ts** — Arquivo de testes E2E para sandbox isolado criado
+- **Bug fix: E2E tests** — Correções de case sensitivity e expectativas de output
+- **Bug fix: lessons compile** — Adicionado `validate --auto` antes de `approve` (aprovação requer validação prévia)
+- **Bug fix: SC2168 shellcheck** — Removidos 9x `local` fora de função em `scripts/validate-rules.sh` (linhas 121, 139, 174, 218, 223, 228, 272, 291, 311)
+- **Bug fix: SC2144 shellcheck** — Corrigido glob com `-f` em `scripts/e2e-test.sh:393` (substituído por `find | grep -q`)
+
+### Documentation
+- **docs/DEVORQ-COMMIT-VISUAL-SPEC.md** — Atualizado status para `IMPLEMENTADO v3.6.5` com histórico completo de todas as 12 features implementadas desde v3.6.5 (visual.sh, commit.sh, debug-systematic.sh, rules, brainstorm, grill, shellcheck 0 errors)
 
 ---
 

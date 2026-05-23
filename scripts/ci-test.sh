@@ -178,6 +178,13 @@ echo ""
 # ============================================================
 info "═══ FASE 4: CLI Commands ═══"
 
+# verify-dispatch (bin/devorq → lib/commands/*)
+if bash "$DEVORQ_ROOT/scripts/verify-dispatch.sh" >/dev/null 2>&1; then
+    pass "verify-dispatch.sh"
+else
+    fail "verify-dispatch.sh"
+fi
+
 # devorq test
 cli_test=$(bin/devorq test 2>&1) || true
 if echo "$cli_test" | grep -q "OK\|Estrutura OK"; then

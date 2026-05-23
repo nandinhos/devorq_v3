@@ -30,6 +30,9 @@ const SANDBOX = '/tmp/devorq-e2e-modes-sandbox';
 const JQ_PENDING =
   'select((.passes != true) and (.status != "done" and .status != "complete"))';
 
+const JQ_DONE =
+  'select(.status == "done" or .status == "complete")';
+
 const e2eEnv = {
   ...process.env,
   PATH: process.env.PATH ?? '',
@@ -155,11 +158,11 @@ describe('Fluxo CLASSIC (devorq flow)', () => {
 });
 
 describe('prd.json e Modo AUTO (loop-auto)', () => {
-  test('prd.json raiz: stories com status=pending contam como pendentes', () => {
+  test('prd.json raiz: stories completadas (all done)', () => {
     const prdPath = path.join(DEVORQ_ROOT, 'prd.json');
     expect(fs.existsSync(prdPath)).toBe(true);
-    const n = jqStoriesMapLength(prdPath, JQ_PENDING);
-    expect(n).toBeGreaterThan(0);
+    const done = jqStoriesMapLength(prdPath, JQ_DONE);
+    expect(done).toBeGreaterThan(0);
   });
 
   test('loop-auto: DIR + número como segundo token não sobrescreve o diretório', () => {

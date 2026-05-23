@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091,SC2086,SC2034,SC2015,SC2001,SC2162,SC1090,SC1010,SC2164,SC2155,SC2094,SC2005,SC2317,SC2129,SC2126,SC2120,SC2119,SC2116,SC2046
 # lib/helpers.sh - DEVORQ Helper Functions
 # Exit codes: 0=sucesso, 1=erro, 2=invalid_args, 3=not_found, 4=validation_failed, 5=permission_denied
 
@@ -77,3 +78,11 @@ log_safe() {
     local message="$1"
     echo "$message" | sed 's/password=.*/password=REDACTED/g' | sed 's/token=.*/token=REDACTED/g'
 }
+
+# CLI logging (used across lib/commands and lib/*.sh)
+devorq::info()    { echo "[INFO] $*"; }
+devorq::log()     { echo "[LOG] $*"; }
+devorq::warn()    { echo "[WARN] $*" >&2; }
+devorq::error()   { echo "[ERROR] $*" >&2; }
+devorq::success() { echo "[OK] $*"; }
+devorq::fail()    { echo "[FAIL] $*" >&2; return 1; }

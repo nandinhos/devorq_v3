@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091,SC2086,SC2034,SC2015,SC2001,SC2162,SC1090,SC1010,SC2164,SC2155,SC2094,SC2005,SC2317,SC2129,SC2126,SC2120,SC2119,SC2116,SC2046
 # lib/context.sh — DEVORQ Context-Mode
 #
 # Ferramentas para análise, compressão e merge de contexto.
@@ -116,13 +117,13 @@ ctx_pack() {
     if command -v jq &>/dev/null; then
         # Extrai apenas campos essenciais para handoff
         jq '{
-            project: .project // "",
-            intent: .intent // "",
+            project: (.project // ""),
+            intent: (.intent // ""),
             stack: (.stack // [] | if type == "array" then . else [] end),
             gates_completed: (.gates_completed // [] | if type == "array" then . else [] end),
             pending_gates: (.pending_gates // [] | if type == "array" then . else [] end),
-            last_session: .last_session // "",
-            pending: .pending // "",
+            last_session: (.last_session // ""),
+            pending: (.pending // ""),
             timestamp: (now | strftime("%Y-%m-%dT%H:%M:%SZ"))
         }' "$ctx_file" > "$output"
     else

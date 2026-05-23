@@ -1,10 +1,8 @@
 {
   "project": "devorq_v3",
-  "stack": "[]",
-  "intent": "",
-  "stats": {
-    "lessons_count": 0,
-    "gates_total": 7,
-    "last_stats_update": "2026-04-22T23:50:32Z"
-  }
+  "stack": ["bash", "jq", "playwright"],
+  "intent": "Restaurar dispatch CLI v3.7 e atestar CLASSIC vs AUTO via orquestrador DEVORQ",
+  "gates_completed": [],
+  "orchestrator_flow": "orch-001",
+  "last_updated": "2026-05-22"
 }

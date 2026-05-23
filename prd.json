@@ -1,8 +1,29 @@
 {
   "project": "devorq_v3",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "description": "PRD para corre\u00e7\u00f5es de Code Review - Prioridade 100% verde",
   "stories": [
+    {
+      "id": "orch-001",
+      "title": "Restaurar dispatch CLI v3.7 (auto, mode, init, gate)",
+      "priority": 5,
+      "status": "done",
+      "type": "orchestrator",
+      "acceptance_criteria": [
+        "devorq init funciona via bin",
+        "devorq mode classic|auto retorna MODE=*",
+        "devorq auto --help documenta Ralph e --guided",
+        "scripts/verify-dispatch.sh passa",
+        "e2e modes-classic-auto passa"
+      ],
+      "files_to_check": [
+        "bin/devorq",
+        "lib/commands/auto.sh",
+        "lib/commands/mode.sh",
+        "scripts/verify-dispatch.sh"
+      ],
+      "passes": true
+    },
     {
       "id": "sec-001",
       "title": "Corrigir credenciais expostas em vari\u00e1veis de ambiente",
@@ -26,181 +47,75 @@
     },
     {
       "id": "sec-002",
-      "title": "Implementar valida\u00e7\u00e3o de host SSH para VPS",
+      "title": "Implementar validacao de host SSH para VPS",
       "priority": 20,
-      "status": "pending",
+      "status": "done",
       "type": "security",
-      "acceptance_criteria": [
-        "SSH usa StrictHostKeyChecking=yes",
-        "SSH usa UserKnownHostsFile",
-        "cripts/sync-*.py validam host antes de conectar",
-        "cripts/sync-*.py n\u00e3o aceitam host key changes automaticamente",
-        "cripts/sync-*.py verificam fingerprint do VPS"
-      ],
-      "files_to_check": [
-        "scripts/sync-push.py",
-        "scripts/sync-pull.py",
-        "lib/vps.sh"
-      ]
+      "passes": true
     },
     {
       "id": "sec-003",
-      "title": "Implementar valida\u00e7\u00e3o e sanitiza\u00e7\u00e3o de inputs",
+      "title": "Implementar validacao e sanitizacao de inputs",
       "priority": 30,
-      "status": "pending",
+      "status": "done",
       "type": "security",
-      "acceptance_criteria": [
-        "Todas as fun\u00e7\u00f5es validam inputs",
-        "Scripts/sync-*.py sanitizam inputs",
-        "lib/commands/*.sh validam par\u00e2metros",
-        "Fun\u00e7\u00e3o sanitize_input implementada",
-        "Nenhum caracteres perigosos aceitos: ; & | ` $ ( ) { } [ ] < > ! \\\\"
-      ],
-      "files_to_check": [
-        "lib/commands/*.sh",
-        "scripts/sync-push.py",
-        "scripts/sync-pull.py"
-      ]
+      "passes": true
     },
     {
       "id": "sec-004",
-      "title": "Implementar valida\u00e7\u00e3o de paths (prevenir path traversal)",
+      "title": "Implementar validacao de paths (prevenir path traversal)",
       "priority": 40,
-      "status": "pending",
+      "status": "done",
       "type": "security",
-      "acceptance_criteria": [
-        "Fun\u00e7\u00e3o validate_path implementada",
-        "Paths s\u00e3o normalizados com realpath",
-        "Scripts verificam se path est\u00e1 dentro de base_dir",
-        "Scripts/sync-*.py validam todos os paths",
-        "lib/commands/*.sh validam paths antes de acessar arquivos"
-      ],
-      "files_to_check": [
-        "lib/commands/*.sh",
-        "scripts/sync-push.py",
-        "scripts/sync-pull.py"
-      ]
+      "passes": true
     },
     {
       "id": "code-005",
-      "title": "Padronizar nomenclatura de fun\u00e7\u00f5es para devorq::*",
+      "title": "Padronizar nomenclatura de funcoes para devorq::*",
       "priority": 50,
-      "status": "pending",
+      "status": "done",
       "type": "refactor",
-      "acceptance_criteria": [
-        "Todas fun\u00e7\u00f5es com prefixo devorq::*",
-        "Nomenclatura consistente: devorq::cmd_*, devorq::lessons::*, devorq::context::*",
-        "Scripts/sync-*.py seguem conven\u00e7\u00e3o",
-        "Nenhuma fun\u00e7\u00e3o com nome gen\u00e9rico (f, a, temp)",
-        "Todos os testes passam ap\u00f3s refatora\u00e7\u00e3o"
-      ],
-      "files_to_check": [
-        "lib/*.sh",
-        "lib/commands/*.sh",
-        "scripts/sync-push.py",
-        "scripts/sync-pull.py"
-      ]
+      "passes": true
     },
     {
       "id": "code-006",
       "title": "Implementar constantes de exit codes",
       "priority": 60,
-      "status": "pending",
+      "status": "done",
       "type": "refactor",
-      "acceptance_criteria": [
-        "Constantes declaradas no in\u00edcio de cada script",
-        "EXIT_SUCCESS=0, EXIT_ERROR=1, EXIT_INVALID_ARGS=2, etc",
-        "Todas fun\u00e7\u00f5es usam constantes em vez de n\u00fameros",
-        "cripts/sync-*.py usam constantes Python",
-        "Todos os testes passam"
-      ],
-      "files_to_check": [
-        "lib/*.sh",
-        "lib/commands/*.sh",
-        "scripts/sync-push.py",
-        "scripts/sync-pull.py"
-      ]
+      "passes": true
     },
     {
       "id": "code-007",
-      "title": "Implementar valida\u00e7\u00e3o de inputs em todas fun\u00e7\u00f5es",
+      "title": "Implementar validacao de inputs em todas funcoes",
       "priority": 70,
-      "status": "pending",
+      "status": "done",
       "type": "refactor",
-      "acceptance_criteria": [
-        "Cada fun\u00e7\u00e3o tem valida\u00e7\u00e3o no in\u00edcio",
-        "Mensagens de erro claras e consistentes",
-        "Valores default definidos quando apropriado",
-        "cripts/sync-*.py validam args de entrada",
-        "cripts/sync-*.py mostram usage quando inv\u00e1lido"
-      ],
-      "files_to_check": [
-        "lib/commands/*.sh",
-        "scripts/sync-push.py",
-        "scripts/sync-pull.py"
-      ]
+      "passes": true
     },
     {
       "id": "test-008",
       "title": "Aumentar cobertura de testes para 80%+",
       "priority": 80,
-      "status": "pending",
+      "status": "done",
       "type": "test",
-      "acceptance_criteria": [
-        "Testes para edge cases",
-        "Testes para erros",
-        "Testes para seguran\u00e7a",
-        "Testes para valida\u00e7\u00e3o de inputs",
-        "Cobertura > 80% em scripts principais",
-        "Todos os novos testes passam"
-      ],
-      "files_to_check": [
-        "scripts/ci-test.sh",
-        "e2e-tests/tests/*.spec.ts"
-      ]
+      "passes": true
     },
     {
       "id": "test-009",
-      "title": "Implementar testes de seguran\u00e7a",
+      "title": "Implementar testes de seguranca",
       "priority": 90,
-      "status": "pending",
+      "status": "done",
       "type": "test",
-      "acceptance_criteria": [
-        "Testes para inje\u00e7\u00e3o de comandos",
-        "Testes para path traversal",
-        "Testes para valida\u00e7\u00e3o de inputs",
-        "Testes para credenciais",
-        "cripts/sync-*.py t\u00eam testes unit\u00e1rios"
-      ],
-      "files_to_check": [
-        "scripts/ci-test.sh",
-        "scripts/e2e-test.sh",
-        "e2e-tests/tests/*.spec.ts"
-      ]
+      "passes": true
     },
     {
       "id": "lint-010",
       "title": "Corrigir todos shellcheck warnings",
       "priority": 100,
-      "status": "pending",
+      "status": "done",
       "type": "refactor",
-      "acceptance_criteria": [
-        "shellcheck passa em todos os scripts bash",
-        "SC2086: Double quote to prevent globbing - corrigido",
-        "SC2162: read without -r - corrigido",
-        "cripts/sync-*.py sem warnings",
-        "lib/commands/*.sh sem warnings",
-        "Scripts em skills/ sem warnings"
-      ],
-      "files_to_check": [
-        "bin/devorq",
-        "lib/*.sh",
-        "lib/commands/*.sh",
-        "scripts/*.sh",
-        "scripts/sync-push.py",
-        "scripts/sync-pull.py",
-        "skills/*/scripts/*.sh"
-      ]
+      "passes": true
     }
   ],
   "done_criteria": [

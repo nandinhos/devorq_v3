@@ -15,7 +15,7 @@ import * as path from 'path';
 
 const DEVORQ_ROOT = path.resolve(__dirname, '../../');
 const DEVORQ_BIN = path.resolve(DEVORQ_ROOT, 'bin/devorq');
-const SANDBOX = '/tmp/devorq-e2e-sandbox';
+const SANDBOX = '/tmp/devorq-e2e-cli';
 
 /**
  * Helper para executar comandos
@@ -40,9 +40,7 @@ function runCommand(cmd: string, cwd: string = DEVORQ_ROOT): { stdout: string; s
  * Setup antes de cada teste
  */
 test.beforeEach(async () => {
-  // Limpar sandbox
-  execSync(`rm -rf ${SANDBOX}`, { encoding: 'utf-8' });
-  execSync(`mkdir -p ${SANDBOX}`, { encoding: 'utf-8' });
+  execSync(`cd /tmp && rm -rf ${SANDBOX} && mkdir -p ${SANDBOX}`, { encoding: 'utf-8' });
 });
 
 describe('DEVORQ CLI - Comandos Básicos', () => {
@@ -113,7 +111,7 @@ describe('DEVORQ CLI - Inicialização', () => {
     // Segunda inicialização (deve detectar)
     const result = runCommand('devorq init', projectDir);
     
-    expect(result.stdout).toContain('já existe');
+    expect(result.stdout).toMatch(/[Jj]á existe/);
   });
 
   test('devorq test deve verificar estrutura', () => {

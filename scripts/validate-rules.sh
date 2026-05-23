@@ -117,8 +117,6 @@ fi
 if [ -d "$PROJECT_ROOT/lib" ]; then
     pass "lib/ existe"
     
-    # Contar arquivos .sh
-    local lib_count
     lib_count=$(find "$PROJECT_ROOT/lib" -maxdepth 1 -name "*.sh" -type f 2>/dev/null | wc -l)
     info "lib/ contém $lib_count módulos"
     
@@ -138,7 +136,7 @@ fi
 if [ -d "$PROJECT_ROOT/skills" ]; then
     pass "skills/ existe"
     
-    local skill_count
+    skill_count=
     skill_count=$(find "$PROJECT_ROOT/skills" -maxdepth 1 -type d 2>/dev/null | wc -l)
     ((skill_count--)) || true  # Subtrai o próprio diretório skills
     info "skills/ contém $skill_count skills"
@@ -173,7 +171,7 @@ if [ -d "$PROJECT_ROOT/e2e-tests" ]; then
     fi
     
     # Verificar se há testes
-    local test_count
+    test_count=
     test_count=$(find "$PROJECT_ROOT/e2e-tests/tests" -name "*.spec.ts" -type f 2>/dev/null | wc -l)
     if [ "$test_count" -gt 0 ]; then
         pass "Encontrados $test_count arquivos de teste"
@@ -217,17 +215,17 @@ if [ -d "$PROJECT_ROOT/.git" ]; then
     pass "Repositório Git inicializado"
     
     # Verificar se há commits recentes
-    local commit_count
+    commit_count=
     commit_count=$(git -C "$PROJECT_ROOT" rev-list --count HEAD 2>/dev/null || echo "0")
     info "Total de commits: $commit_count"
     
     # Verificar último commit
-    local last_commit
+    last_commit=
     last_commit=$(git -C "$PROJECT_ROOT" log -1 --oneline 2>/dev/null || echo "Nenhum commit")
     info "Último commit: $last_commit"
     
     # Verificar se há coauthor (contra as diretrizes)
-    local coauthor_count
+    coauthor_count=
     coauthor_count=$(git -C "$PROJECT_ROOT" log --all --grep="Co-authored-by" --format="%H" 2>/dev/null | wc -l || echo "0")
     if [ "$coauthor_count" -gt 0 ]; then
         warn "Encontrados $coauthor_count commits com Co-authored-by (contra diretrizes)"
@@ -271,7 +269,7 @@ fi
 if [ -d "$PROJECT_ROOT/docs" ]; then
     pass "docs/ existe"
     
-    local doc_count
+    doc_count=
     doc_count=$(find "$PROJECT_ROOT/docs" -name "*.md" -type f 2>/dev/null | wc -l)
     info "docs/ contém $doc_count arquivos"
 else
@@ -290,7 +288,7 @@ info "═══ Boas Práticas ═══"
 if command -v shellcheck &>/dev/null; then
     info "shellcheck disponível - verificando scripts..."
     
-    local shell_errors=0
+    shell_errors=0
     for script in "$PROJECT_ROOT/bin/devorq" "$PROJECT_ROOT/lib"/*.sh; do
         if [ -f "$script" ]; then
             if shellcheck -S error "$script" 2>/dev/null | grep -q "SC[12]"; then
@@ -310,7 +308,7 @@ fi
 
 # 6.2 Verificar VERSION
 if [ -f "$PROJECT_ROOT/VERSION" ]; then
-    local version
+    version=
     version=$(cat "$PROJECT_ROOT/VERSION" 2>/dev/null || echo "desconhecida")
     pass "VERSÃO: $version"
 else

@@ -9,7 +9,7 @@ import * as path from 'path';
  * Testa funcionalidades de lições aprendidas
  */
 
-const SANDBOX = '/tmp/devorq-e2e-sandbox';
+const SANDBOX = '/tmp/devorq-e2e-lessons';
 const DEVORQ_BIN = path.resolve(__dirname, '../..', 'bin/devorq');
 
 function runCommand(cmd: string, cwd: string = SANDBOX): { stdout: string; stderr: string; exitCode: number } {
@@ -29,7 +29,7 @@ function runCommand(cmd: string, cwd: string = SANDBOX): { stdout: string; stder
 }
 
 test.beforeEach(async () => {
-  execSync(`rm -rf ${SANDBOX} && mkdir -p ${SANDBOX}`, { encoding: 'utf-8' });
+  execSync(`cd /tmp && rm -rf ${SANDBOX} && mkdir -p ${SANDBOX}`, { encoding: 'utf-8' });
 });
 
 describe('Lessons - Captura', () => {
@@ -157,38 +157,38 @@ describe('Lessons - Validação', () => {
     const projectDir = `${SANDBOX}/validate-project`;
     fs.mkdirSync(projectDir, { recursive: true });
     runCommand('devorq init', projectDir);
-    
+
     runCommand(
       'devorq lessons capture "Test" "Problem" "Solution"',
       projectDir
     );
-    
+
     const result = runCommand('devorq lessons validate', projectDir);
-    
+
     console.log('Validate output:', result.stdout);
-    
-    expect(result.stdout).toMatch(/validate|Validate|Lição/i);
+
+    expect(result.stdout).toMatch(/Validada|valid|Validation/i);
   });
 
   test('devorq lessons validate deve funcionar sem Context7', () => {
     const projectDir = `${SANDBOX}/validate-no-context7`;
     fs.mkdirSync(projectDir, { recursive: true });
     runCommand('devorq init', projectDir);
-    
+
     runCommand(
       'devorq lessons capture "Test" "Problem" "Solution"',
       projectDir
     );
-    
+
     // Forçar sem Context7
     const result = runCommand(
       'OPENAI_API_KEY="" devorq lessons validate',
       projectDir
     );
-    
+
     console.log('Validate no-context7 output:', result.stdout);
-    
-    expect(result.stdout).toMatch(/validate|Validate|Lição/i);
+
+    expect(result.stdout).toMatch(/Validada|valid|Validation|indisponível/i);
   });
 });
 
@@ -248,25 +248,32 @@ describe('Lessons - Migração', () => {
 });
 
 describe('Lessons - Compilação', () => {
-  
+
   test('devorq lessons compile deve compilar lição', () => {
     const projectDir = `${SANDBOX}/compile-project`;
     fs.mkdirSync(projectDir, { recursive: true });
     runCommand('devorq init', projectDir);
-    
+
     runCommand('devorq lessons capture "Compile test" "P" "S"', projectDir);
-    
+
     // Obter ID da lição
     const lessonsDir = path.join(projectDir, '.devorq/state/lessons/captured');
     const files = fs.readdirSync(lessonsDir).filter(f => f.endsWith('.json'));
-    
+
     if (files.length > 0) {
       const lessonId = path.basename(files[0], '.json');
+
+      // Validar com --auto (bypass Context7 quando indisponível)
+      runCommand(`devorq lessons validate --auto`, projectDir);
+
+      // Aprovar lição antes de compilar
+      runCommand(`devorq lessons approve ${lessonId}`, projectDir);
+
       const result = runCommand(`devorq lessons compile ${lessonId}`, projectDir);
-      
+
       console.log('Compile output:', result.stdout);
-      
-      expect(result.stdout).toMatch(/compile|Compile|skill|Skill/i);
+
+      expect(result.stdout).toMatch(/compile|Compile|skill|Skill|Compilad/i);
     }
   });
 });

@@ -15,15 +15,39 @@ Este arquivo contém as diretrizes e regras de desenvolvimento para o projeto DE
 - Use a `AskUserQuestionTool` quando apropriado
 - Nunca assuma, sempre confirme
 
-### Commits
+### Commits — REGRAS RÍGIDAS
 
-- **NUNCA** adicione o Claude/Trae como coautor nos commits
-- Esta é uma regra **RÍGIDA**
-- Commits devem ser feitos **APENAS** após validação manual do usuário
-- Aguardar confirmação antes de cada commit
-- Usar Conventional Commits em português (sem emojis)
-- Formato: `tipo(escopo): descrição em português`
-- Escopo deve identificar a fase (ex: fase-1, fase-2, gates, lessons, etc)
+#### ⚠️ REGRAS DE OURO ⚠️
+
+1. **AGUARDAR VALIDAÇÃO MANUAL ANTES DE CADA COMMIT**
+   - Esta é uma regra **RÍGIDA** e **INEGOCIÁVEL**
+   - **NUNCA** faça commits automáticos durante implementação
+   - **NUNCA** faça commits ao final de loops (como devorq-auto)
+   - **SEMPRE** pergunte antes: "Posso fazer o commit?"
+
+2. **AGUARDAR VALIDAÇÃO MANUAL ANTES DE CADA PUSH**
+   - **NUNCA** faça push automático
+   - **SEMPRE** pergunte antes: "Posso fazer o push?"
+
+3. **REGRAS ADICIONAIS**
+   - **NUNCA** adicione o Claude/Trae como coautor nos commits
+   - Usar Conventional Commits em português (sem emojis)
+   - Formato: `tipo(escopo): descrição em português`
+   - Escopo deve identificar a fase (ex: fase-1, fase-2, gates, lessons, etc)
+
+#### FLUXO CORRETO:
+```
+1. Implementar funcionalidade
+2. Executar testes
+3. Se testes passam:
+   a. Preparar commit message
+   b. PERGUNTAR: "Posso fazer o commit?"
+   c. AGUARDAR resposta
+   d. Se OK → git commit
+   e. PERGUNTAR: "Posso fazer o push?"
+   f. AGUARDAR resposta
+   g. Se OK → git push
+```
 
 ### Permissões
 

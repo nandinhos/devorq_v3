@@ -9,7 +9,7 @@ import * as path from 'path';
  * Testa todos os gates do sistema DEVORQ v3
  */
 
-const SANDBOX = '/tmp/devorq-e2e-sandbox';
+const SANDBOX = '/tmp/devorq-e2e-gates';
 const DEVORQ_BIN = path.resolve(__dirname, '../..', 'bin/devorq');
 
 function runCommand(cmd: string, cwd: string = SANDBOX): { stdout: string; stderr: string; exitCode: number } {
@@ -29,7 +29,7 @@ function runCommand(cmd: string, cwd: string = SANDBOX): { stdout: string; stder
 }
 
 test.beforeEach(async () => {
-  execSync(`rm -rf ${SANDBOX} && mkdir -p ${SANDBOX}`, { encoding: 'utf-8' });
+  execSync(`cd /tmp && rm -rf ${SANDBOX} && mkdir -p ${SANDBOX}`, { encoding: 'utf-8' });
 });
 
 describe('GATE-0: Exploration', () => {

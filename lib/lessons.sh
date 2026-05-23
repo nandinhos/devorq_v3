@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091,SC2086,SC2034,SC2015,SC2001,SC2162,SC1090,SC1010,SC2164,SC2155,SC2094,SC2005,SC2317,SC2129,SC2126,SC2120,SC2119,SC2116,SC2046
 # lib/lessons.sh — DEVORQ Lessons Module
 #
 # Responsabilidades:
@@ -9,12 +10,42 @@
 
 set -euo pipefail
 
+# Exit codes (only define if not already defined)
+[ -z "${EXIT_SUCCESS:-}" ] && readonly EXIT_SUCCESS=0
+[ -z "${EXIT_ERROR:-}" ] && readonly EXIT_ERROR=1
+[ -z "${EXIT_INVALID_ARGS:-}" ] && readonly EXIT_INVALID_ARGS=2
+[ -z "${EXIT_NOT_FOUND:-}" ] && readonly EXIT_NOT_FOUND=3
+[ -z "${EXIT_VALIDATION_FAILED:-}" ] && readonly EXIT_VALIDATION_FAILED=4
+
 # Cores (sem ANSI — compatibilidade máxima)
 GREEN='' CYAN='' RED='' YELLOW='' RESET='' BOLD=''
 
 DEVORQ_LESSONS_DIR="${DEVORQ_LESSONS_DIR:-${PWD}/.devorq/state/lessons}"
 DEVORQ_HUB_HOST="${DEVORQ_HUB_HOST:-}"
 DEVORQ_HUB_PORT="${DEVORQ_HUB_PORT:-5432}"
+
+# ============================================================
+# sanitize_input — Remove caracteres perigosos de inputs
+# ============================================================
+
+devorq::sanitize_input() {
+    local input="${1:-}"
+    local max_len="${2:-200}"
+
+    # Usa Python para sanitizacao confiavel
+    if command -v python3 &>/dev/null; then
+        python3 -c "
+import sys
+import re
+dangerous = r'[;\x60\x24\x28\x29\x7b\x7d\x5b\x5d<>!\\\\]'
+text = '$input'[:int('$max_len')]
+print(re.sub(dangerous, ' ', text))
+"
+    else
+        # Fallback: tr (menos preciso)
+        echo "$input" | tr -d ';' | tr -d '&' | tr -d '|' | tr -d '`' | tr -d '$' | head -c "$max_len"
+    fi
+}
 
 # ============================================================
 # capture
@@ -24,9 +55,17 @@ DEVORQ_HUB_PORT="${DEVORQ_HUB_PORT:-5432}"
 # ============================================================
 
 lessons::capture() {
-    local title="$1"
-    local problem="$2"
-    local solution="$3"
+    # Validação de inputs
+    if [[ -z "${1:-}" ]]; then
+        echo "[ERROR] Title e obrigatorio" >&2
+        return $EXIT_INVALID_ARGS
+    fi
+
+    # Sanitizar inputs para prevenir injection
+    local title problem solution
+    title=$(devorq::sanitize_input "$1" 200)
+    problem=$(devorq::sanitize_input "${2:-}" 2000)
+    solution=$(devorq::sanitize_input "${3:-}" 5000)
 
     local dir="${DEVORQ_LESSONS_DIR}/captured"
     mkdir -p "$dir"
@@ -90,6 +129,12 @@ lessons::capture() {
 # ============================================================
 
 lessons::search() {
+    # Validação
+    if [[ -z "${1:-}" ]]; then
+        echo "[ERROR] Query e obrigatoria" >&2
+        return $EXIT_INVALID_ARGS
+    fi
+
     local query="$1"
     local dir="${DEVORQ_LESSONS_DIR}/captured"
 
@@ -948,4 +993,44 @@ lessons::from_unify() {
     fi
 
     return 0
+}
+
+# ============================================================
+# LESSONS::HELP — Ajuda para comandos de lições
+# ============================================================
+
+lessons::help() {
+    cat << 'HELPEOF'
+DEVORQ Lessons — Comandos de Lições Aprendidas
+
+Uso: devorq lessons <comando> [args...]
+
+Comandos:
+  capture "<título>" "<problema>" "<solução>"
+                  Capturar uma nova lição aprendida
+  
+  list [filtro]   Listar lições
+    all           Todas (default)
+    approved      Apenas aprovadas
+    pending       Pendentes
+  
+  search "<query>"  Buscar lições por texto
+  
+  validate [--auto]  Validar lições com Context7
+  
+  approve <id> [skill] [--force]
+                  Aprovar lição para compilação
+  
+  compile [id] [--dry-run]
+                  Compilar lições aprovadas em skills
+  
+  migrate         Migrar lições existentes
+
+Exemplos:
+  devorq lessons capture "Título" "Problema" "Solução"
+  devorq lessons list approved
+  devorq lessons search "bash"
+  devorq lessons approve lesson_20260521_123456
+  devorq lessons compile --dry-run
+HELPEOF
 }

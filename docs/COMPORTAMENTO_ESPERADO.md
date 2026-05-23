@@ -1,7 +1,7 @@
-# Comportamento Esperado do Sistema DEVORQ v3.6.0
+# Comportamento Esperado do Sistema DEVORQ v3.7.0
 
-> **Data:** 2026-05-12
-> **Versão:** 3.6.0
+> **Data:** 2026-05-22
+> **Versão:** 3.7.0
 > **Status:** Documentação para Code Review
 
 ---
