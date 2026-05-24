@@ -38,3 +38,19 @@ mkdir -p .devorq/rules
 **Manutenção:**
 - Regras globais são mantidas no repo [nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3)
 - Lições aprendidas podem gerar novas regras via `devorq lessons capture`
+
+## Arquitetura agnóstica (v3.8.1)
+
+- **Fonte canônica:** apenas `rules/` — sem acoplamento a IDE específica
+- **Bootstrap:** `devorq rules bootstrap` → `.devorq/rules/`
+- **Export sob demanda:**
+
+```bash
+devorq rules export project   # .devorq/rules/
+devorq rules export cursor    # .cursor/rules/ (gitignored)
+devorq rules export claude    # CLAUDE.md
+devorq rules export agents    # AGENTS.md no projeto alvo
+```
+
+- **Repo DEVORQ:** [`AGENTS.md`](../AGENTS.md) estável + [`docs/ARQUITETURA-AGNOSTICA-LLM.md`](../docs/ARQUITETURA-AGNOSTICA-LLM.md)
+- **Nunca commitar** `.cursor/` — gerado localmente por export

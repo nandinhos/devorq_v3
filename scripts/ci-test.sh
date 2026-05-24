@@ -233,6 +233,43 @@ else
     fail "devorq ddd validate — output: $cli_ddd"
 fi
 
+# devorq rules export (smoke)
+export_tmp=$(mktemp -d)
+mkdir -p "$export_tmp/.devorq"
+(
+    cd "$export_tmp"
+    for target in cursor claude agents; do
+        export_out=$("$DEVORQ_ROOT/bin/devorq" rules export "$target" 2>&1) || true
+        case "$target" in
+            cursor)
+                [ -f ".cursor/rules/devorq-discipline.mdc" ] && pass "devorq rules export cursor" || fail "devorq rules export cursor — $export_out"
+                ;;
+            claude)
+                [ -f "CLAUDE.md" ] && pass "devorq rules export claude" || fail "devorq rules export claude — $export_out"
+                ;;
+            agents)
+                [ -f "AGENTS.md" ] && pass "devorq rules export agents" || fail "devorq rules export agents — $export_out"
+                ;;
+        esac
+    done
+)
+rm -rf "$export_tmp"
+
+# devorq scope lite
+scope_out=$(bin/devorq scope lite "testar export agnostico" 2>&1) || true
+if echo "$scope_out" | grep -qiE "FAZER|NÃO FAZER|VERIFICAR|NAO FAZER"; then
+    pass "devorq scope lite"
+else
+    fail "devorq scope lite — output: $scope_out"
+fi
+
+# validate-rules (coauthor + agnostic checks)
+if bash "$DEVORQ_ROOT/scripts/validate-rules.sh" >/dev/null 2>&1; then
+    pass "validate-rules.sh"
+else
+    fail "validate-rules.sh (coauthor ou estrutura agnóstica)"
+fi
+
 echo ""
 
 # ============================================================

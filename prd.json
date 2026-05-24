@@ -1,8 +1,30 @@
 {
   "project": "devorq_v3",
-  "version": "3.8.0",
+  "version": "3.8.1",
   "description": "PRD para corre\u00e7\u00f5es de Code Review - Prioridade 100% verde",
   "stories": [
+    {
+      "id": "orch-004",
+      "title": "Agnosticismo LLM + export rules + histórico limpo",
+      "priority": 1,
+      "status": "done",
+      "type": "orchestrator",
+      "acceptance_criteria": [
+        "devorq rules export project|cursor|claude|agents funciona",
+        "Nenhum .cursor/ versionado; AGENTS.md + docs/ARQUITETURA-AGNOSTICA-LLM.md",
+        "Hook commit-msg bloqueia Co-Authored-By",
+        "validate-rules.sh fail se coauthor > 0",
+        "VERSION 3.8.1 alinhada; histórico reorganizado por release"
+      ],
+      "files_to_check": [
+        "lib/rules.sh",
+        "AGENTS.md",
+        "docs/ARQUITETURA-AGNOSTICA-LLM.md",
+        "scripts/rebuild-history-by-version.sh",
+        "scripts/validate-rules.sh"
+      ],
+      "passes": true
+    },
     {
       "id": "orch-003",
       "title": "Disciplina do agente Karpathy + success_criteria + scope lite",

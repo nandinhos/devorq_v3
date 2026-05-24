@@ -1,9 +1,9 @@
-# DEVORQ v3.8.0 — Specification
+# DEVORQ v3.8.1 — Specification
 
 > **Princípio de auto-construção:** o DEVORQ constrói a si próprio.
 > Sistema operacional → usa-se para construir a si mesmo → refina → cresce.
 
-**Versão:** 3.8.0 | **Atualizado:** 2026-05-23
+**Versão:** 3.8.1 | **Atualizado:** 2026-05-23
 
 ---
 

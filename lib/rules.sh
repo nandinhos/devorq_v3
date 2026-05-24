@@ -379,6 +379,140 @@ devorq::rules::help() {
 }
 
 # ============================================================
+# devorq::rules::export — Exporta regras para adaptadores LLM
+# ============================================================
+
+devorq::rules::export_essential_rules() {
+    local dest_dir="$1"
+    mkdir -p "$dest_dir"
+    local rule copied=0
+    for rule in commit-convention manual-commit agent-discipline; do
+        if [[ -f "${DEVORQ_ROOT}/rules/${rule}.md" ]]; then
+            cp "${DEVORQ_ROOT}/rules/${rule}.md" "${dest_dir}/${rule}.md"
+            copied=$((copied + 1))
+        fi
+    done
+    echo "$copied"
+}
+
+devorq::rules::export_project() {
+    local project_root="${1:-$PWD}"
+    if [[ ! -d "${project_root}/.devorq" ]]; then
+        echo "[WARN] .devorq/ não encontrado — execute 'devorq init' primeiro"
+        return 1
+    fi
+    local count
+    count=$(devorq::rules::export_essential_rules "${project_root}/.devorq/rules")
+    echo "[OK] Export project: ${count} regra(s) em ${project_root}/.devorq/rules/"
+}
+
+devorq::rules::export_cursor() {
+    local project_root="${1:-$PWD}"
+    local out_dir="${project_root}/.cursor/rules"
+    mkdir -p "$out_dir"
+    cat > "${out_dir}/devorq-discipline.mdc" << 'MDCEOF'
+---
+description: Disciplina do agente DEVORQ — gerado por devorq rules export cursor. Fonte canonica rules/agent-discipline.md
+alwaysApply: true
+---
+
+# Disciplina DEVORQ
+
+Regras completas em `.devorq/rules/` ou `rules/` no repo DEVORQ.
+
+1. **Pensar antes de codar** — assumptions explicitas; perguntar se ambiguo
+2. **Simplicidade** — minimo codigo; nada especulativo
+3. **Mudancas cirurgicas** — so o pedido; nao refatorar adjacente
+4. **Metas verificaveis** — success_criteria + teste/verify antes de done
+
+Trivial (<5min) → julgamento. Feature nova → `devorq scope lite "<intent>"`.
+MDCEOF
+    echo "[OK] Export cursor: ${out_dir}/devorq-discipline.mdc"
+    echo "[INFO] Regere apos atualizar rules/: devorq rules export cursor"
+}
+
+devorq::rules::export_claude() {
+    local project_root="${1:-$PWD}"
+    local out_file="${project_root}/CLAUDE.md"
+    {
+        echo "# DEVORQ — Instrucoes para agentes (gerado por devorq rules export claude)"
+        echo ""
+        echo "> Fonte canonica: rules/ no repo DEVORQ. Regere com: \`devorq rules export claude\`"
+        echo ""
+        for rule in agent-discipline commit-convention manual-commit; do
+            if [[ -f "${DEVORQ_ROOT}/rules/${rule}.md" ]]; then
+                echo "---"
+                echo ""
+                cat "${DEVORQ_ROOT}/rules/${rule}.md"
+                echo ""
+            fi
+        done
+    } > "$out_file"
+    echo "[OK] Export claude: ${out_file}"
+}
+
+devorq::rules::export_agents() {
+    local project_root="${1:-$PWD}"
+    local out_file="${project_root}/AGENTS.md"
+    cat > "$out_file" << 'AGENTSEOF'
+# AGENTS.md — DEVORQ (gerado por devorq rules export agents)
+
+> Instrucoes agnosticas para qualquer LLM, IDE ou orquestrador.
+> Fonte canonica: `rules/` + `.devorq/rules/` apos `devorq init`.
+
+## Regras essenciais
+
+| Regra | Arquivo |
+|-------|---------|
+| Disciplina do agente | `.devorq/rules/agent-discipline.md` |
+| Convencao de commit | `.devorq/rules/commit-convention.md` |
+| Commits manuais | `.devorq/rules/manual-commit.md` |
+
+## Fluxo recomendado
+
+1. `devorq init` — bootstrap de regras
+2. Preencher `.devorq/state/context.json` com `intent` e `success_criteria`
+3. `devorq scope lite "<intent>"` — contrato minimo antes de codar
+4. `devorq flow` / gates 1-7
+5. `devorq verify` antes de commit
+6. `devorq commit` — sem Co-Authored-By
+
+## Adaptadores por ferramenta
+
+```bash
+devorq rules export project   # .devorq/rules/
+devorq rules export cursor    # .cursor/rules/
+devorq rules export claude    # CLAUDE.md
+devorq rules export agents    # este arquivo
+```
+
+## Proibicoes
+
+- Sem Co-Authored-By em commits
+- Sem refatoracao fora do escopo pedido
+- Sem features especulativas
+AGENTSEOF
+    echo "[OK] Export agents: ${out_file}"
+}
+
+devorq::rules::export_target() {
+    local target="${1:-}"
+    local project_root="${2:-$PWD}"
+
+    case "$target" in
+        project)  devorq::rules::export_project "$project_root" ;;
+        cursor)   devorq::rules::export_cursor "$project_root" ;;
+        claude)   devorq::rules::export_claude "$project_root" ;;
+        agents)   devorq::rules::export_agents "$project_root" ;;
+        *)
+            echo "[ERROR] Alvo desconhecido: $target"
+            echo "Alvos validos: project | cursor | claude | agents"
+            return 1
+            ;;
+    esac
+}
+
+# ============================================================
 # devorq::cmd_rules — Comando principal
 # ============================================================
 
@@ -411,6 +545,9 @@ devorq::cmd_rules() {
         bootstrap)
             devorq::rules::bootstrap_project "${PWD}"
             ;;
+        export)
+            devorq::rules::export_target "${rule_name}" "${PWD}"
+            ;;
         "")
             echo "Uso: devorq rules <action> [args]"
             echo ""
@@ -419,6 +556,7 @@ devorq::cmd_rules() {
             echo "  check <rule> [--strict]   Valida se regra está sendo seguida"
             echo "  apply <rule>              Copia regra global para .devorq/rules/"
             echo "  bootstrap                 Aplica regras essenciais + commit-msg hook"
+            echo "  export <alvo>             Exporta regras (project|cursor|claude|agents)"
             echo "  install-hook              Instala git commit-msg hook (formato commit)"
             echo "  uninstall-hook            Remove git commit-msg hook"
             echo "  help <rule>               Mostra documentação da regra"
@@ -426,6 +564,7 @@ devorq::cmd_rules() {
             echo "Exemplos:"
             echo "  devorq rules list"
             echo "  devorq rules bootstrap"
+            echo "  devorq rules export cursor"
             echo "  devorq rules check commit-convention"
             echo "  devorq rules apply commit-convention"
             ;;
@@ -529,6 +668,13 @@ COMMIT_MSG="$(head -1 "$COMMIT_MSG_FILE")"
 
 if [[ "$COMMIT_MSG" =~ ^Merge|^Revert|^fixup!|^squash! ]]; then
     exit 0
+fi
+
+if grep -qiE '^Co-Authored-By:' "$COMMIT_MSG_FILE"; then
+    echo ""
+    echo "[DEVORQ RULES] Co-Authored-By proibido (rules/commit-convention.md)"
+    echo ""
+    exit 1
 fi
 
 if ! echo "$COMMIT_MSG" | grep -qE '^[a-z]+\([a-z]+\):'; then

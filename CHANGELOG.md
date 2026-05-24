@@ -2,6 +2,24 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.8.1] — 2026-05-23
+
+### Added
+- **`devorq rules export`** — alvos `project`, `cursor`, `claude`, `agents` (adaptadores gerados de `rules/`)
+- **`AGENTS.md`** — instruções agnósticas estáveis na raiz do repo
+- **`docs/ARQUITETURA-AGNOSTICA-LLM.md`** — uso com Telegram, Claude, Cursor sem acoplamento
+- **`scripts/rebuild-history-by-version.sh`** — histórico linear por release (divulgação)
+- **CI** — smoke tests export + `scope lite`; `validate-rules.sh` falha em coautoria
+
+### Changed
+- **Agnosticismo LLM** — `.cursor/` removido do repo; gitignored; gerar via `devorq rules export cursor`
+- **Hook commit-msg** — rejeita `Co-Authored-By` (além do formato escopo(fase))
+- **`rules/README.md`** — secção arquitetura agnóstica
+- **Histórico Git** — reorganizado por versão (1 commit/release); re-clone recomendado
+
+### Fixed
+- **[3.8.0]** menção incorreta de `.cursor/rules/` como feature commitada — corrigido para export-only
+
 ## [3.8.0] — 2026-05-23
 
 ### Added
@@ -9,13 +27,15 @@ All notable changes to DEVORQ v3 are documented here.
 - **Bootstrap** — `agent-discipline` incluída em `devorq rules bootstrap` (junto commit-convention)
 - **`success_criteria`** — campo no template `context.json` do `devorq init`
 - **`devorq scope lite "<intent>"`** — contrato mínimo FAZER/NÃO FAZER/VERIFICAR
-- **`.cursor/rules/devorq-discipline.mdc`** — regra Cursor always-on para projetos DEVORQ
 - **`docs/EXEMPLOS-DISCIPLINA-AGENTE.md`** — 4 exemplos bash/DEVORQ
 - **`docs/ANALISE-KARPATHY-DEVORQ.md`** — análise sistemática Karpathy × DEVORQ
 
 ### Changed
 - **`ctx_lint`** — avisa se `intent` preenchido sem `success_criteria`
 - **Docs de release** — INSTALL, TROUBLESHOOTING, EXTRAS, COMPORTAMENTO_ESPERADO → v3.8.0
+
+### Note (v3.8.1)
+- `.cursor/rules/devorq-discipline.mdc` foi removido em v3.8.1 — use `devorq rules export cursor`
 
 ## [3.7.2] — 2026-05-23
 

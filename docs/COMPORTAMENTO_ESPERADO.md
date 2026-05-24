@@ -1,7 +1,7 @@
-# Comportamento Esperado do Sistema DEVORQ v3.8.0
+# Comportamento Esperado do Sistema DEVORQ v3.8.1
 
 > **Data:** 2026-05-23
-> **Versão:** 3.8.0
+> **Versão:** 3.8.1
 > **Status:** Documentação para Code Review
 
 ---

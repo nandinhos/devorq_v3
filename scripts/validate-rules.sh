@@ -226,14 +226,42 @@ if [ -d "$PROJECT_ROOT/.git" ]; then
     
     # Verificar se há coauthor (contra as diretrizes)
     coauthor_count=
-    coauthor_count=$(git -C "$PROJECT_ROOT" log --all --grep="Co-authored-by" --format="%H" 2>/dev/null | wc -l || echo "0")
+    coauthor_count=$(git -C "$PROJECT_ROOT" log --grep="Co-authored-by" --format="%H" 2>/dev/null | wc -l || echo "0")
+    coauthor_count=$(echo "$coauthor_count" | tr -d ' ')
     if [ "$coauthor_count" -gt 0 ]; then
-        warn "Encontrados $coauthor_count commits com Co-authored-by (contra diretrizes)"
+        fail "Encontrados $coauthor_count commits com Co-authored-by (proibido — rules/commit-convention.md)"
     else
         pass "Nenhum commit com Co-authored-by encontrado"
     fi
 else
     warn "Repositório Git não encontrado"
+fi
+
+# 4.2 Verificar .cursor/ não versionado no repo canônico
+if git -C "$PROJECT_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    if git -C "$PROJECT_ROOT" ls-files --error-unmatch .cursor 2>/dev/null; then
+        fail ".cursor/ versionado no repo (use devorq rules export cursor localmente)"
+    else
+        pass ".cursor/ não versionado"
+    fi
+fi
+if grep -q '^\.cursor/' "$PROJECT_ROOT/.gitignore" 2>/dev/null; then
+    pass ".cursor/ no .gitignore"
+else
+    warn ".cursor/ não está no .gitignore"
+fi
+
+# 4.3 Verificar AGENTS.md e arquitetura agnóstica
+if [ -f "$PROJECT_ROOT/AGENTS.md" ]; then
+    pass "AGENTS.md existe"
+else
+    fail "AGENTS.md não encontrado"
+fi
+
+if [ -f "$PROJECT_ROOT/docs/ARQUITETURA-AGNOSTICA-LLM.md" ]; then
+    pass "docs/ARQUITETURA-AGNOSTICA-LLM.md existe"
+else
+    fail "docs/ARQUITETURA-AGNOSTICA-LLM.md não encontrado"
 fi
 
 echo ""
@@ -340,10 +368,5 @@ else
     echo -e "  ✗ ALGUMAS VALIDAÇÕES FALHARAM"
     echo -e "═══════════════════════════════════════════${NC}"
     echo ""
-    
-    if [ -n "$STRICT" ] && [ "$STRICT" = "--strict" ]; then
-        exit 1
-    fi
-    
-    exit 0
+    exit 1
 fi
