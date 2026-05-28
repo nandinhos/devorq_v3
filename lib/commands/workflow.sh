@@ -166,9 +166,17 @@ devorq::cmd_gate() {
     
     local rv=0
     case "$gate_num" in
+        0)   gate_0;   rv=$? ;;
         0.5) gate_0_5; rv=$? ;;
+        1)   gate_1;   rv=$? ;;
+        2)   gate_2;   rv=$? ;;
+        3)   gate_3;   rv=$? ;;
+        4)   gate_4;   rv=$? ;;
+        5)   gate_5;   rv=$? ;;
         5.5) gate_5_5; rv=$? ;;
-        *) "gate_${gate_num}"; rv=$? ;;
+        6)   gate_6;   rv=$? ;;
+        7)   gate_7;   rv=$? ;;
+        *)   devorq::fail "Gate invalido: $gate_num (aceitos: 0, 0.5, 1-7, 5.5)"; return 1 ;;
     esac
     
     return $rv

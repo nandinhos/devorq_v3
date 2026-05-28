@@ -13,13 +13,7 @@
       "GATE-6",
       "GATE-7"
     ],
-    "untracked_files": [
-      "docs/FLOW-ORCHESTRATOR-ATTEST.md",
-      "lib/commands/auto.sh",
-      "lib/commands/info.sh",
-      "lib/commands/mode.sh",
-      "lib/commands/review.sh"
-    ],
-    "timestamp": "2026-05-22T05:17:14Z"
+    "untracked_files": [],
+    "timestamp": "2026-05-28T20:32:41Z"
   }
 }
