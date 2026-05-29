@@ -26,7 +26,9 @@ EOF
 # ============================================================
 
 devorq::cmd_init() {
-    local project_root="${PWD}"
+    # Sanitizar PWD para prevenir path traversal
+    local project_root
+    project_root=$(cd "${PWD}" && pwd -P)
     local devorq_dir="${project_root}/.devorq"
 
     if [ -d "$devorq_dir" ]; then
@@ -66,7 +68,9 @@ EOFS
 
     local foundation_init="${DEVORQ_ROOT}/skills/project-foundation/scripts/foundation-init.sh"
     if [ -f "$foundation_init" ]; then
-        if bash "$foundation_init" "$devorq_dir/state" "$(basename "$project_root")" 2>/dev/null; then
+        local safe_project_name
+        safe_project_name=$(basename "$project_root" | tr -cd 'a-zA-Z0-9._-')
+        if bash "$foundation_init" "$devorq_dir/state" "$safe_project_name" 2>/dev/null; then
             devorq::info "Foundation docs criados em .devorq/state/"
             devorq::info "Execute: devorq foundation create para preencher"
         fi
@@ -141,7 +145,8 @@ devorq::cmd_flow() {
     for gate in 0 0.5 1 2 3 4 5 6 7; do
         devorq::info "--- GATE ${gate} ---"
         if ! devorq::cmd_gate "$gate" 2>&1; then
-            devorq::error "Gate ${gate} falhou"
+            devorq::error "Gate ${gate} falhou — parando flow"
+            break
         fi
     done
 
@@ -162,8 +167,11 @@ devorq::cmd_gate() {
         return 0
     fi
 
-    source "$lib_gate"
-    
+    # Guard: evitar re-sourcing do mesmo arquivo
+    if ! declare -f gate_0 &>/dev/null; then
+        source "$lib_gate"
+    fi
+
     local rv=0
     case "$gate_num" in
         0)   gate_0;   rv=$? ;;

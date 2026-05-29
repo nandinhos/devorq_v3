@@ -18,8 +18,12 @@ YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
 RESET='\033[0m'
 
-GATE_BLOCKING="${DEVORQ_BLOCKING:-true}"
 DEVORQ_ALLOW_DRAFT="${DEVORQ_ALLOW_DRAFT:-false}"
+
+# Validar DEVORQ_ROOT ao carregar
+if [ -z "${DEVORQ_ROOT:-}" ] || [ ! -d "$DEVORQ_ROOT" ]; then
+    echo "[WARN] DEVORQ_ROOT não definido ou inválido: ${DEVORQ_ROOT:-undefined}" >&2
+fi
 
 # ============================================================
 # helpers
@@ -220,11 +224,20 @@ gate_2() {
 
     if [ -f "bin/devorq" ] || [ -f "Makefile" ]; then
         if command -v shellcheck &>/dev/null; then
-            local sc_errors
-            sc_errors=$(shellcheck -S error bin/devorq lib/*.sh scripts/*.sh 2>/dev/null | grep -c "SC[12]" || true)
-            if [ "$sc_errors" -gt 0 ]; then
-                gate::warn 2 "shellcheck: $sc_errors erro(s) de sintaxe"
-                ((test_errors += sc_errors))
+            local sc_files=("bin/devorq")
+            # Validar globs antes de passar para shellcheck
+            shopt -s nullglob
+            for f in lib/*.sh scripts/*.sh; do
+                [ -f "$f" ] && sc_files+=("$f")
+            done
+            shopt -u nullglob
+            if [ ${#sc_files[@]} -gt 1 ]; then
+                local sc_errors
+                sc_errors=$(shellcheck -S error "${sc_files[@]}" 2>/dev/null | grep -c "SC[12]" || true)
+                if [ "$sc_errors" -gt 0 ]; then
+                    gate::warn 2 "shellcheck: $sc_errors erro(s) de sintaxe"
+                    ((test_errors += sc_errors))
+                fi
             fi
         fi
     fi
@@ -249,7 +262,9 @@ gate_2() {
 gate_3() {
     gate::info 3 "Context Documented — devorq context mostra estado atual"
 
-    source "${DEVORQ_LIB}/context.sh" 2>/dev/null || true
+    if ! source "${DEVORQ_LIB}/context.sh" 2>/dev/null; then
+        gate::warn 3 "lib/context.sh não disponível — algumas funcionalidades podem não funcionar"
+    fi
 
     local ctx_file="${PWD}/.devorq/state/context.json"
 
@@ -271,6 +286,8 @@ gate_3() {
         if ! ctx_lint >/dev/null 2>&1; then
             gate::warn 3 "context.json com problemas (campos ausentes)"
         fi
+    else
+        gate::warn 3 "ctx_lint não disponível — pulando validação de contexto"
     fi
 
     # Mostrar contexto atual
@@ -290,13 +307,15 @@ gate_3() {
 }
 
 # ============================================================
-# GATE-4 — Lessons Reviewed (BLOQUEANTE)
+# GATE-4 — Lessons Reviewed (NÃO BLOQUEANTE)
 # ============================================================
 
 gate_4() {
     gate::info 4 "Lessons Reviewed — devorq lessons search encontrou lições relevantes"
 
-    source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null || true
+    if ! source "${DEVORQ_LIB}/lessons.sh" 2>/dev/null; then
+        gate::warn 4 "lib/lessons.sh não disponível — lições não serão verificadas"
+    fi
 
     local lessons_dir="${PWD}/.devorq/state/lessons/captured"
     local found=0
@@ -323,7 +342,10 @@ gate_4() {
 gate_5() {
     gate::info 5 "Handoff Ready — devorq compact gera JSON válido"
 
-    source "${DEVORQ_LIB}/compact.sh" 2>/dev/null || true
+    if ! source "${DEVORQ_LIB}/compact.sh" 2>/dev/null; then
+        gate::fail 5 "lib/compact.sh não disponível"
+        return 1
+    fi
 
     if ! declare -f compact::generate &>/dev/null; then
         gate::fail 5 "lib/compact.sh não disponível"
@@ -332,25 +354,29 @@ gate_5() {
 
     local handoff_file="${PWD}/.devorq/state/handoff.json"
     local tmp
-    tmp=$(mktemp)
+    tmp=$(mktemp) || { gate::fail 5 "Falha ao criar temp file"; return 1; }
+    trap "rm -f '$tmp'" EXIT
 
     # Gerar handoff e validar JSON
     if compact::generate "$tmp" >/dev/null 2>&1; then
         if command -v jq &>/dev/null; then
             if jq empty "$tmp" 2>/dev/null; then
-                # JSON válido — mover para localização real
+                # JSON válido — mover para localização real (atômico no mesmo FS)
                 mkdir -p "$(dirname "$handoff_file")"
                 mv "$tmp" "$handoff_file"
+                trap - EXIT
                 gate::pass 5 "Handoff Ready — JSON válido gerado"
                 return 0
             else
                 gate::fail 5 "JSON gerado é inválido"
                 rm -f "$tmp"
+                trap - EXIT
                 return 1
             fi
         else
             # Sem jq, confiar na saída
             mv "$tmp" "$handoff_file"
+            trap - EXIT
             gate::pass 5 "Handoff Ready (jq não disponível, validação manual)"
             return 0
         fi
