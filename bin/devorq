@@ -19,7 +19,7 @@ set -euo pipefail
 readonly DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 readonly DEVORQ_LIB="${DEVORQ_ROOT}/lib"
 readonly DEVORQ_BIN="${DEVORQ_ROOT}/bin"
-readonly DEVORQ_VERSION="3.8.1"
+readonly DEVORQ_VERSION="3.8.2"
 
 # Load libraries
 source "${DEVORQ_LIB}/helpers.sh"

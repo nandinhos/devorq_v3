@@ -1,4 +1,4 @@
-# Disciplina do Agente — DEVORQ v3.8+
+# Disciplina do Agente — DEVORQ v3.8.2
 
 **Objetivo:** Reduzir erros comuns de LLM em coding — assumptions silenciosas, over-engineering, diffs inflados, tarefas vagas.
 

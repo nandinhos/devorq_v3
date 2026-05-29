@@ -2,6 +2,30 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.8.2] — 2026-05-28
+
+### Security
+- **Code Review Completo** — 17 issues corrigidas (5 CRITICAL + 6 HIGH + 6 MEDIUM/LOW)
+  - Python injection em `lib/lessons.sh`
+  - Variáveis de cor ANSI vazias causando escape incorreto
+  - Exit code capture com `set -e` em subshell
+  - Command injection em `lib/lessons.sh` e `lib/commands/workflow.sh`
+  - Missing error trapping em `bin/devorq`
+  - DEVORQ_ROOT validation ausente ao carregar libs
+  - Silent source failures — agora com warn explícito
+  - Gate flow continuava após falha — agora para com break
+  - Temp file race condition — trap EXIT implementado
+  - Repeated source de `gates.sh` — guard com `declare -f`
+  - shellcheck globs sem `nullglob` — validacao previa implementada
+
+### Fixed
+- **`devorq gate [N]`** — todos os gates (0, 1, 2, 3, 4, 5, 6, 7) agora funcionais; antes apenas 0.5 e 5.5 eram invocados
+- **`.devorq/version`** — dessincronizado em 3.4.0; corrigido para 3.8.1 (agora 3.8.2)
+- **GATE_BLOCKING** — variável unused removida
+- **PWD path traversal** em `cmd_init` — sanitizado com `cd && pwd -P`
+- **`basename`** em `foundation-init` — sanitizado com `tr -cd 'a-zA-Z0-9._-'`
+- **`devorq flow`** — agora para ao primeiro gate falho (break implícito)
+
 ## [3.8.1] — 2026-05-23
 
 ### Added

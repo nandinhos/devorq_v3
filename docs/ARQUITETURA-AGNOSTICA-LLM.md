@@ -1,4 +1,4 @@
-# Arquitetura agnóstica LLM — DEVORQ v3.8.1
+# Arquitetura agnóstica LLM — DEVORQ v3.8.2
 
 **Princípio:** `rules/` é a única fonte canônica. Adaptadores (Cursor, Claude, AGENTS.md) são **gerados** por `devorq rules export` — nunca editados em paralelo no repo DEVORQ.
 
