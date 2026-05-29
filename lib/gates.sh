@@ -12,7 +12,11 @@
 
 set -euo pipefail
 
-RED='' GREEN='' YELLOW='' CYAN='' RESET=''
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+RESET='\033[0m'
 
 GATE_BLOCKING="${DEVORQ_BLOCKING:-true}"
 DEVORQ_ALLOW_DRAFT="${DEVORQ_ALLOW_DRAFT:-false}"
@@ -193,10 +197,12 @@ gate_2() {
         fi
 
         if [ -n "$test_cmd" ] && command -v php &>/dev/null; then
-            $test_cmd 2>/dev/null || {
-                gate::warn 2 "Testes falharam (exit code: $?)"
+            $test_cmd 2>/dev/null
+            local rv=$?
+            if [ $rv -ne 0 ]; then
+                gate::warn 2 "Testes falharam (exit code: $rv)"
                 ((test_errors++))
-            }
+            fi
         elif [ -f "composer.json" ] && [ ! -d "vendor" ]; then
             gate::warn 2 "vendor/ não instalado"
             ((test_errors++))

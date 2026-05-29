@@ -38,9 +38,9 @@ devorq::sanitize_input() {
 import sys
 import re
 dangerous = r'[;\x60\x24\x28\x29\x7b\x7d\x5b\x5d<>!\\\\]'
-text = '$input'[:int('$max_len')]
+text = sys.argv[1][:int(sys.argv[2])]
 print(re.sub(dangerous, ' ', text))
-"
+" "$input" "$max_len"
     else
         # Fallback: tr (menos preciso)
         echo "$input" | tr -d ';' | tr -d '&' | tr -d '|' | tr -d '`' | tr -d '$' | head -c "$max_len"
@@ -402,7 +402,9 @@ lessons::sync_vps() {
     if [ -f "$mux_lib" ]; then
         # shellcheck source=/dev/null
         source "$mux_lib"
-        vps::exec "mkdir -p ~/.devorq/lessons && cat > ~/.devorq/lessons/$(basename "$file")" < "$file"
+        local safe_name
+        safe_name=$(basename "$file" | tr -cd 'a-zA-Z0-9._-')
+        vps::exec "mkdir -p ~/.devorq/lessons && cat > ~/.devorq/lessons/${safe_name}" < "$file"
     else
         # Fallback: scp direto
         scp -P "$vps_port" -o "ControlPath=$mux_sock" "$file" "${vps_user}@${vps_host}:~/.devorq/lessons/" 2>/dev/null || \

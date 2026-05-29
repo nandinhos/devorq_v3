@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 # bin/devorq — DEVORQ v3.7 CLI (Modularizado)
 #
 # Uso:
