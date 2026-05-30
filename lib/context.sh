@@ -251,3 +251,23 @@ ctx_clear() {
         echo "[INFO] Nenhum context.json para limpar"
     fi
 }
+
+# ============================================================
+# ctx_get — Exibe o contexto atual
+# ============================================================
+
+ctx_get() {
+    local ctx_file="${PWD}/.devorq/state/context.json"
+
+    if [ ! -f "$ctx_file" ]; then
+        echo "[WARN] context.json não encontrado. Execute 'devorq init' ou configure um contexto."
+        return 1
+    fi
+
+    if command -v jq &>/dev/null; then
+        jq . "$ctx_file"
+    else
+        cat "$ctx_file"
+    fi
+}
+
