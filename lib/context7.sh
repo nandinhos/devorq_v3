@@ -34,8 +34,13 @@ CTX7_MCP_URL="${CTX7_MCP_URL:-https://mcp.context7.com/mcp}"
 # Carrega API key do config se existir
 _load_config() {
     if [ -f "$CTX7_CONFIG" ]; then
-        # shellcheck source=/dev/null
-        source <(grep -E "^(OPENAI_API_KEY|CTX7_API_KEY|CTX7_MCP_URL)=" "$CTX7_CONFIG" 2>/dev/null || true)
+        # PATCH F-01: substituir source <(grep ...) por leitura segura
+        # O source original executava command substitution no shell atual
+        # (RCE via payload no $CTX7_CONFIG). Agora validamos keys explicitamente.
+        while IFS='=' read -r k v; do
+            [[ "$k" =~ ^(OPENAI_API_KEY|CTX7_API_KEY|CTX7_MCP_URL)$ ]] || continue
+            declare -gx "$k=$v"
+        done < <(grep -E "^(OPENAI_API_KEY|CTX7_API_KEY|CTX7_MCP_URL)=" "$CTX7_CONFIG" 2>/dev/null)
         CTX7_API_KEY="${OPENAI_API_KEY:-${CTX7_API_KEY:-}}"
     fi
 }

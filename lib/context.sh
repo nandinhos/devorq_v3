@@ -214,25 +214,22 @@ ctx_set() {
         echo "{}" > "$ctx_file"
     fi
 
-    if command -v jq &>/dev/null; then
-        local tmp
-        tmp=$(mktemp)
-        if echo "$value" | jq -e . >/dev/null 2>&1; then
-            jq --arg f "$field" --argjson v "$value" '.[$f] = $v' "$ctx_file" > "$tmp"
-        else
-            jq --arg f "$field" --arg v "$value" '.[$f] = $v' "$ctx_file" > "$tmp"
-        fi
-        mv "$tmp" "$ctx_file"
-    else
-        # Fallback grep+sed rudimentar
-        if grep -q "\"$field\"" "$ctx_file" 2>/dev/null; then
-            sed -i "s/\"$field\":[[:space:]]*\"[^\"]*\"/\"$field\": \"$value\"/" "$ctx_file"
-        else
-            # Adiciona campo (mal formed mas funcional)
-            sed -i 's/}$/  , "'"$field"'": "'"$value"'"\n}/' "$ctx_file" 2>/dev/null || \
-            echo "{\"$field\": \"$value\"}" > "$ctx_file"
-        fi
+        # PATCH F-02: exigir jq (sed fallback era vulneravel a injection)
+    if ! command -v jq &>/dev/null; then
+        echo "[ERROR] ctx_set requer 'jq' instalado (sed fallback removido por seguranca)" >&2
+        echo "        Instale: apt install jq  /  brew install jq" >&2
+        return 1
     fi
+
+    local tmp
+    tmp=$(mktemp)
+    if echo "$value" | jq -e . >/dev/null 2>&1; then
+        jq --arg f "$field" --argjson v "$value" '.[$f] = $v' "$ctx_file" > "$tmp"
+    else
+        jq --arg f "$field" --arg v "$value" '.[$f] = $v' "$ctx_file" > "$tmp"
+    fi
+    mv "$tmp" "$ctx_file"
+
 
     echo "[OK] $field = $value"
 }

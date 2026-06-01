@@ -148,7 +148,8 @@ lessons::search() {
 
     # Busca local via grep nos arquivos JSON
     local results
-    results=$(grep -l -i "$query" "$dir"/*.json 2>/dev/null || true)
+    # PATCH F-06: -F (literal) impede regex injection, -- encerra opcoes
+    results=$(grep -l -iF -- "$query" "$dir"/*.json 2>/dev/null || true)
 
     if [ -z "$results" ]; then
         echo "Nenhuma lição encontrada."
