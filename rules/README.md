@@ -39,7 +39,7 @@ mkdir -p .devorq/rules
 - Regras globais são mantidas no repo [nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3)
 - Lições aprendidas podem gerar novas regras via `devorq lessons capture`
 
-## Arquitetura agnóstica (v3.8.1)
+## Arquitetura agnóstica (v3.8.3)
 
 - **Fonte canônica:** apenas `rules/` — sem acoplamento a IDE específica
 - **Bootstrap:** `devorq rules bootstrap` → `.devorq/rules/`

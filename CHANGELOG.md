@@ -2,6 +2,42 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.8.3] — 2026-06-01
+
+### Security
+- **Code Review Sistemático + Sandbox Testing** — 4 vulnerabilidades corrigidas (F-01 CRITICAL + F-06 HIGH + F-02 HIGH + D-1+D-2 MEDIUM)
+  - **F-01 (CRITICAL)** — RCE via `source <(grep ...)` em `lib/context7.sh`. Saída de grep era sourced em shell, permitindo execução arbitrária se config contaminado. Substituído por `while+read+declare` com whitelist de keys. Exploit confirmou 5 de 7 payloads em sandbox.
+  - **F-06 (HIGH)** — Grep regex injection em `lib/lessons.sh::lessons::search`. Query do usuário era passada crua pro `grep -i`, permitindo flag injection (`--`) e regex injection. Corrigido com `grep -iF --`. Exploit confirmou que query `AKIA` revelava lições com secrets AWS.
+  - **F-02 (HIGH)** — Sed injection em `lib/context.sh::ctx_set` (fallback). Caracteres especiais em valores (`/`, `\`, `"`, newlines) corrompiam o JSON ou executavam comandos via sed. Removido fallback, hard requirement de `jq` (já era dependência).
+  - **D-1+D-2 (MEDIUM)** — Hook `commit-msg` não era instalado automaticamente. Hook existe em `lib/commands/rules.sh` e bloqueia tags de co-autoria + valida formato `escopo(fase):`. Patch garante instalação via `devorq rules install-hook`.
+
+### Added
+- `tests/security/` — suite TDD com 20 testes de regressão (11 arquivos: test_lib.sh + 4 test_F* + 4 apply_* + 1 apply_all.sh)
+- `docs/security-reviews/2026-06-01/PATCHES.md` — documentação completa do processo (8.5 KB)
+- `lib/commands/rules.sh` — hook commit-msg auto-instalado por padrão
+- Skill `devorq-validate-rules-pitfall` (Hermes) — documenta pitfall do body de commit documentando o fix
+
+### Changed
+- **Docs version sync** — README.md, INSTALL.md, EXTRAS.md, TROUBLESHOOTING.md, SPEC.md, rules/README.md, docs/COMPORTAMENTO_ESPERADO.md atualizados de 3.8.1/3.8.2 para 3.8.3
+- `bin/devorq` — header atualizado de "v3.7 CLI" para "v3.8.3 CLI"
+- Histórico Git reescrito via `git filter-repo` para remover menções a co-autoria no body (validador `validate-rules.sh` rejeitava)
+
+### Fixed
+- **`validate-rules.sh`** — falso positivo quando body do commit documentava o fix mencionando a string bloqueada. CI 33/34 → 45/45 ALL PASSED
+- **Version drift** — `.devorq/version`, `VERSION`, header do `bin/devorq`, e 7 arquivos de documentação estavam dessincronizados. Corrigido em v3.8.3.
+
+### Validation
+- `bash scripts/validate-rules.sh` — 34/34 PASSED, 0 FAILED
+- `bash scripts/ci-test.sh` — 45/45 ALL TESTS PASSED (incluindo 20 testes de regressão de segurança)
+- `git log --grep="Co-authored-by" -i` — 0 commits
+- Branch `main` @ `470c5b1` (após filter-repo sanitize)
+- Tag `v3.8.3` @ `f3d976a`
+
+### Reference
+- Code review via Kanban Hermes worker t_15139089
+- Metodologia: systematic-debugging + context7 validation + sandbox testing
+- Detalhes completos: `docs/security-reviews/2026-06-01/PATCHES.md`
+
 ## [3.8.2] — 2026-05-28
 
 ### Security

@@ -1,4 +1,4 @@
-# Arquitetura agnóstica LLM — DEVORQ v3.8.2
+# Arquitetura agnóstica LLM — DEVORQ v3.8.3
 
 **Princípio:** `rules/` é a única fonte canônica. Adaptadores (Cursor, Claude, AGENTS.md) são **gerados** por `devorq rules export` — nunca editados em paralelo no repo DEVORQ.
 
@@ -37,6 +37,6 @@ rules/*.md                    ← fonte canônica (versionada)
 - `scripts/validate-rules.sh` falha se histórico contiver coautoria
 - Convenção em `rules/commit-convention.md`
 
-## Histórico Git (v3.8.1)
+## Histórico Git (v3.8.3)
 
 O histórico `main` foi reorganizado por release (2026-05-23). Re-clone recomendado após force-push de tags.

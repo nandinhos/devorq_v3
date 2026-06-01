@@ -2,7 +2,7 @@
 
 > Guia completo de instalação para Linux, macOS, WSL, e containers Docker.
 
-**Versão:** 3.8.1
+**Versão:** 3.8.3
 
 ---
 
@@ -228,5 +228,5 @@ Manenha apenas `~/projects/devorq_v3/` (ou `~/bin/devorq` com symlink para ela).
 
 ---
 
-**Versão:** 3.8.1
+**Versão:** 3.8.3
 **Repo:** https://github.com/nandinhos/devorq_v3

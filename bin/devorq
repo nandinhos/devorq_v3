@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# bin/devorq — DEVORQ v3.7 CLI (Modularizado)
+# bin/devorq — DEVORQ v3.8.3 CLI (Modularizado)
 #
 # Uso:
 #   devorq <comando> [args...]
@@ -19,7 +19,7 @@ set -euo pipefail
 readonly DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 readonly DEVORQ_LIB="${DEVORQ_ROOT}/lib"
 readonly DEVORQ_BIN="${DEVORQ_ROOT}/bin"
-readonly DEVORQ_VERSION="3.8.2"
+readonly DEVORQ_VERSION="3.8.3"
 
 # Load libraries
 source "${DEVORQ_LIB}/helpers.sh"
@@ -34,7 +34,7 @@ source "${DEVORQ_LIB}/lessons.sh"
 
 devorq::help() {
     cat << 'HELPEOF'
-DEVORQ v3.7 — Framework de Desenvolvimento Sistemático
+DEVORQ v3.8.3 — Framework de Desenvolvimento Sistemático
 
 Uso: devorq <comando> [args...]
 
