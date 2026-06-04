@@ -309,7 +309,7 @@ DEVORQ CORE (bash puro — /projects/devorq_v3)
 │
 ├── lib/
 │   ├── lessons.sh             # lessons::capture|search|validate|apply|sync_vps|export
-│   ├── gates.sh                # gates::check + 7 gates bloqueantes
+│   ├── gates.sh                # gates::check + 10 gates bloqueantes
 │   ├── compact.sh              # compact::run — handoff JSON
 │   ├── context.sh              # ctx_lint|stats|pack|merge|set|clear
 │   ├── context7.sh             # ctx7_check|search|resolve|compare

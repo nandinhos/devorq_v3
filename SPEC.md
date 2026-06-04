@@ -53,7 +53,7 @@ devorq_v3/
 │   │   ├── debug.sh             # debug
 │   │   └── execution.sh         # mode, auto, review
 │   ├── lessons.sh              # lessons core logic
-│   ├── gates.sh                # 7+ gates bloqueantes
+│   ├── gates.sh                # 10 gates bloqueantes
 │   ├── compact.sh              # handoff JSON
 │   ├── context.sh              # ctx_lint|stats|pack|merge|set|clear
 │   ├── context7.sh            # ctx7_check|search|resolve|compare
