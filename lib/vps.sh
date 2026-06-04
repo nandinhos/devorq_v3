@@ -117,6 +117,72 @@ devorq::vps_exec() {
     local cmd="$*"
     [ -z "$cmd" ] && echo "Uso: devorq::vps_exec <comando>" && return $EXIT_INVALID_ARGS
 
+    # Whitelist de comandos SSH permitidos (fix-sec-001 — code review 2026-06-01)
+    # Bloqueia command injection via:
+    # 1. Metacaracteres shell perigosos (; | ` $ newline CR backtick)
+    # 2. Primeira palavra de cada sub-comando (separado por && ou ||) deve estar na whitelist
+    # 3. Rejeita redirecionamento < > que nao seja do proprio caller
+    local allowed_cmds=(
+        systemctl journalctl docker
+        ls cat grep tail head
+        ps free df uptime
+        whoami pwd
+        mkdir                       # caller: lib/lessons.sh:408 (lessons::sync_vps)
+    )
+
+    # P1: Bloqueia metacaracteres SEMPRE proibidos (codex review 2026-06-04)
+    #    Estes NAO sao permitidos nem em compound commands:
+    #      ;        - command separator
+    #      `        - command substitution backtick
+    #      $        - variable expansion
+    #      ( )      - subshell
+    #      cntrl    - injecao multi-line (newline, CR, etc)
+    #    Pipe/background (| &) e' validado no split por sub-comando (P2)
+    # shellcheck disable=SC2016  # regex literal, nao queremos expansao
+    if printf '%s' "$cmd" | grep -qE '[;`$()]|[[:cntrl:]]'; then
+        echo "[ERROR] comando SSH contem metacaracteres proibidos" >&2
+        return $EXIT_INVALID_ARGS
+    fi
+
+    # P2: Valida cada sub-comando (separado por && ou ||) individualmente
+    #    Cada sub-comando NAO pode conter pipe/background (| &) e
+    #    sua primeira palavra deve estar na whitelist.
+    #    NOTA: BRE (sem -E) com classes POSIX basicas (s/ */) e' mais deterministico.
+    local normalized
+    normalized=$(printf '%s\n' "$cmd" | sed 's/ *&& */\n/g; s/ *|| */\n/g')
+    local sub_cmds=()
+    local sub_cmd
+    while IFS= read -r sub_cmd; do
+        [ -z "$sub_cmd" ] && continue
+        # Trim leading/trailing whitespace
+        sub_cmd="${sub_cmd#"${sub_cmd%%[![:space:]]*}"}"
+        sub_cmd="${sub_cmd%"${sub_cmd##*[![:space:]]}"}"
+        [ -z "$sub_cmd" ] && continue
+        sub_cmds+=( "$sub_cmd" )
+    done <<< "$normalized"
+    for sub_cmd in "${sub_cmds[@]}"; do
+        # Bloqueia pipe/background standalone (NAO && nem ||)
+        if printf '%s' "$sub_cmd" | grep -qE '[|&]'; then
+            echo "[ERROR] sub-comando SSH contem pipe/background nao permitido" >&2
+            return $EXIT_INVALID_ARGS
+        fi
+        # Pega primeira palavra (delimitada por espaco ou tab)
+        local first_word="${sub_cmd%%[ 	]*}"
+        local ok=0
+        local allowed
+        for allowed in "${allowed_cmds[@]}"; do
+            if [[ "$first_word" == "$allowed" ]]; then
+                ok=1
+                break
+            fi
+        done
+        if ((ok == 0)); then
+            echo "[ERROR] comando SSH nao permitido: $first_word" >&2
+            echo "[INFO] Comandos permitidos: ${allowed_cmds[*]}" >&2
+            return $EXIT_INVALID_ARGS
+        fi
+    done
+
     # Validação
     devorq::validate_ssh_host "$VPS_HOST" "$VPS_PORT" || return $?
 
