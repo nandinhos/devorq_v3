@@ -256,7 +256,6 @@ CREATE EXTENSION vector;
 | `devorq build` | Executa todos os gates + testes |
 | `devorq upgrade` | Pull latest do repo |
 | `devorq uninstall` | Remove instalação (preserva lessons) |
-| `devorq self-patch` | Aplica patch automático |
 
 ### Fluxo de Self-Building
 
