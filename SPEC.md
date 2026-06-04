@@ -505,6 +505,33 @@ O sistema funciona e atende aos requisitos básicos, mas possui **múltiplas ár
 
 ## 13. Changelog
 
+### v3.8.4 (2026-06-04)
+- ✅ Whitelist SSH em 2 camadas (blocklist + whitelist por sub-comando)
+- ✅ Escopo `release` documentado na whitelist de commit-convention
+- ✅ Doc drift 7 → 10 gates corrigido em SPEC.md e README.md
+- ✅ `devorq self-patch` removido de EXTRAS.md (feature fantasma)
+- 📄 SPEC: `docs/specs/2026-06-02-code-review-corrections.md`
+- 📄 Review: `docs/security-reviews/2026-06-04/SUMMARY.md`
+
+### v3.8.3 (2026-06-01)
+- ✅ Code Review Sistemático (4 vulnerabilidades: F-01 RCE, F-06 grep injection, F-02 sed injection, D-1+D-2 hook)
+- ✅ Suite TDD de regressão de segurança (20 testes)
+- ✅ Hook `commit-msg` auto-instalado
+- 📄 `docs/security-reviews/2026-06-01/PATCHES.md`
+
+### v3.8.2 (2026-05-28)
+- ✅ Code Review Completo (17 issues corrigidas: 5 CRITICAL + 6 HIGH + 6 MEDIUM/LOW)
+- ✅ Gates 0, 1, 2, 3, 4, 6, 7 funcionais (antes só 0.5 e 5.5)
+
+### v3.8.1 (2026-05-23)
+- ✅ Version sync de 3.4.0 → 3.8.1
+- ✅ `GATE_BLOCKING` variável removida
+
+### v3.8.0 (2026-05-23)
+- ✅ Agent discipline (Karpathy)
+- ✅ Success criteria + scope lite
+- ✅ Cursor rules export
+
 ### v3.6.0 (2026-05-13)
 - ✅ Refatoração modular completa (10 módulos em lib/commands/)
 - ✅ Sistema de testes E2E com Playwright
@@ -540,4 +567,4 @@ O sistema funciona e atende aos requisitos básicos, mas possui **múltiplas ár
 ---
 
 *Documento mantido sob controle de versão*
-*Última atualização: 2026-05-13*
+*Última atualização: 2026-06-04 (sprint code-review-2026-06-02 — 5 commits, 4 stories, +1 SPEC, +1 codex review)*
