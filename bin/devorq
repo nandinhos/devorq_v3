@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# bin/devorq — DEVORQ v3.8.3 CLI (Modularizado)
+# bin/devorq — DEVORQ v3.8.4 CLI (Modularizado)
 #
 # Uso:
 #   devorq <comando> [args...]

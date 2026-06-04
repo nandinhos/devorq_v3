@@ -4,8 +4,10 @@
 > Captura lições aprendidas, impõe gates bloqueantes, gera handoffs consistentes.
 > **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
 
-**Versão:** 3.8.3
+**Versão:** 3.8.4
 
+> **Última release (2026-06-04):** v3.8.4 — 4 stories do code review 2026-06-01 (whitelist SSH, escopo release, gates 7→10, remove self-patch). Detalhes em [`CHANGELOG.md`](CHANGELOG.md) e [`docs/specs/2026-06-02-code-review-corrections.md`](docs/specs/2026-06-02-code-review-corrections.md).
+>
 > **Histórico Git (2026-05-23):** `main` reorganizado por release (1 commit/versão). Re-clone recomendado após atualizar.
 
 ---
@@ -309,7 +311,7 @@ DEVORQ CORE (bash puro — /projects/devorq_v3)
 │
 ├── lib/
 │   ├── lessons.sh             # lessons::capture|search|validate|apply|sync_vps|export
-│   ├── gates.sh                # gates::check + 7 gates bloqueantes
+│   ├── gates.sh                # gates::check + 10 gates bloqueantes
 │   ├── compact.sh              # compact::run — handoff JSON
 │   ├── context.sh              # ctx_lint|stats|pack|merge|set|clear
 │   ├── context7.sh             # ctx7_check|search|resolve|compare

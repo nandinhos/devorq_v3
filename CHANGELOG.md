@@ -2,6 +2,61 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
+## [3.8.4] — 2026-06-04
+
+### Security
+- **Whitelist SSH em `devorq::vps_exec`** — defesa em 2 camadas (code review 2026-06-01, issues #3 e #9):
+  - **P1 — blocklist de metacaracteres sempre proibidos**: `;` `` ` `` `$` `()` control chars bloqueados antes de qualquer outra validacao
+  - **P2 — split por compound + validacao por sub-comando**: `&&` e `||` permitidos, mas cada sub-comando e validado contra pipe/background standalone (`|`/`&`) + whitelist de primeira palavra
+  - **Whitelist**: systemctl, journalctl, docker, ls, cat, grep, tail, head, ps, free, df, uptime, whoami, pwd, mkdir
+  - Cobre todos os callers reais: `vps_pg_exec` (docker exec) e `lessons::sync_vps` (mkdir && cat)
+  - **Codex review (2026-06-04)** identificou 2 issues adicionais (P1: bypass via `ls | sh`; P2: caller `lessons::sync_vps` quebrado) que foram corrigidas em 2 iteracoes
+
+### Changed
+- **Doc drift gates 7 → 10** — SPEC.md e README.md declaravam "7 gates" (ou "7+ gates") mas o codigo tem 10 (gate_0, gate_0_5, gate_1, gate_2, gate_3, gate_4, gate_5, gate_5_5, gate_6, gate_7). Atualizado nas referencias atuais; changelog historico de v3.1.0 preservado.
+- **Escopo `release` adicionado a whitelist** — `lib/rules.sh:enforce_commit` e `rules/commit-convention.md` agora incluem `release` na lista de escopos validos. Os 15 commits historicos de version sync (v3.6.4 ate v3.8.2) ja usavam o escopo; agora esta documentado formalmente.
+
+### Removed
+- **`devorq self-patch`** — referencia removida de `EXTRAS.md` (linha da tabela de comandos). Feature nunca foi implementada; a SPEC deste sprint a moveu para "roadmap futuro" (escopo: sprint separada).
+
+### Added
+- **`docs/specs/2026-06-02-code-review-corrections.md`** — SPEC canonica deste sprint (4 stories, decisoes marteladas, principios, riscos)
+- **`docs/security-reviews/2026-06-04/SUMMARY.md`** — sumario do fix do codex review (bypass pipe/background + caller quebrado)
+- **5 licoes capturadas** em `.devorq/state/lessons/`:
+  - SPEC drift: validar contagem real antes de atualizar docs
+  - Path containment: `case` e equivalente a `[[ == base* ]]` (nao requer patch)
+  - Whitelist SSH: cobrir TODOS os callers, nao apenas o exemplo da SPEC
+  - Command injection: defesa em 2 camadas (blocklist + whitelist)
+  - `sed -E` com `[[:space:]]*` quebra silenciosamente em command substitution
+
+### Validation
+- `bash -n lib/vps.sh lib/rules.sh` — OK
+- `shellcheck lib/vps.sh lib/rules.sh` — 0 errors (com `disable=SC2016` documentado para regex literal)
+- `bin/devorq build` — 7/7 gates verdes
+- **Suite de testes funcionais do whitelist** — 11/11 (4 positivos + 7 negativos)
+  - Positivos: `ls -la /tmp`, `docker exec postgres psql ...`, `mkdir -p X && cat > X.json`, `docker ps && journalctl -u nginx`
+  - Negativos: `rm -rf /tmp/x`, `ls; rm -rf /tmp/x`, `ls && rm -rf /tmp/x`, `` cat `whoami` ``, `echo $(whoami)`, `echo x | grep x`, ``
+- **Codex CLI review** (`codex review --uncommitted`) — usado como code review multi-agente; identificou P1 e P2 do fix SSH em 2 rodadas
+- Branch `fix/code-review-2026-06-02` @ 5 commits (publicada no origin)
+- Working dir limpo: apenas state/ local (gitignored) + 5 licoes + 1 spec (commitada)
+
+### Commits deste sprint
+```
+9d564ba docs(specs): publica SPEC code-review-2026-06-02 (4 stories implementadas)
+c95f018 docs(spec): alinha declaracao de gates com implementacao real (10 gates)
+be95519 docs(extras): remove devorq self-patch (nao implementado, planejado para roadmap)
+047208f fix(rules): adiciona escopo release a whitelist de commit-convention
+bc18335 fix(security): corrige command injection em vps.sh via whitelist + blocklist
+```
+
+### Reference
+- Origem: code review 2026-06-01 via Kanban Hermes worker (t_15139089) + 5 lanes paralelas
+- SPEC completa: `docs/specs/2026-06-02-code-review-corrections.md`
+- Fix do codex: `docs/security-reviews/2026-06-04/SUMMARY.md`
+- Metodologia: systematic-debugging (4 phases) + codex CLI review + devorq gates
+
+---
+
 ## [3.8.3] — 2026-06-01
 
 ### Security

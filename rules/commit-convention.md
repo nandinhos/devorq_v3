@@ -45,6 +45,7 @@ docs(gates): documenta GATE-6 manual verification gate
 | `vps` | VPS, infraestrutura |
 | `hub` | HUB, sincronização |
 | `context` | Contexto, estado |
+| `release` | Bump de versão / version sync |
 
 **Fases válidas:**
 

@@ -32,6 +32,9 @@
 | `DEVORQ-RULES-CODE-REVIEW.md` | Regras de code review | ✅ ATIVO |
 | `DEVORQ-DEFICITS-FIX-PLAN.md` | Plano de correções | ✅ ATIVO |
 | `CODE_REVIEW_COMPLETO.md` | Guia de code review | ⚠️ LEGADO |
+| `docs/specs/2026-06-02-code-review-corrections.md` | SPEC do sprint de code review (4 stories) | ✅ ATIVO |
+| `docs/specs/README.md` | Índice de SPECs por sprint | ✅ ATIVO |
+| `docs/security-reviews/2026-06-04/SUMMARY.md` | Review do Codex CLI (fix SSH) | ✅ ATIVO |
 
 ### Testes
 
@@ -46,6 +49,7 @@
 | `MELHORIAS_V3.md` | Melhorias planejadas | ⚠️ LEGADO |
 | `REFATORACAO_ESTRUTURA.md` | Plano de refatoração | ⚠️ LEGADO |
 | `SPEC-LESSONS-SKILLS-LOOP.md` | Arquitetura lessons/skills | ✅ ATIVO |
+| `SPEC-ORCH-002-COMMIT-RULES-DISPATCH.md` | Spec do orquestrador de commit rules | ✅ ATIVO |
 
 ### Propostas
 
@@ -59,7 +63,7 @@
 
 | Status | Count | Descrição |
 |--------|-------|-----------|
-| ✅ ATIVO | 8 | Documentos em uso |
+| ✅ ATIVO | 11 | Documentos em uso |
 | ⚠️ LEGADO | 7 | Documentos históricos |
 | ⚠️ PROPOSTA | 1 | Propostas a avaliar |
 | ❌ ARQUIVADO | 0 | Documentos arquivados |
@@ -84,4 +88,4 @@
 
 ---
 
-*Última atualização: 2026-05-21*
+*Última atualização: 2026-06-04 (sprint code-review-2026-06-02: 4 stories + 1 SPEC + 1 codex review)*

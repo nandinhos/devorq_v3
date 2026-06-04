@@ -600,7 +600,7 @@ devorq::rules::enforce_commit() {
         echo "Escopos válidos:"
         echo "  core | models | services | livewire | notifications | routes | config |"
         echo "  database | tests | bdd | gates | unify | docs | debug | spec | lessons |"
-        echo "  compact | vps | hub | context"
+        echo "  compact | vps | hub | context | release"
         echo ""
         echo "Fases válidas:"
         echo "  impl | test | verify | docs | unify | debug | fix | refactor"
