@@ -469,3 +469,66 @@ gate_7() {
     gate::pass 7 "Systematic Debugging OK (lib/debug.sh não presente — Fase 5)"
     return 0
 }
+
+# ============================================================
+# GATE-E2E — Playwright E2E tests (story-001 e2e revival)
+# Nao-bloqueante. Reporta status, mas retorna 0 sempre.
+# Promocao a bloqueante fica para v3.8.7+ apos 2-3 sprints de
+# estabilidade observada.
+# ============================================================
+
+gate_e2e() {
+    gate::info E2E "E2E Tests (Playwright) — story-001 baseline"
+
+    local e2e_dir="${DEVORQ_ROOT}/e2e-tests"
+
+    if [ ! -d "$e2e_dir" ]; then
+        gate::warn E2E "e2e-tests/ nao encontrado em $e2e_dir"
+        return 0
+    fi
+
+    if ! command -v node >/dev/null 2>&1 || ! command -v npx >/dev/null 2>&1; then
+        gate::warn E2E "node/npx nao disponivel (gate nao verificado)"
+        return 0
+    fi
+
+    # Instala deps sob demanda (rapido se ja cacheado)
+    if [ ! -d "$e2e_dir/node_modules" ]; then
+        gate::info E2E "Instalando dependencias E2E (primeira execucao)..."
+        (cd "$e2e_dir" && npm install --no-fund --no-audit --silent) >/dev/null 2>&1 || {
+            gate::warn E2E "npm install falhou em e2e-tests/"
+            return 0
+        }
+    fi
+
+    # Roda a suite (com timeout de 5 min)
+    local e2e_output
+    e2e_output=$(cd "$e2e_dir" && unset NODE_OPTIONS && timeout 300 npx playwright test --reporter=line 2>&1) || true
+
+    local e2e_passed e2e_failed e2e_total
+    e2e_passed=$(echo "$e2e_output" | grep -oE "[0-9]+ passed" | head -1 | grep -oE "[0-9]+" || echo "0")
+    e2e_failed=$(echo "$e2e_output" | grep -oE "[0-9]+ failed" | head -1 | grep -oE "[0-9]+" || echo "0")
+    e2e_total=$(( ${e2e_passed:-0} + ${e2e_failed:-0} ))
+
+    if [ "$e2e_failed" -eq 0 ] && [ "$e2e_passed" -gt 0 ]; then
+        gate::pass E2E "Playwright ${e2e_passed}/${e2e_total} passed (baseline 2026-06-04)"
+    elif [ "$e2e_total" -eq 0 ]; then
+        gate::warn E2E "Suite nao executou — verifique logs em $e2e_dir/playwright-report"
+    else
+        # Nao bloqueante: imprime mas retorna 0
+        gate::warn E2E "Playwright ${e2e_passed}/${e2e_total} passed (${e2e_failed} failed) — nao-bloqueante no dev"
+    fi
+
+    if [ -d "$e2e_dir/playwright-report" ]; then
+        gate::info E2E "Relatorio HTML: $e2e_dir/playwright-report/index.html"
+    fi
+
+    return 0
+}
+
+# Alias numerico para consistencia com gate_0, gate_1, ... gate_7
+# Uso: devorq gate e2e  →  gate_e2e
+# Tambem acessivel como gate_8 (apos gate_7) — slot reservado para E2E
+gate_8() {
+    gate_e2e
+}
