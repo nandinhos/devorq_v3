@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
-set -euo pipefail
-# bin/devorq — DEVORQ v3.8.4 CLI (Modularizado)
+# bin/devorq -- DEVORQ v3.8.5 CLI Router
 #
 # Uso:
 #   devorq <comando> [args...]
 #
 # Comandos principais:
-#   init, foundation, flow, gate, lessons, context, compact, vps
-#   skills, version, info, upgrade, test, sync, debug, stats
-#   scope, ddd, env, spec, unify, mode, auto, review
+#   init, foundation, mode, test
+#   flow, gate, auto, ddd, scope, env, spec, grill, brainstorm
+#   lessons, context, compact, unify, debug
+#   commit, vps, sync, context7, rules, review, version, upgrade, build, uninstall, stats
+#   skills, info
+#
+# Este arquivo e apenas o ROUTER. Toda a logica vive em lib/dispatchers/*.sh
+
+set -euo pipefail
 
 # shellcheck disable=SC1091,SC2086,SC2034,SC2015,SC2001,SC2162,SC1090,SC1010,SC2164,SC2155,SC2094,SC2005,SC2317,SC2129,SC2126,SC2120,SC2119,SC2116,SC2046
 
@@ -19,14 +24,34 @@ set -euo pipefail
 readonly DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 readonly DEVORQ_LIB="${DEVORQ_ROOT}/lib"
 readonly DEVORQ_BIN="${DEVORQ_ROOT}/bin"
-readonly DEVORQ_VERSION="3.8.4"
+readonly DEVORQ_VERSION="3.8.5"
+readonly DEVORQ_DISPATCHERS_DIR="${DEVORQ_LIB}/dispatchers"
 
-# Load libraries
+# Carrega bibliotecas core (mantem ordem para dependencias)
+# shellcheck source=lib/helpers.sh
 source "${DEVORQ_LIB}/helpers.sh"
+# shellcheck source=lib/visual.sh
 source "${DEVORQ_LIB}/visual.sh"
+# shellcheck source=lib/gates.sh
 source "${DEVORQ_LIB}/gates.sh"
+# shellcheck source=lib/context.sh
 source "${DEVORQ_LIB}/context.sh"
+# shellcheck source=lib/lessons.sh
 source "${DEVORQ_LIB}/lessons.sh"
+
+# Carrega dispatchers (dynamic source loop)
+# Cada dispatcher agrupa comandos por afinidade e expoe devorq::cmd_*
+if [[ -d "${DEVORQ_DISPATCHERS_DIR}" ]]; then
+    for _dispatcher in "${DEVORQ_DISPATCHERS_DIR}"/*.sh; do
+        [[ -f "$_dispatcher" ]] || continue
+        # shellcheck disable=SC1090
+        source "$_dispatcher"
+    done
+    unset _dispatcher
+else
+    echo "[ERROR] dispatchers dir nao encontrado: ${DEVORQ_DISPATCHERS_DIR}" >&2
+    exit 1
+fi
 
 # ============================================================
 # HELP
@@ -34,7 +59,7 @@ source "${DEVORQ_LIB}/lessons.sh"
 
 devorq::help() {
     cat << 'HELPEOF'
-DEVORQ v3.8.4 — Framework de Desenvolvimento Sistemático
+DEVORQ v3.8.5 — Framework de Desenvolvimento Sistemático
 
 Uso: devorq <comando> [args...]
 
@@ -87,7 +112,7 @@ HELPEOF
 }
 
 # ============================================================
-# MAIN DISPATCH
+# MAIN DISPATCH (router puro)
 # ============================================================
 
 main() {
@@ -95,96 +120,57 @@ main() {
     shift || true
 
     case "$cmd" in
-        init)           source "${DEVORQ_LIB}/commands/workflow.sh" && devorq::cmd_init "$@" ;;
-        foundation)     source "${DEVORQ_LIB}/commands/foundation.sh" && devorq::cmd_foundation "$@" ;;
-        flow)           source "${DEVORQ_LIB}/commands/workflow.sh" && devorq::cmd_flow "$@" ;;
-        gate)           source "${DEVORQ_LIB}/commands/workflow.sh" && devorq::cmd_gate "$@" ;;
-        
-        lessons)
-            local action="${1:-}"
-            shift || true
-            # Check if action is --help and delegate to lessons::help
-            if [[ "$action" == "--help" ]] || [[ "$action" == "-h" ]]; then
-                lessons::help
-                return 0
-            fi
-            # Handle --help for subcommands
-            if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
-                lessons::help
-                return 0
-            fi
-            case "$action" in
-                capture)  lessons::capture "${1:-}" "${2:-}" "${3:-}" ;;
-                list)     lessons::list "${1:-}" ;;
-                search)   lessons::search "${1:-}" ;;
-                validate) lessons::validate "${1:-}" ;;
-                approve)  lessons::approve "${1:-}" "${2:-}" "${3:-}" ;;
-                compile)  lessons::compile "${1:-}" "${2:-}" "${3:-}" ;;
-                migrate)  lessons::migrate ;;
-                help|--help|-h) lessons::help ;;
-                *)        lessons::help ;;
-            esac
-            ;;
-        
-        context)
-            local action="${1:-}"
-            case "$action" in
-                get)   ctx_get ;;
-                set)   ctx_set "${2:-}" "${3:-}" ;;
-                merge) ctx_merge "${2:-}" ;;
-                clear) ctx_clear ;;
-                stats) ctx_stats ;;
-                *)     echo "Uso: devorq context <get|set|merge|clear|stats>" ;;
-            esac
-            ;;
-        
-        compact)    source "${DEVORQ_LIB}/commands/context.sh" && devorq::cmd_compact ;;
-        vps)        source "${DEVORQ_LIB}/commands/integration.sh" && devorq::cmd_vps "$@" ;;
-        sync)       source "${DEVORQ_LIB}/commands/integration.sh" && devorq::cmd_sync "$@" ;;
-        
-        skills)     source "${DEVORQ_LIB}/commands/skills.sh" && devorq::cmd_skills ;;
-        
-        ddd)
-            local action="${1:-}"
-            case "$action" in
-                validate)  source "${DEVORQ_LIB}/commands/ddd.sh" && devorq::cmd_ddd_validate ;;
-                explore)   source "${DEVORQ_LIB}/commands/ddd.sh" && devorq::cmd_ddd_explore ;;
-                *) echo "Uso: devorq ddd <validate|explore>" ;;
-            esac
-            ;;
-        
-        scope)      source "${DEVORQ_LIB}/commands/exploration.sh" && devorq::cmd_scope "$@" ;;
-        env)
-            local action="${1:-detect}"
-            shift || true
-            source "${DEVORQ_LIB}/commands/exploration.sh" && devorq::cmd_env "$action" "$@"
-            ;;
-        spec)       source "${DEVORQ_LIB}/commands/exploration.sh" && devorq::cmd_spec "$@" ;;
-        unify)      source "${DEVORQ_LIB}/commands/exploration.sh" && devorq::cmd_unify "$@" ;;
-        mode)       source "${DEVORQ_LIB}/commands/mode.sh" && devorq::cmd_mode "$@" ;;
-        auto)       source "${DEVORQ_LIB}/commands/auto.sh" && devorq::cmd_auto "$@" ;;
-        commit)     source "${DEVORQ_LIB}/commands/commit.sh" && devorq::cmd_commit_dispatch "$@" ;;
-        verify)     devorq::cmd_verify "$@" ;;
-        rules)      source "${DEVORQ_LIB}/commands/rules.sh" && devorq::cmd_rules_dispatch "$@" ;;
-        review)     source "${DEVORQ_LIB}/commands/review.sh" && devorq::cmd_review "$@" ;;
-        build)      source "${DEVORQ_LIB}/commands/utils.sh" && devorq::cmd_build ;;
-        stats)      source "${DEVORQ_LIB}/commands/utils.sh" && devorq::cmd_stats ;;
-        
-        version)    echo "DEVORQ v${DEVORQ_VERSION}" ;;
-        info)       source "${DEVORQ_LIB}/commands/info.sh" && devorq::cmd_info ;;
-        upgrade)    source "${DEVORQ_LIB}/commands/utils.sh" && devorq::cmd_upgrade ;;
-        test)       source "${DEVORQ_LIB}/commands/test.sh" && devorq::cmd_test ;;
-        debug)      source "${DEVORQ_LIB}/commands/debug.sh" && devorq::cmd_debug "$@" ;;
-        
-        uninstall)  source "${DEVORQ_LIB}/commands/utils.sh" && devorq::cmd_uninstall ;;
-        
+        # INIT dispatcher
+        init)        devorq::cmd_init "$@" ;;
+        foundation)  devorq::cmd_foundation "$@" ;;
+        mode)        devorq::cmd_mode "$@" ;;
+        test)        devorq::cmd_test "$@" ;;
+
+        # WORKFLOW dispatcher
+        flow)        devorq::cmd_flow "$@" ;;
+        gate)        devorq::cmd_gate "$@" ;;
+        auto)        devorq::cmd_auto "$@" ;;
+        ddd)         devorq::cmd_ddd "$@" ;;
+        scope)       devorq::cmd_scope "$@" ;;
+        env)         devorq::cmd_env "$@" ;;
+        spec)        devorq::cmd_spec "$@" ;;
+        grill)       devorq::cmd_grill "$@" ;;
+        brainstorm)  devorq::cmd_brainstorm "$@" ;;
+
+        # STATE dispatcher
+        lessons)     devorq::cmd_lessons "$@" ;;
+        context)     devorq::cmd_context "$@" ;;
+        compact)     devorq::cmd_compact "$@" ;;
+        unify)       devorq::cmd_unify "$@" ;;
+        debug)       devorq::cmd_debug "$@" ;;
+
+        # DELIVERY dispatcher
+        commit)      devorq::cmd_commit_dispatch "$@" ;;
+        vps)         devorq::cmd_vps "$@" ;;
+        sync)        devorq::cmd_sync "$@" ;;
+        context7)    devorq::cmd_context7 "$@" ;;
+        rules)       devorq::cmd_rules_dispatch "$@" ;;
+        review)      devorq::cmd_review "$@" ;;
+        upgrade)     devorq::cmd_upgrade "$@" ;;
+        build)       devorq::cmd_build "$@" ;;
+        uninstall)   devorq::cmd_uninstall "$@" ;;
+        stats)       devorq::cmd_stats "$@" ;;
+
+        # DISCOVERY dispatcher
+        skills)      devorq::cmd_skills "$@" ;;
+        info)        devorq::cmd_info "$@" ;;
+
+        # Built-in (sem dispatcher dedicado)
+        version)     echo "DEVORQ v${DEVORQ_VERSION}" ;;
+        verify)      devorq::cmd_verify "$@" ;;
+
         help|--help|-h) devorq::help ;;
-        
-        *) 
+
+        *)
             if [[ -n "$cmd" ]]; then
                 echo "[ERROR] Comando desconhecido: $cmd" >&2
-                echo "Use 'devorq help' para ajuda"
-                return $EXIT_INVALID_ARGS
+                echo "Use devorq help para ajuda" >&2
+                return 1
             fi
             devorq::help
             ;;
