@@ -1,0 +1,17 @@
+{
+  "id": "lesson_20260604_125848_50899",
+  "title": "sed -E com   :space:  * em command substitution quebra silenciosamente",
+  "problem": "--problem",
+  "solution": "Usei 'sed -E s/  :space:  *&&  :space:  */  n/g' dentro de   command substitution . O resultado foi: cada caractere do input virou uma linha separada  l, s, -, l, a, /, t, m, p em vez de 'ls -la /tmp' . Causa: combinacao de  a  ERE com   :space:  * que tem semantica diferente de BRE,  b  command substitution com set -u,  c  read com IFS que nao preservava o valor. Demorei 30min para isolar — a SPEC original do code review nao cobriu esse edge case.",
+  "stack": "unknown",
+  "tags": [],
+  "timestamp": "20260604_125848",
+  "validated": true,
+  "applied": false,
+  "approved": true,
+  "validated_at": "2026-06-04T21:35:00Z",
+  "approved_at": "2026-06-04T21:35:00Z",
+  "validator": "manual-nando-2026-06-04",
+  "approver": "manual-nando-2026-06-04",
+  "sprint_origin": "v3.8.4"
+}

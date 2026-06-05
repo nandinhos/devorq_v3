@@ -1,9 +1,12 @@
 {
   "handoff": {
     "project": "devorq_v3",
-    "stack": "bash,jq,playwright",
-    "intent": "Restaurar dispatch CLI v3.7 e atestar CLASSIC vs AUTO via orquestrador DEVORQ",
-    "gates_completed": [],
+    "stack": "bash,jq,playwright,python3",
+    "intent": "Sprint v3.8.5: dogfooding do DEVORQ no proprio DEVORQ. 5 stories: E2E revival, refactor bin/devorq, refactor lib/lessons.sh, sync-version.sh, close v3.8.4 cycle",
+    "gates_completed": [
+      "GATE-0",
+      "GATE-0.5"
+    ],
     "pending_gates": [
       "GATE-1",
       "GATE-2",
@@ -13,7 +16,10 @@
       "GATE-6",
       "GATE-7"
     ],
+    "foundation_status": "5/5 docs validados (GATE-0.5 PASSED 2026-06-04T21:45Z)",
+    "sprint_origin_closed": "v3.8.4 (5 licoes validadas+aprovadas, PRD movido para docs/specs/archive/)",
     "untracked_files": [],
-    "timestamp": "2026-05-28T20:32:41Z"
+    "next_action": "Criar SPEC docs/specs/2026-06-04-v3.8.5-dogfooding.md e prd-2026-06-04.json, depois despachar stories via Mavis Team em paralelo",
+    "timestamp": "2026-06-04T21:45:00Z"
   }
 }

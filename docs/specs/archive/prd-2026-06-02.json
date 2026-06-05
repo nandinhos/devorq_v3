@@ -1,0 +1,121 @@
+{
+  "project": "devorq_v3",
+  "feature": "code-review-corrections-2026-06-02",
+  "branch": "fix/code-review-2026-06-02",
+  "created": "2026-06-02T04:30:00Z",
+  "spec": "docs/specs/2026-06-02-code-review-corrections.md",
+  "version_at_start": "3.8.3",
+  "commit_at_start": "38dbb8b1932205671282f3f24fda7c4a8f84138f",
+  "stories": [
+    {
+      "id": "fix-sec-001",
+      "title": "Whitelist de comandos SSH + checagem de containment em vps.sh",
+      "description": "Aplicar whitelist de comandos permitidos em devorq::vps_exec (systemctl, journalctl, docker, ls, cat, grep, tail, head, ps, free, df, uptime, whoami, pwd) e adicionar checagem de containment [[ \"$real_path\" == \"$real_base\"* ]] em devorq::sanitize_path.",
+      "acceptanceCriteria": [
+        "devorq::vps_exec valida $cmd contra whitelist",
+        "Whitelist contem os 14 comandos listados na SPEC",
+        "Comando fora da whitelist retorna erro explicito e exit != 0",
+        "devorq::sanitize_path checa containment apos realpath",
+        "Path fora de base_dir retorna erro explicito e exit != 0",
+        "Todos os callers atuais de vps_exec usam comandos da whitelist (verificar com grep)",
+        "bash -n lib/vps.sh passa",
+        "shellcheck lib/vps.sh retorna 0 errors"
+      ],
+      "files_allowed": [
+        "lib/vps.sh"
+      ],
+      "files_prohibited": [
+        "bin/devorq",
+        "lib/*.sh"
+      ],
+      "priority": 1,
+      "passes": false,
+      "estimated_minutes": 15,
+      "commit_message": "fix(security): corrige command injection em vps.sh via whitelist + checagem de path"
+    },
+    {
+      "id": "fix-rules-002",
+      "title": "Adicionar release a whitelist de escopos validos",
+      "description": "Adicionar | `release` | Bump de versao / version sync | na tabela de rules/commit-convention.md e adicionar 'release' a lista hardcoded em lib/rules.sh:603-610. Os 15 commits historicos com release(...) permanecem no historico sem rewrite.",
+      "acceptanceCriteria": [
+        "rules/commit-convention.md tem linha `release` na tabela",
+        "lib/rules.sh:603-610 contem 'release' na lista hardcoded",
+        "Regex do hook permanece ^[a-z]+\\([a-z]+\\): (aceita qualquer escopo)",
+        "Commit de teste release(test-spec): spec e aceito pelo hook",
+        "Os 15 commits historicos com release(...) nao sao reescritos",
+        "bash -n lib/rules.sh passa"
+      ],
+      "files_allowed": [
+        "rules/commit-convention.md",
+        "lib/rules.sh"
+      ],
+      "files_prohibited": [
+        "bin/devorq"
+      ],
+      "priority": 2,
+      "passes": false,
+      "estimated_minutes": 5,
+      "commit_message": "fix(rules): adiciona escopo release a whitelist de commit-convention"
+    },
+    {
+      "id": "docs-extras-003",
+      "title": "Remover devorq self-patch de EXTRAS.md",
+      "description": "Remover a linha `| `devorq self-patch` | Aplica patch automatico |` de EXTRAS.md. Feature nao foi implementada em bin/devorq e deve ir para roadmap futuro (decisao separada do Nando).",
+      "acceptanceCriteria": [
+        "Linha `| `devorq self-patch` | Aplica patch automatico |` removida de EXTRAS.md",
+        "grep -rE 'self-patch|self_patch' EXTRAS.md README.md SPEC.md retorna vazio",
+        "Referencia a EXTRAS.md em SPEC.md:493 permanece",
+        "git diff mostra apenas a linha removida (sem reformatacao acidental)"
+      ],
+      "files_allowed": [
+        "EXTRAS.md"
+      ],
+      "files_prohibited": [
+        "docs/specs/2026-06-02-code-review-corrections.md",
+        "prd-2026-06-02.json"
+      ],
+      "priority": 3,
+      "passes": false,
+      "estimated_minutes": 3,
+      "commit_message": "docs(extras): remove devorq self-patch (nao implementado, planejado para roadmap)"
+    },
+    {
+      "id": "docs-spec-004",
+      "title": "Alinhar SPEC.md com 10 gates reais",
+      "description": "Atualizar referencias a '7 gates' em SPEC.md (linhas 56, 537) para refletir 10 gates reais (gate_0, gate_0_5, gate_1-7, gate_5_5). Verificar e completar tabela de gates se faltar GATE-3/4/5/5.5/6/7.",
+      "acceptanceCriteria": [
+        "SPEC.md:56 atualizado de '7+ gates bloqueantes' para '10 gates bloqueantes'",
+        "SPEC.md:537 atualizado de '7 gates bloqueantes' para '10 gates bloqueantes'",
+        "Tabela de gates em SPEC (regiao GATE-0/0.5/1/2) verificada e completada se faltar GATE-3/4/5/5.5/6/7",
+        "grep -nE '7 gate|sete gate' SPEC.md retorna vazio",
+        "grep -nE '10 gate|gate_0|gate_5_5' SPEC.md retorna >= 1 match"
+      ],
+      "files_allowed": [
+        "SPEC.md"
+      ],
+      "files_prohibited": [
+        "EXTRAS.md",
+        "README.md",
+        "lib/*.sh"
+      ],
+      "priority": 4,
+      "passes": false,
+      "estimated_minutes": 5,
+      "commit_message": "docs(spec): alinha declaracao de gates com implementacao real (10 gates)"
+    }
+  ],
+  "stats": {
+    "total": 4,
+    "completed": 0,
+    "pending": 4,
+    "in_progress": 0
+  },
+  "commit_plan": [
+    "fix(security): corrige command injection em vps.sh via whitelist + checagem de path (fix-sec-001)",
+    "fix(rules): adiciona escopo release a whitelist de commit-convention (fix-rules-002)",
+    "docs(extras): remove devorq self-patch (nao implementado, planejado para roadmap) (docs-extras-003)",
+    "docs(spec): alinha declaracao de gates com implementacao real (10 gates) (docs-spec-004)"
+  ],
+  "archived_at": "2026-06-04T21:35:00Z",
+  "archive_reason": "sprint v3.8.4 finalizado e mergeado; PRD original desatualizado (passes: false); CHANGELOG.md é a fonte de verdade"
+}
