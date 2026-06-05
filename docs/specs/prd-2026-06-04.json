@@ -1,0 +1,150 @@
+{
+  "project": "devorq_v3",
+  "feature": "v3.8.5-dogfooding-2026-06-04",
+  "branch": "feature/v3.8.5-dogfooding",
+  "version_at_start": "3.8.4",
+  "spec": "docs/specs/2026-06-04-v3.8.5-dogfooding.md",
+  "created": "2026-06-04T21:50:00Z",
+  "stories": [
+    {
+      "id": "story-001-e2e-revival",
+      "title": "E2E revival: reviver suite Playwright estagnada desde v3.6.0 + baseline CI",
+      "type": "test",
+      "priority": 1,
+      "passes": false,
+      "estimated_minutes": 90,
+      "files_allowed": [
+        "e2e-tests/",
+        "scripts/ci-test.sh",
+        "lib/gates.sh",
+        ".github/workflows/"
+      ],
+      "files_prohibited": [
+        "bin/devorq",
+        "lib/*.sh"
+      ],
+      "acceptance_criteria": [
+        "Todos os testes em e2e-tests/tests/*.ts rodam sem erro de infra",
+        "Minimo 80% dos testes passam (baseline revisado)",
+        "e2e-tests/RESULTADOS_TESTES.md atualizado com data 2026-06-04",
+        "scripts/ci-test.sh inclui step de e2e",
+        "devorq verify reporta status de e2e via GATE-E2E"
+      ],
+      "commit_message": "test(e2e): reviver suite Playwright + baseline CI gate"
+    },
+    {
+      "id": "story-002-refactor-bin-devorq",
+      "title": "Refactor bin/devorq (1503 LOC) em router + lib/dispatchers/*.sh",
+      "type": "refactor",
+      "priority": 1,
+      "passes": false,
+      "estimated_minutes": 120,
+      "files_allowed": [
+        "bin/devorq",
+        "lib/dispatchers/"
+      ],
+      "files_prohibited": [
+        "lib/*.sh"
+      ],
+      "acceptance_criteria": [
+        "bin/devorq < 200 LOC (apenas router + bootstrap)",
+        "lib/dispatchers/*.sh com <500 LOC cada",
+        "devorq --help saida identica a baseline (diff zero)",
+        "devorq version retorna 3.8.5",
+        "Suite de testes de seguranca: 11/11 passam",
+        "bash -n bin/devorq lib/dispatchers/*.sh retorna 0",
+        "shellcheck bin/devorq lib/dispatchers/*.sh retorna 0 errors"
+      ],
+      "commit_message": "refactor(bin): quebrar bin/devorq em router + lib/dispatchers/*.sh"
+    },
+    {
+      "id": "story-003-refactor-lib-lessons",
+      "title": "Refactor lib/lessons.sh (995 LOC) em lib/lessons/{crud,search,sync}.sh",
+      "type": "refactor",
+      "priority": 1,
+      "passes": false,
+      "estimated_minutes": 90,
+      "files_allowed": [
+        "lib/lessons.sh",
+        "lib/lessons/"
+      ],
+      "files_prohibited": [
+        "bin/devorq",
+        "lib/*.sh (exceto lessons.sh)"
+      ],
+      "acceptance_criteria": [
+        "lib/lessons.sh < 100 LOC (apenas source + exports)",
+        "lib/lessons/{crud,search,sync}.sh com <400 LOC cada",
+        "Todas as funcoes lessons::* acessiveis (mesmo namespace)",
+        "Suite de testes de seguranca: 11/11 passam (F-06 grep injection)",
+        "bash -n lib/lessons.sh lib/lessons/*.sh retorna 0",
+        "shellcheck lib/lessons.sh lib/lessons/*.sh retorna 0 errors"
+      ],
+      "commit_message": "refactor(lessons): separar lib/lessons.sh em lib/lessons/{crud,search,sync}.sh"
+    },
+    {
+      "id": "story-004-sync-version-script",
+      "title": "scripts/sync-version.sh: detectar e corrigir drift de versao",
+      "type": "tooling",
+      "priority": 2,
+      "passes": false,
+      "estimated_minutes": 45,
+      "files_allowed": [
+        "scripts/sync-version.sh",
+        "scripts/ci-test.sh",
+        "EXTRAS.md",
+        "prd.json"
+      ],
+      "files_prohibited": [
+        "bin/devorq",
+        "lib/*.sh"
+      ],
+      "acceptance_criteria": [
+        "./scripts/sync-version.sh --check detecta drift entre VERSION=3.8.4 e bin/devorq=3.8.3 (cenario real)",
+        "./scripts/sync-version.sh --fix atualiza todos os pontos para VERSION",
+        "Integrado como step em scripts/ci-test.sh",
+        "prd.json (raiz) tem version corrigido para 3.8.4",
+        "Documentado em EXTRAS.md com exemplo de uso"
+      ],
+      "commit_message": "feat(scripts): sync-version.sh detecta/corrige drift de versao automaticamente"
+    },
+    {
+      "id": "story-005-close-v3-8-4-cycle",
+      "title": "Close v3.8.4 cycle: commit licoes + progress.txt + working dir limpo",
+      "type": "chore",
+      "priority": 2,
+      "passes": false,
+      "estimated_minutes": 20,
+      "files_allowed": [
+        "progress.txt",
+        ".devorq/state/lessons/captured/",
+        "docs/specs/archive/"
+      ],
+      "files_prohibited": [
+        "bin/devorq",
+        "lib/*.sh"
+      ],
+      "acceptance_criteria": [
+        "5 licoes commitadas com sprint_origin=v3.8.4 e validated+approved=true",
+        "progress.txt tem marca PASSED para todas as 4 stories do v3.8.4 + fechamento",
+        "PRD v3.8.4 (archive/prd-2026-06-02.json) com nota explicativa de arquivamento",
+        "git status do working dir: apenas state/ gitignored + arquivos da sprint v3.8.5"
+      ],
+      "commit_message": "chore(lessons): commit 5 licoes v3.8.4 + fechar ciclo do sprint anterior"
+    }
+  ],
+  "done_criteria": [
+    "Todos os 5 stories com passes=true",
+    "Tests security: 11/11 passando",
+    "Tests E2E: >=80% passando (baseline revisado)",
+    "shellcheck: 0 errors em todos arquivos modificados",
+    "bash -n: 0 errors em todos .sh modificados",
+    "bin/devorq: <200 LOC",
+    "lib/lessons.sh: <100 LOC + 3 modulos separados",
+    "scripts/sync-version.sh: detecta drift em todos os pontos",
+    "Working dir limpo",
+    "CHANGELOG.md atualizado com v3.8.5",
+    "Codex CLI review multi-agente do diff consolidado",
+    "Version bumped para 3.8.5 em todos os pontos"
+  ]
+}
