@@ -24,16 +24,23 @@ info() { echo -e "${CYAN}[INFO]${NC} $*"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
 
 cleanup() {
-    # Restaura estado original
+    # PASSO 1: limpa APENAS artefatos criados durante o teste
+    # (skills geradas pelo lessons::compile, lessons de teste capturadas)
+    rm -rf "$DEVORQ_ROOT/skills/learned-lesson"
+    rm -rf "$DEVORQ_ROOT/skills/.index.md"
+    # Limpa lessons de teste (capturadas durante o teste, no .devorq ATUAL,
+    # antes de restaurar o backup)
+    if [ -d "$DEVORQ_ROOT/.devorq/state/lessons/captured" ]; then
+        rm -f "$DEVORQ_ROOT/.devorq/state/lessons/captured/"*.json 2>/dev/null || true
+    fi
+
+    # PASSO 2: restaura estado original do .devorq/ (com lessons reais)
+    # NOTA: este passo NAO deve rodar o rm -f lessons acima, senao
+    # apagaria as lessons reais do backup. Ver story-004-sync-version.
     if [ -d "$DEVORQ_ROOT/.devorq.bak" ]; then
         rm -rf "$DEVORQ_ROOT/.devorq"
         mv "$DEVORQ_ROOT/.devorq.bak" "$DEVORQ_ROOT/.devorq"
     fi
-    # Remove skill de teste se existir
-    rm -rf "$DEVORQ_ROOT/skills/learned-lesson"
-    rm -rf "$DEVORQ_ROOT/skills/.index.md"
-    # Limpa lessons de teste
-    rm -f "$DEVORQ_ROOT/.devorq/state/lessons/captured/"*.json 2>/dev/null || true
 }
 
 # Setup
@@ -273,6 +280,17 @@ fi
 echo ""
 
 # ============================================================
+# FASE 5.5: Version sync (story-004)
+info "═══ FASE 5.5: Version Sync ═══"
+
+if bash "$DEVORQ_ROOT/scripts/sync-version.sh" --check >/dev/null 2>&1; then
+    pass "sync-version.sh --check"
+else
+    fail "sync-version.sh --check (drift detectado - rode --fix)"
+fi
+
+echo ""
+
 # FASE 5: Skills scripts
 # ============================================================
 info "═══ FASE 5: Skills Scripts ═══"

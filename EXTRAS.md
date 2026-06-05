@@ -2,10 +2,50 @@
 
 > Tópicos avançados: Context-Mode, Context7, Superpowers, HUB, Self-Building, e Debug Sistemático.
 
-**Versão:** 3.8.3 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3)
+**Versão:** 3.8.4 | **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3)
 
 ---
 
+## Version Sync (sprint v3.8.5+)
+
+O DEVORQ declara a versao em varios pontos (VERSION, bin/devorq, lib/*.sh, CHANGELOG.md, prd.json). Sem disciplina, esses pontos dessincronizam a cada release. O script `sync-version.sh` detecta e opcionalmente corrige o drift.
+
+### Comando
+
+```bash
+./scripts/sync-version.sh --check    # CI gate (exit != 0 se drift)
+./scripts/sync-version.sh --fix      # atualiza tudo para VERSION
+./scripts/sync-version.sh --status   # status detalhado (exit 0 sempre)
+./scripts/sync-version.sh --help     # ajuda
+```
+
+### Pontos verificados
+
+| Ponto | Regex |
+|-------|-------|
+| `VERSION` (raiz) | valor canonico |
+| `bin/devorq` header | `DEVORQ vX.Y.Z CLI` |
+| `bin/devorq` readonly | `DEVORQ_VERSION="X.Y.Z"` |
+| `bin/devorq` help | `DEVORQ vX.Y.Z - Framework` |
+| `lib/*.sh` headers | `# ... vX.Y.Z` |
+| `CHANGELOG.md` | `^## [X.Y.Z]` (header da versao atual) |
+| `prd.json` | campo `version` |
+
+### Integracao
+
+Ja integrado em `scripts/ci-test.sh` (FASE 5.5). Toda execucao do CI valida consistencia de versao.
+
+### Workflow recomendado
+
+1. Antes de commit com escopo `release`: rode `--check`
+2. Se drift: rode `--fix` antes de commitar
+3. Em CI: `--check` e gate obrigatorio
+
+### Origem
+
+Story 4 do sprint v3.8.5 (dogfooding). Detectado em sessao de 2026-06-04 que `bin/devorq=3.8.3` enquanto `VERSION=3.8.4` (drift de 1 minor) - cenario real que motivou a feature.
+
+---
 ## Context-Mode (Compressão de Contexto)
 
 ### O Problema
@@ -431,6 +471,6 @@ DEVORQ CORE (/projects/devorq_v3)
 
 ---
 
-**Versão:** 3.8.3
+**Versão:** 3.8.4
 **Repo:** https://github.com/nandinhos/devorq_v3
 **Última atualização:** 2026-05-22

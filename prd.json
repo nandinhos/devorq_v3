@@ -1,7 +1,7 @@
 {
   "project": "devorq_v3",
-  "version": "3.8.2",
-  "description": "PRD para corre\u00e7\u00f5es de Code Review - Prioridade 100% verde",
+  "version": "3.8.4",
+  "description": "PRD para correções de Code Review - Prioridade 100% verde",
   "stories": [
     {
       "id": "orch-004",
@@ -94,15 +94,15 @@
     },
     {
       "id": "sec-001",
-      "title": "Corrigir credenciais expostas em vari\u00e1veis de ambiente",
+      "title": "Corrigir credenciais expostas em variáveis de ambiente",
       "priority": 10,
       "status": "done",
       "type": "security",
       "acceptance_criteria": [
-        "Credenciais n\u00e3o aparecem em logs",
-        "Credenciais n\u00e3o aparecem em ps aux",
-        "Usar arquivo com permiss\u00f5es 600 para credenciais",
-        "cripts/sync-*.py n\u00e3o exp\u00f5em vari\u00e1veis sens\u00edveis",
+        "Credenciais não aparecem em logs",
+        "Credenciais não aparecem em ps aux",
+        "Usar arquivo com permissões 600 para credenciais",
+        "cripts/sync-*.py não expõem variáveis sensíveis",
         "Todos os testes passam"
       ],
       "files_to_check": [
@@ -192,7 +192,7 @@
     "Testes E2E: 100% passando",
     "shellcheck: 0 warnings",
     "Credenciais: 0 expostas",
-    "Seguran\u00e7a: 0 vulnerabilidades cr\u00edticas",
+    "Segurança: 0 vulnerabilidades críticas",
     "Cobertura: > 80%",
     "Code review: Aprovado"
   ]

@@ -1,0 +1,16 @@
+{
+  "id": "lesson_20260604_220728_15027",
+  "title": "ci-test.sh cleanup apagava lessons reais do backup",
+  "problem": "O cleanup rodava rm -f lessons DEPOIS de restaurar o backup .devorq.bak -  .devorq, apagando as lessons reais em vez das de teste",
+  "solution": "Reordenar cleanup: PASSO 1 limpa apenas artefatos do teste  skills, lessons do .devorq atual ANTES do restore   PASSO 2 restaura backup",
+  "stack": "unknown",
+  "tags": [],
+  "timestamp": "20260604_220728",
+  "validated": true,
+  "applied": false,
+  "approved": true,
+  "validated_at": "2026-06-04T22:08:00Z",
+  "approved_at": "2026-06-04T22:08:00Z",
+  "validator": "manual-nando-2026-06-04",
+  "sprint_origin": "v3.8.5"
+}
