@@ -27,6 +27,20 @@ DEVORQ_LESSONS_DIR="${DEVORQ_LESSONS_DIR:-${PWD}/.devorq/state/lessons}"
 DEVORQ_HUB_HOST="${DEVORQ_HUB_HOST:-}"
 DEVORQ_HUB_PORT="${DEVORQ_HUB_PORT:-5432}"
 
+# devorq::sanitize_input - wrapper de compatibilidade (sprint v3.8.5 fix)
+# A funcao sanitize_input existe em lib/helpers.sh mas sem namespace.
+# crud.sh (e outros callers) esperam devorq::sanitize_input.
+# Este wrapper expoe ela via namespace sem duplicar a logica.
+if declare -f sanitize_input >/dev/null 2>&1; then
+    devorq::sanitize_input() { sanitize_input "$@"; }
+elif [ -f "${BASH_SOURCE[0]%/*}/../helpers.sh" ]; then
+    # shellcheck source=lib/helpers.sh
+    source "${BASH_SOURCE[0]%/*}/../helpers.sh" 2>/dev/null || true
+    if declare -f sanitize_input >/dev/null 2>&1; then
+        devorq::sanitize_input() { sanitize_input "$@"; }
+    fi
+fi
+
 # Carrega os 3 modulos por responsabilidade
 # shellcheck source=lib/lessons/crud.sh
 source "${BASH_SOURCE[0]%/*}/lessons/crud.sh"
