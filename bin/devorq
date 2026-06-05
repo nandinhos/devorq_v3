@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/devorq -- DEVORQ v3.8.5 CLI Router
+# bin/devorq -- DEVORQ vVERSION CLI Router
 #
 # Uso:
 #   devorq <comando> [args...]
@@ -24,7 +24,7 @@ set -euo pipefail
 readonly DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 readonly DEVORQ_LIB="${DEVORQ_ROOT}/lib"
 readonly DEVORQ_BIN="${DEVORQ_ROOT}/bin"
-readonly DEVORQ_VERSION="3.8.5"
+readonly DEVORQ_VERSION="VERSION"
 readonly DEVORQ_DISPATCHERS_DIR="${DEVORQ_LIB}/dispatchers"
 
 # Carrega bibliotecas core (mantem ordem para dependencias)

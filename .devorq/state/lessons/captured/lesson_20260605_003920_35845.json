@@ -1,0 +1,13 @@
+{
+  "id": "lesson_20260605_003920_35845",
+  "title": "Mavis Team + manual override para fechar sprint com qualidade",
+  "problem": "Verifier adversario pegou: 1  devorq::sanitize_input missing no refactor de lib/lessons  functions com namespace nao sobrevivem ao source , 2  producer claim '11/11 security tests' era false  apply_*.sh sao by-design fail quando ja patched ",
+  "solution": "Em dogfooding: 1  usar override_accept quando work esta bom mas deliverable tem metricas inlateadas  plan owner tem contexto , 2  sempre testar end-to-end com bin/devorq lessons capture apos refactor de lessons.sh  capture eh o caso de uso real , 3  functions com namespace devorq:: precisam ser exportadas via source OU wrapper no agregador",
+  "stack": "unknown",
+  "tags": [],
+  "timestamp": "20260605_003920",
+  "validated": true,
+  "applied": false,
+  "approved": true,
+  "sprint_origin": "v3.8.5"
+}
