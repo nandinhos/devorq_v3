@@ -48,3 +48,5 @@ skills/learned-lesson/
 # Docs temporários
 docs/PLANO_CORRECAO*.md
 docs/REFATORACAO*.md
+.opencode/
+test_hook_*
