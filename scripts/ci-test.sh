@@ -313,6 +313,66 @@ fi
 
 echo ""
 
+
+# ============================================================
+# FASE 5.6: E2E (story-001 e2e revival)
+# Suite Playwright em e2e-tests/. NAO BLOQUEANTE no dev:
+# imprime status mas nao incrementa TESTS_FAILED se falhar.
+# Em CI, defina DEVORQ_E2E_STRICT=1 para promover a bloqueante.
+# ============================================================
+info "═══ FASE 5.6: E2E (Playwright) ═══"
+
+E2E_DIR="$DEVORQ_ROOT/e2e-tests"
+E2E_REPORT_DIR="$E2E_DIR/playwright-report"
+
+e2e_skip_reason=""
+if [ ! -d "$E2E_DIR" ]; then
+    e2e_skip_reason="e2e-tests/ nao existe"
+elif ! command -v node >/dev/null 2>&1; then
+    e2e_skip_reason="node nao instalado"
+elif ! command -v npx >/dev/null 2>&1; then
+    e2e_skip_reason="npx nao instalado"
+fi
+
+if [ -n "$e2e_skip_reason" ]; then
+    warn "E2E skipped: $e2e_skip_reason"
+    echo ""
+else
+    # Instala deps se necessario
+    if [ ! -d "$E2E_DIR/node_modules" ]; then
+        info "Instalando dependencias E2E (primeira execucao)..."
+        (cd "$E2E_DIR" && npm install --no-fund --no-audit --silent) >/dev/null 2>&1 || {
+            warn "npm install falhou em e2e-tests/"
+        }
+    fi
+
+    # Roda a suite Playwright (com timeout de 5 min para evitar travas)
+    e2e_output=$(cd "$E2E_DIR" && unset NODE_OPTIONS && timeout 300 npx playwright test --reporter=line 2>&1) || e2e_rv=$?
+    e2e_rv=${e2e_rv:-0}
+
+    e2e_passed=$(echo "$e2e_output" | grep -oE "[0-9]+ passed" | head -1 | grep -oE "[0-9]+" || echo "0")
+    e2e_failed=$(echo "$e2e_output" | grep -oE "[0-9]+ failed" | head -1 | grep -oE "[0-9]+" || echo "0")
+    e2e_total=$(( ${e2e_passed:-0} + ${e2e_failed:-0} ))
+
+    if [ "$e2e_failed" -eq 0 ] && [ "$e2e_passed" -gt 0 ]; then
+        pass "e2e: ${e2e_passed}/${e2e_total} passed"
+    elif [ "$e2e_rv" -ne 0 ] && [ -z "$e2e_passed" ]; then
+        warn "e2e: suite nao executou (exit $e2e_rv) - verifique logs em $E2E_REPORT_DIR"
+    else
+        if [ "${DEVORQ_E2E_STRICT:-0}" = "1" ]; then
+            fail "e2e: ${e2e_passed}/${e2e_total} passed (${e2e_failed} failed) - STRICT mode"
+        else
+            warn "e2e: ${e2e_passed}/${e2e_total} passed (${e2e_failed} failed) - nao bloqueante no dev"
+        fi
+    fi
+
+    if [ -d "$E2E_REPORT_DIR" ]; then
+        info "Relatorio HTML: $E2E_REPORT_DIR/index.html"
+    fi
+fi
+
+echo ""
+
 # ============================================================
 # RESUMO
 # ============================================================
