@@ -1,0 +1,40 @@
+{
+  "restricoes": [
+    {
+      "id": "C-01",
+      "statement": "Sem Co-Authored-By em commits",
+      "source": "rules/commit-convention.md + hook commit-msg (lib/commands/rules.sh)",
+      "enforcement": "validate-rules.sh falha se coauthor > 0; hook bloqueia formato feat(id):"
+    },
+    {
+      "id": "C-02",
+      "statement": "Sem refatoração fora do escopo da story",
+      "source": "AGENTS.md (regras essenciais)",
+      "enforcement": "Code review manual + codex CLI review; PRD lista files_allowed vs files_prohibited por story"
+    },
+    {
+      "id": "C-03",
+      "statement": "Sem features especulativas",
+      "source": "AGENTS.md (regras essenciais)",
+      "enforcement": "Toda feature precisa de SPEC.md com acceptance_criteria antes de implementação"
+    },
+    {
+      "id": "C-04",
+      "statement": "Bash puro como linguagem (sem Python/Node no core)",
+      "source": "Decisão arquitetural v3.0",
+      "enforcement": "lib/ e bin/ são .sh. Exceção: scripts/sync-*.py (orquestração VPS, não core)"
+    },
+    {
+      "id": "C-05",
+      "statement": "jq é dependência obrigatória",
+      "source": "lib/lessons.sh e lib/context7.sh usam jq para JSON parsing",
+      "enforcement": "validate-foundation.sh verifica jq no PATH; INSTALL.md documenta instalação"
+    },
+    {
+      "id": "C-06",
+      "statement": "PRD JSON é a fonte de verdade para stories em modo AUTO",
+      "source": "lib/auto.sh + prd.json schema",
+      "enforcement": "devorq-auto consume prd.json estritamente; status done só com passes=true"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "premissas": [
+    {
+      "id": "P-01",
+      "statement": "Bash + jq + git estão universalmente disponíveis em ambientes Unix-like (Linux, macOS, WSL)",
+      "rationale": "Escolha de bash puro evita dependências pesadas (Python, Node) e mantém o framework instalável via curl one-liner. WSL no Windows dá paridade total",
+      "validation": "verificado em Ubuntu 22.04, Ubuntu 24.04, macOS Sonoma, WSL2"
+    },
+    {
+      "id": "P-02",
+      "statement": "O usuário (humano) é o aprovador final de cada commit e release",
+      "rationale": "DEVORQ impõe processo mas não substitui julgamento humano. Nenhum commit automático sem devorq verify + revisão manual",
+      "validation": "regra explícita em rules/agent-discipline.md e em CHANGELOG v3.8.4: ZERO commit automatico - validacao manual do Nando obrigatoria"
+    },
+    {
+      "id": "P-03",
+      "statement": "Agnosticismo de LLM é uma feature central, não um afterthought",
+      "rationale": "Regras devem ser consumíveis por Claude, Cursor, Copilot, Trae, Telegram bot. AGENTS.md é a fonte canônica, adaptadores são gerados via devorq rules export",
+      "validation": "scripts/rebuild-history-by-version.sh + rules/commit-convention.md + devorq rules export {project|cursor|claude|agents}"
+    },
+    {
+      "id": "P-04",
+      "statement": "Lições aprendidas têm valor cumulativo: capturar sempre, consultar antes de implementar",
+      "rationale": "Cada lição capturada reduz a chance de repetir o mesmo erro. O custo de capturar é baixo (1 comando); o custo de repetir é alto",
+      "validation": "sprint v3.8.4 capturou 5 lições que orientaram decisões no próprio sprint (defesa em 2 camadas, cobertura de TODOS os callers, validação de contagem real antes de atualizar docs)"
+    },
+    {
+      "id": "P-05",
+      "statement": "Refatoração só com escopo explícito",
+      "rationale": "Disciplina: não misturar feature com refactor. bin/devorq com 1503 LOC e lib/lessons.sh com 995 LOC estão marcados como prioridade alta mas só serão atacados em sprint dedicado",
+      "validation": "regra em AGENTS.md: Sem refatoração fora do escopo pedido. Sprint v3.8.5 planeja atacar isso formalmente"
+    }
+  ]
+}

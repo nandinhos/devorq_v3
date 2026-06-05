@@ -1,0 +1,75 @@
+{
+  "requisitos": [
+    {
+      "id": "REQ-01",
+      "title": "Comandos CLI principais acessíveis via devorq <comando>",
+      "type": "functional",
+      "priority": "must",
+      "acceptance_criteria": [
+        "devorq init, foundation, gate, lessons, context, compact, flow, mode, auto, commit, verify, rules, sync, vps, skills, info funcionam sem erro",
+        "devorq --help mostra lista completa de subcomandos",
+        "devorq version retorna a versão do VERSION file"
+      ]
+    },
+    {
+      "id": "REQ-02",
+      "title": "Sistema de lições aprendidas funcional com busca",
+      "type": "functional",
+      "priority": "must",
+      "acceptance_criteria": [
+        "devorq lessons capture cria arquivo em .devorq/state/lessons/captured/",
+        "devorq lessons search <query> retorna lições que batem",
+        "devorq lessons list all/approved/pending filtra corretamente",
+        "devorq lessons approve muda status para approved=true",
+        "lições validadas e aprovadas aparecem em lessons list approved"
+      ]
+    },
+    {
+      "id": "REQ-03",
+      "title": "10 gates bloqueantes implementados e detectáveis",
+      "type": "functional",
+      "priority": "must",
+      "acceptance_criteria": [
+        "bin/devorq build executa gate_0, gate_0_5, gate_1..gate_7, gate_5_5 (10 total)",
+        "Cada gate retorna exit 0 (pass) ou != 0 (fail)",
+        "Gate output é human-readable com [OK]/[FAIL] prefix",
+        "GATE-0.5 (foundation) valida 5W2H/premissas/riscos/requisitos/restricoes"
+      ]
+    },
+    {
+      "id": "REQ-04",
+      "title": "Agnosticismo LLM: export de regras para múltiplas ferramentas",
+      "type": "functional",
+      "priority": "must",
+      "acceptance_criteria": [
+        "devorq rules export project copia rules/ para .devorq/rules/",
+        "devorq rules export agents gera AGENTS.md no projeto alvo",
+        "devorq rules bootstrap é idempotente",
+        "validate-rules.sh falha se Co-Authored-By aparece em commit"
+      ]
+    },
+    {
+      "id": "REQ-05",
+      "title": "Cobertura de testes: shellcheck 0 errors, bash -n passa, security tests 11/11",
+      "type": "non-functional",
+      "priority": "must",
+      "acceptance_criteria": [
+        "shellcheck lib/*.sh retorna 0 errors",
+        "bash -n em todos .sh retorna 0",
+        "tests/security/ passa 11/11 (incluindo regressão F-01, F-02, F-06, D-1, D-2)"
+      ]
+    },
+    {
+      "id": "REQ-06",
+      "title": "Documentação mantida por release",
+      "type": "non-functional",
+      "priority": "must",
+      "acceptance_criteria": [
+        "CHANGELOG.md tem entrada para cada versão desde 3.6.0",
+        "Cada release tem docs/specs/<data>-<feature>.md quando envolve decisão arquitetural",
+        "docs/security-reviews/<data>/ documenta fixes de segurança",
+        "AGENTS.md e rules/ consistentes (validados por validate-rules.sh)"
+      ]
+    }
+  ]
+}

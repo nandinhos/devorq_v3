@@ -1,0 +1,44 @@
+{
+  "riscos": [
+    {
+      "id": "R-01",
+      "title": "bin/devorq e lib/lessons.sh inflados dificultam manutenção",
+      "severity": "medium",
+      "probability": "high",
+      "impact": "Módulos >1000 LOC são difíceis de auditar (segurança), testar e evoluir. Já há débito técnico reconhecido de 2 sprints",
+      "mitigation": "Sprint v3.8.5 dedicará stories específicas a quebrar bin/devorq (router + subcommand dispatchers) e lib/lessons.sh (CRUD/search/sync separados)"
+    },
+    {
+      "id": "R-02",
+      "title": "Cobertura de testes E2E funcional estagnada desde v3.6.0",
+      "severity": "high",
+      "probability": "high",
+      "impact": "Refatorações futuras (v3.8.5) podem quebrar comandos sem detecção. Testes de segurança são fortes (11/11) mas E2E reporta 35% de sucesso e ninguém re-rodou",
+      "mitigation": "Sprint v3.8.5 Story 1: reviver suite E2E, fixar o que quebrou, criar baseline CI com gate obrigatório"
+    },
+    {
+      "id": "R-03",
+      "title": "Drift de versão entre VERSION, bin/devorq, prd.json",
+      "severity": "low",
+      "probability": "high",
+      "impact": "Confusão sobre qual é a versão corrente. Já aconteceu: VERSION=3.8.4 mas bin/devorq=3.8.3 até esta sessão",
+      "mitigation": "Sprint v3.8.5 Story 4: scripts/sync-version.sh que varre todos os pontos de versão (VERSION, bin/devorq header, lib/*.sh header, CHANGELOG, README badge) e gera relatório de drift"
+    },
+    {
+      "id": "R-04",
+      "title": "Trabalho em WSL no Windows gera fricção de paths (UNC vs Linux)",
+      "severity": "low",
+      "probability": "high",
+      "impact": "Ferramentas Mavis (Read/Edit/Glob) bloqueiam paths UNC. Força uso de wsl -d Ubuntu-24.04 -- bash -lc para todo I/O",
+      "mitigation": "Aceitar como constraint do ambiente. Trabalhar via wsl explícito. Considerar migration para Linux puro no roadmap"
+    },
+    {
+      "id": "R-05",
+      "title": "Sistema de permissões do Mavis bloqueia modificações em .devorq/state/ sem aprovação explícita",
+      "severity": "low",
+      "probability": "high",
+      "impact": "Cada operação de escrita em state files pede confirmação. Cria fricção quando o usuário já autorizou o sprint inteiro",
+      "mitigation": "Consolidar modificações em rajadas (1-2 comandos por sprint phase) e pedir autorização agregada quando possível"
+    }
+  ]
+}

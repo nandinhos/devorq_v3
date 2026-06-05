@@ -1,0 +1,23 @@
+{
+  "what": {
+    "description": "DEVORQ — framework bash puro para metodologia de desenvolvimento sistemático assistido por IA, com gates bloqueantes, sistema de lições aprendidas, handoffs estruturados e disciplina de agente agnóstica de LLM"
+  },
+  "why": {
+    "description": "Resolver o problema de contexto saturado em sessões longas de IA: o próximo agente perde informações, decisões são duplicadas e as mesmas falhas se repetem. DEVORQ captura lições, impõe verificação e gera handoffs consistentes"
+  },
+  "who": {
+    "description": "Autor e mantenedor: Fernando Dos Santos (Nando, github.com/nandinhos). Usuários: devs solo e times pequenos que usam LLMs (Claude, Cursor, Copilot, Trae, Telegram) e precisam de disciplina de processo"
+  },
+  "when": {
+    "description": "Em cada sessão de desenvolvimento assistido por IA: antes (init + foundation), durante (gates 0-7 + lessons capture), no fim (compact/handoff + sync)"
+  },
+  "where": {
+    "description": "Repositório principal: github.com/nandinhos/devorq_v3. Distribuição via curl one-liner para ~/bin/devorq. Usado em qualquer projeto que rode bash + jq"
+  },
+  "how": {
+    "description": "CLI bash modular (bin/devorq 1503 LOC + lib/ 14 arquivos) que source dinamicamente submódulos. Estado em .devorq/. Workflow: init -> foundation (5W2H+premissas+riscos+requisitos+restricoes) -> SPEC -> gates 0-7 -> commit. Dois modos: CLASSIC (gates manuais) e AUTO (story-by-story via delegation)"
+  },
+  "how_much": {
+    "description": "v3.8.4 atual, ~20K linhas de bash, 16 subcomandos, 9 skills, 6 regras, 11 testes de segurança, cobertura E2E parcial (a ser revivida no v3.8.5). Tempo de bootstrap de projeto: ~2 min. Overhead por gate: <5s"
+  }
+}
