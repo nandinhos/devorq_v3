@@ -1,17 +1,8 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2086,SC2034,SC2015,SC2001,SC2162,SC1090,SC1010,SC2164,SC2155,SC2094,SC2005,SC2317,SC2129,SC2126,SC2120,SC2119,SC2116,SC2046
 # lib/lessons/search.sh - DEVORQ Lessons SEARCH module
-#
-# Modulo responsavel por:
-#   lessons::validate      - Validar com Context7 (GATE-6)
-#   lessons::approve       - Marcar licao como aprovada
-#   lessons::_fuzzy_check  - Detectar duplicatas (helper)
-#   lessons::_suggest_tags - Sugerir tags via Context7 (helper)
-#   lessons::help          - Texto de ajuda dos comandos de lessons
-#   lessons::search        - (no agregador) — F-06 grep injection test
-#
-# Originalmente em lib/lessons.sh (Story 3 - dogfooding).
-# Mantem 100% das assinaturas publicas: nenhuma chamada externa precisa mudar.
+# Funcoes: validate, approve, help, _fuzzy_check, _suggest_tags
+# Story 3 - dogfooding. Refatorado de lib/lessons.sh (1045 LOC).
 
 set -euo pipefail
 
