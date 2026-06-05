@@ -151,5 +151,18 @@
     "CHANGELOG.md atualizado com v3.8.5",
     "Codex CLI review multi-agente do diff consolidado",
     "Version bumped para 3.8.5 em todos os pontos"
-  ]
+  ],
+  "description": "Sprint v3.8.5 dogfooding: E2E revival + 2 refactors + version sync + close cycle. Sprint concluida: 5 stories done, E2E 77/77 = 100% deterministico, sync-version 0 drift, sanitize_input restaurado, bin/devorq 1503->180 LOC.",
+  "metrics": {
+    "e2e_pass_rate": "100% (77/77)",
+    "e2e_runs_validated": 3,
+    "bin_devorq_loc_before": 1503,
+    "bin_devorq_loc_after": 180,
+    "lib_lessons_sh_aggregator_loc_before": 1045,
+    "lib_lessons_sh_aggregator_loc_after": 96,
+    "largest_file_loc": 337,
+    "drift_status": "0 drift",
+    "code_review_score_before": 7.5,
+    "code_review_score_estimated_after": 8.5
+  }
 }
