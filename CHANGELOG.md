@@ -57,6 +57,68 @@ bc18335 fix(security): corrige command injection em vps.sh via whitelist + block
 
 ---
 
+## [3.8.5] - 2026-06-04
+
+### Sprint: Dogfooding do DEVORQ no proprio DEVORQ
+Origem: code review + auto-analise em sessao Mavis+Nando de 2026-06-04 21:23 BRT
+Metodologia: dogfooding real - DEVORQ se aplica a si mesmo
+Plano executado via Mavis Team (3 tracks paralelas) + orchestrador manual
+
+### Security
+- **Whitelist SSH em devorq::vps_exec** (sprint v3.8.4 fix, commit bc18335) - defesa em 2 camadas (blocklist + whitelist)
+- **F-06 grep injection regression fixed** (commit f78d6f8) - devorq::sanitize_input restaurado com implementacao original (Python regex cirurgica vs sed agressivo de helpers.sh)
+
+### Added
+- **scripts/sync-version.sh** (story-004) - detecta e corrige drift de versao entre 7 pontos:
+  VERSION, bin/devorq (header/readonly/help), lib/*.sh headers, CHANGELOG.md, prd.json
+  - Modo --check (CI gate) + --fix (auto-correge) + --status
+- **scripts/ci-test.sh FASE 5.5** - valida sync-version em todo CI run
+- **scripts/ci-test.sh FASE 5.6** (story-001) - E2E Playwright nao-bloqueante no dev
+- **lib/gates.sh gate_e2e / gate_8** (story-001) - gate dedicado para E2E tests
+- **.github/workflows/e2e.yml** (story-001) - CI job Playwright com npm cache + artifact upload
+- **GATE-0.5 Foundation docs** (5 docs obrigatorios): 5w2h.json, premissas.json, riscos.json, requisitos.json, restricoes.json
+- **EXTRAS.md secao "Version Sync"** - documenta sync-version.sh com uso, pontos verificados, workflow
+- **docs/specs/2026-06-04-v3.8.5-dogfooding.md** - SPEC completa do sprint
+
+### Changed
+- **bin/devorq: 1503 -> 180 LOC** (story-002, commit ab556c4) - router puro + 5 dispatchers
+  - lib/dispatchers/init.sh (44 LOC), workflow.sh (56), state.sh (45), delivery.sh (58), discovery.sh (33)
+  - dynamic source loop + case-statement dispatch
+  - Comportamento identico preservado: devorq --help saida identica, version=3.8.5
+- **lib/lessons.sh: 995 -> 91 LOC** (story-003, commit 975308b + 627a4d2) - agregador + 3 modulos
+  - lib/lessons/crud.sh (295), search.sh (396), sync.sh (337)
+  - 100% das funcoes lessons::* preservadas, F-06 grep injection 5/5
+- **CHANGELOG.md** + **prd.json** - drift corrigido
+
+### Fixed
+- **ci-test.sh cleanup ordering bug** - rm -f lessons rodava DEPOIS de restaurar .devorq.bak
+  Reordenado: PASSO 1 limpa artefatos de teste, PASSO 2 restaura backup
+- **devorq::sanitize_input regression** (commit f78d6f8) - funcao perdida no refactor de
+  lib/lessons.sh. Restaurada implementacao original de v3.8.4 (Python com regex cirurgica)
+- **bin/devorq version drift** - sincronizado para 3.8.4
+- **prd.json version drift** - 3.8.2 -> 3.8.4
+
+### Validation
+- bash -n: 0 errors em todos arquivos modificados
+- shellcheck -S error: 0 errors
+- scripts/ci-test.sh: 46/46 (incluindo FASE 5.5 sync-version + FASE 5.6 e2e)
+- npx playwright test: 68/77 = 88.3% (alvo 80%)
+- sync-version.sh --check: 0 drift
+- 19 commits no sprint, 0 Co-Authored-By
+
+### Metricas
+- bin/devorq: 1503 -> 180 LOC (-88%)
+- lib/lessons.sh: 995 -> 91 LOC + 3 modulos (-91% no agregador)
+- Maior arquivo .sh: 1503 -> 396 LOC (lib/lessons/search.sh)
+- Score maturidade codigo: 7.5/10 -> >= 8.5/10 (estimado)
+
+### Reference
+- SPEC: docs/specs/2026-06-04-v3.8.5-dogfooding.md
+- PRD: docs/specs/prd-2026-06-04.json (5 stories, todas done)
+- Story 1 deliverable: reviver suite E2E Playwright, baseline 88.3%
+- Story 2 deliverable: refactor bin/devorq, 5/5 criterios estruturais
+- Story 3 deliverable: refactor lib/lessons.sh, 100% funcoes preservadas + sanitize_input restaurado
+
 ## [3.8.3] — 2026-06-01
 
 ### Security

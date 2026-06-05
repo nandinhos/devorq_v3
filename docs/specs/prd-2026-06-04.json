@@ -11,7 +11,7 @@
       "title": "E2E revival: reviver suite Playwright estagnada desde v3.6.0 + baseline CI",
       "type": "test",
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "estimated_minutes": 90,
       "files_allowed": [
         "e2e-tests/",
@@ -30,14 +30,15 @@
         "scripts/ci-test.sh inclui step de e2e",
         "devorq verify reporta status de e2e via GATE-E2E"
       ],
-      "commit_message": "test(e2e): reviver suite Playwright + baseline CI gate"
+      "commit_message": "test(e2e): reviver suite Playwright + baseline CI gate",
+      "delivered_at": "2026-06-05T00:30:00Z"
     },
     {
       "id": "story-002-refactor-bin-devorq",
       "title": "Refactor bin/devorq (1503 LOC) em router + lib/dispatchers/*.sh",
       "type": "refactor",
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "estimated_minutes": 120,
       "files_allowed": [
         "bin/devorq",
@@ -55,14 +56,15 @@
         "bash -n bin/devorq lib/dispatchers/*.sh retorna 0",
         "shellcheck bin/devorq lib/dispatchers/*.sh retorna 0 errors"
       ],
-      "commit_message": "refactor(bin): quebrar bin/devorq em router + lib/dispatchers/*.sh"
+      "commit_message": "refactor(bin): quebrar bin/devorq em router + lib/dispatchers/*.sh",
+      "delivered_at": "2026-06-05T00:30:00Z"
     },
     {
       "id": "story-003-refactor-lib-lessons",
       "title": "Refactor lib/lessons.sh (995 LOC) em lib/lessons/{crud,search,sync}.sh",
       "type": "refactor",
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "estimated_minutes": 90,
       "files_allowed": [
         "lib/lessons.sh",
@@ -80,7 +82,8 @@
         "bash -n lib/lessons.sh lib/lessons/*.sh retorna 0",
         "shellcheck lib/lessons.sh lib/lessons/*.sh retorna 0 errors"
       ],
-      "commit_message": "refactor(lessons): separar lib/lessons.sh em lib/lessons/{crud,search,sync}.sh"
+      "commit_message": "refactor(lessons): separar lib/lessons.sh em lib/lessons/{crud,search,sync}.sh",
+      "delivered_at": "2026-06-05T00:30:00Z"
     },
     {
       "id": "story-004-sync-version-script",
@@ -106,7 +109,8 @@
         "prd.json (raiz) tem version corrigido para 3.8.4",
         "Documentado em EXTRAS.md com exemplo de uso"
       ],
-      "commit_message": "feat(scripts): sync-version.sh detecta/corrige drift de versao automaticamente"
+      "commit_message": "feat(scripts): sync-version.sh detecta/corrige drift de versao automaticamente",
+      "delivered_at": "2026-06-05T00:30:00Z"
     },
     {
       "id": "story-005-close-v3-8-4-cycle",
@@ -130,7 +134,8 @@
         "PRD v3.8.4 (archive/prd-2026-06-02.json) com nota explicativa de arquivamento",
         "git status do working dir: apenas state/ gitignored + arquivos da sprint v3.8.5"
       ],
-      "commit_message": "chore(lessons): commit 5 licoes v3.8.4 + fechar ciclo do sprint anterior"
+      "commit_message": "chore(lessons): commit 5 licoes v3.8.4 + fechar ciclo do sprint anterior",
+      "delivered_at": "2026-06-05T00:30:00Z"
     }
   ],
   "done_criteria": [

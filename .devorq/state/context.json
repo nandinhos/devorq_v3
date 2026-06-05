@@ -40,10 +40,13 @@
   ],
   "last_updated": "2026-06-04T21:45:00Z",
   "stats": {
-    "lessons_count": 5,
-    "lessons_approved_count": 5,
-    "gates_total": 10,
-    "foundation_docs": 5,
-    "last_stats_update": "2026-06-04T21:45:00Z"
-  }
+    "lessons_count": 6,
+    "gates_total": 7,
+    "last_stats_update": "2026-06-05T03:04:49Z"
+  },
+  "unify_done": true,
+  "unify_file": "/home/nandodev/projects/devorq_v3/.devorq/state/unify/2026-06-05_000449_sprint_v3_8_5__dogfooding_do_devorq_no_proprio_dev_unify.md",
+  "ac_passed": 0,
+  "ac_failed": 0,
+  "ac_deferred": 0
 }

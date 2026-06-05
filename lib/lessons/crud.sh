@@ -16,7 +16,26 @@
 set -euo pipefail
 
 # sanitize_input — Remove caracteres perigosos de inputs
+# ============================================================
 
+devorq::sanitize_input() {
+    local input="${1:-}"
+    local max_len="${2:-200}"
+
+    # Usa Python para sanitizacao confiavel
+    if command -v python3 &>/dev/null; then
+        python3 -c "
+import sys
+import re
+dangerous = r'[;\x60\x24\x28\x29\x7b\x7d\x5b\x5d<>!\\\\]'
+text = sys.argv[1][:int(sys.argv[2])]
+print(re.sub(dangerous, ' ', text))
+" "$input" "$max_len"
+    else
+        # Fallback: tr (menos preciso)
+        echo "$input" | tr -d ';' | tr -d '&' | tr -d '|' | tr -d '`' | tr -d '$' | head -c "$max_len"
+    fi
+}
 
 # ============================================================
 
