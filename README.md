@@ -4,9 +4,9 @@
 > Captura lições aprendidas, impõe gates bloqueantes, gera handoffs consistentes.
 > **Repo:** [github.com/nandinhos/devorq_v3](https://github.com/nandinhos/devorq_v3) | **Autor:** Fernando Dos Santos (Nando)
 
-**Versão:** 3.8.4
+**Versão:** 3.8.5
 
-> **Última release (2026-06-04):** v3.8.4 — 4 stories do code review 2026-06-01 (whitelist SSH, escopo release, gates 7→10, remove self-patch). Detalhes em [`CHANGELOG.md`](CHANGELOG.md) e [`docs/specs/2026-06-02-code-review-corrections.md`](docs/specs/2026-06-02-code-review-corrections.md).
+> **Última release (2026-06-05):** v3.8.5 — Sprint dogfooding: E2E revival 100% (77/77), refactor `bin/devorq` (1503→180 LOC), refactor `lib/lessons.sh` (1045→96 LOC + 4 modulos), `scripts/sync-version.sh`. Detalhes em [`CHANGELOG.md`](CHANGELOG.md) e [`docs/specs/2026-06-04-v3.8.5-dogfooding.md`](docs/specs/2026-06-04-v3.8.5-dogfooding.md).
 >
 > **Histórico Git (2026-05-23):** `main` reorganizado por release (1 commit/versão). Re-clone recomendado após atualizar.
 

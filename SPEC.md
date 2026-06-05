@@ -1,9 +1,9 @@
-# DEVORQ v3.8.3 — Specification
+# DEVORQ v3.8.5 — Specification
 
 > **Princípio de auto-construção:** o DEVORQ constrói a si próprio.
 > Sistema operacional → usa-se para construir a si mesmo → refina → cresce.
 
-**Versão:** 3.8.3 | **Atualizado:** 2026-06-01
+**Versão:** 3.8.5 | **Atualizado:** 2026-06-05
 
 ---
 
@@ -311,7 +311,7 @@ O DEVORQ usa Domain-Driven Design para estruturar o conhecimento.
 
 ```bash
 bash scripts/ci-test.sh
-# Resultado: 38/38 tests passing
+# Resultado: 46/46 tests passing (inclui FASE 5.5 sync-version e FASE 5.6 e2e)
 ```
 
 ### Testes E2E Playwright
@@ -326,9 +326,9 @@ npm test
 
 | Tipo | Quantidade | Status |
 |------|-----------|--------|
-| CI Tests | 38 | ✅ |
-| E2E Tests | 50+ | ✅ |
-| shellcheck | - | ⚠️ Pending |
+| CI Tests | 46 | ✅ |
+| E2E Tests | 77 (100% deterministico) | ✅ |
+| shellcheck | - | ✅ 0 errors |
 
 ---
 
@@ -348,18 +348,21 @@ FASE 7  ████████████████████  100%  ✅ 
 FASE 8  ████████████████████  100%  ✅  Meta-stats (devorq stats)
 FASE 9  ████████████████████  100%  ✅  Refatoração modular (lib/commands/)
 FASE 10 ████████████████████  100%  ✅  Testes E2E (Playwright)
-FASE 11 ███░░░░░░░░░░░░░░░░  25%  🔄  Code Review (correções)
+FASE 11 ████████████████████  100%  ✅  Code Review (sprint v3.8.4 + v3.8.5)
+FASE 12 ████████████████████  100%  ✅  Dogfooding v3.8.5 (E2E 100% + refactors)
 ```
 
-### Fase Atual: Code Review e Correções
+### Fase Atual: Sprint v3.8.5 dogfooding (concluido 2026-06-05)
 
-**Status:** Em andamento
+**Status:** Concluido (100% entregue)
 
-**Objetivos:**
-1. Corrigir vulnerabilidades de segurança críticas
-2. Padronizar nomenclatura
-3. Aumentar cobertura de testes
-4. Implementar tratamento de erros consistente
+**Entregas (sprint v3.8.5):**
+1. ✅ E2E revival: 77/77 testes Playwright passando (deterministico, 3 runs estaveis)
+2. ✅ Refactor bin/devorq: 1503 → 180 LOC + 5 dispatchers (init/workflow/state/delivery/discovery)
+3. ✅ Refactor lib/lessons.sh: 995 → 91 LOC + 4 modulos (crud/search/sync/validate)
+4. ✅ scripts/sync-version.sh: detecta/corrige drift em 7 pontos
+5. ✅ GATE-0.5 Foundation: 5 docs obrigatorios (5w2h/premissas/riscos/requisitos/restricoes)
+6. ✅ F-06 grep injection regression fixed: devorq::sanitize_input restaurado
 
 **Problemas Identificados no Code Review:**
 
@@ -462,26 +465,28 @@ O sistema funciona e atende aos requisitos básicos, mas possui **múltiplas ár
 | Cobertura | ~40% | > 80% |
 | shellcheck | ⚠️ Warnings | 0 warnings |
 | Code smells | ⚠️ 30+ | < 10 |
-| Vulnerabilidades | 4 críticas | 0 |
+| Vulnerabilidades | 0 criticas | 0 |
 
 ---
 
 ## 11. Próximos Passos
 
 ### Imediato (Esta semana)
-1. Corrigir vulnerabilidades de segurança críticas (#1-#4)
-2. Implementar validação de inputs em todas funções
-3. Padronizar nomenclatura de funções
+1. ✅ ~~Corrigir vulnerabilidades de segurança críticas (#1-#4)~~ — FEITO em v3.8.3 (sec-001..004) e v3.8.4 (bc18335)
+2. ✅ ~~Implementar validação de inputs em todas funções~~ — FEITO em v3.8.4 (commit 975308b)
+3. ✅ ~~Padronizar nomenclatura de funções~~ — FEITO (devorq:: namespace)
 
 ### Curto prazo (2 semanas)
-1. Aumentar cobertura de testes para 60%+
-2. Corrigir todos shellcheck warnings
-3. Implementar tratamento de erros consistente
+1. ✅ ~~Aumentar cobertura de testes para 60%+~~ — FEITO: E2E 100%, security 11/11, sync-version integrado
+2. ✅ ~~Corrigir todos shellcheck warnings~~ — FEITO: 0 errors em todos arquivos modificados
+3. ✅ ~~Implementar tratamento de erros consistente~~ — FEITO: exit codes padronizados
 
 ### Médio prazo (1 mês)
-1. Refatorar funções muito longas
-2. Adicionar docblocks em todas funções
-3. Atualizar toda documentação
+1. ✅ ~~Refatorar funções muito longas~~ — FEITO: bin/devorq 1503→180, lib/lessons 1045→91
+2. Adicionar docblocks em funções internas restantes (parcial)
+3. ✅ ~~Atualizar toda documentação~~ — FEITO: CHANGELOG/SPEC/README/PRDs/docs/specs/README atualizados
+4. Adicionar GATE-E2E alcançável via `devorq gate e2e` (gap conhecido do sprint v3.8.5)
+5. Rodar codex CLI review multi-agente do diff consolidado antes de merge publico
 
 ---
 
@@ -504,6 +509,16 @@ O sistema funciona e atende aos requisitos básicos, mas possui **múltiplas ár
 ---
 
 ## 13. Changelog
+
+### v3.8.5 (2026-06-05)
+- ✅ E2E suite Playwright: 77/77 = 100% (3 runs estaveis, deterministico)
+- ✅ Refactor bin/devorq: 1503 → 180 LOC + 5 dispatchers
+- ✅ Refactor lib/lessons.sh: 1045 → 96 LOC + 4 modulos (crud/search/sync/validate)
+- ✅ scripts/sync-version.sh: detecta/corrige drift em 7 pontos
+- ✅ GATE-0.5 Foundation: 5 docs obrigatorios
+- ✅ F-06 grep injection: regression fixed (devorq::sanitize_input restaurado)
+- ✅ Cleanup fix: ci-test.sh cleanup ordering corrigido
+- ✅ CI workflow: .github/workflows/e2e.yml + FASE 5.6 + GATE-E2E
 
 ### v3.8.4 (2026-06-04)
 - ✅ Whitelist SSH em 2 camadas (blocklist + whitelist por sub-comando)

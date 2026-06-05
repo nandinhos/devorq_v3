@@ -8,6 +8,7 @@
 
 | Data | Slug | Status | Cobertura |
 |------|------|--------|-----------|
+| 2026-06-05 | `v3.8.5-dogfooding` | ✅ IMPLEMENTADO (v3.8.5) | 5 stories: E2E revival 100% (77/77), refactor bin/devorq 1503→180 LOC, refactor lib/lessons.sh 1045→96 LOC + 4 modulos, sync-version.sh, close v3.8.4 cycle |
 | 2026-06-02 | `code-review-corrections` | ✅ IMPLEMENTADO (v3.8.4) | 4 stories: fix-sec-001 (whitelist SSH), fix-rules-002 (escopo release), docs-extras-003 (remove self-patch), docs-spec-004 (gates 7→10) |
 | 2026-06-02 | `prd-2026-06-02.json` | ✅ DERIVADO | PRD gerado por `prd-from-spec.sh` para o loop auto story-by-story |
 

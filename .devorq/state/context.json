@@ -40,9 +40,9 @@
   ],
   "last_updated": "2026-06-04T21:45:00Z",
   "stats": {
-    "lessons_count": 6,
+    "lessons_count": 11,
     "gates_total": 7,
-    "last_stats_update": "2026-06-05T03:04:49Z"
+    "last_stats_update": "2026-06-05T04:49:32Z"
   },
   "unify_done": true,
   "unify_file": "/home/nandodev/projects/devorq_v3/.devorq/state/unify/2026-06-05_000449_sprint_v3_8_5__dogfooding_do_devorq_no_proprio_dev_unify.md",
