@@ -11,3 +11,32 @@
 # devorq-auto progress — devorq_v3
 # Formato: [HH:MM] ✅|❌|⏭️  Story Title — PASSED|FAILED|SKIPPED
 [02:12] PASSED orch-001: Restaurar dispatch CLI v3.7 (auto, mode, init, gate) — PASSED
+
+# devorq-auto progress — devorq_v3
+# Formato: [HH:MM] PASSED|FAILED|SKIPPED  Story Title -- STATUS
+# Sprint v3.8.4 - code review 2026-06-01 (mergeado em c3abd01)
+[22:35] PASSED sec-001: Corrigir credenciais expostas em variaveis de ambiente
+[22:53] PASSED sec-002: Implementar validacao de host SSH para VPS
+[22:53] PASSED sec-003: Implementar validacao e sanitizacao de inputs
+[22:53] PASSED sec-004: Implementar validacao de paths (prevenir path traversal)
+[22:53] PASSED code-005: Padronizar nomenclatura de funcoes para devorq::*
+[22:53] PASSED code-006: Implementar constantes de exit codes
+[22:53] PASSED code-007: Implementar validacao de inputs em todas funcoes
+[22:53] PASSED lint-010: Corrigir todos shellcheck warnings
+# Sprint v3.8.4 - dispatch CLI + agnosticismo (4 stories do code review 2026-06-01)
+[02:12] PASSED orch-001: Restaurar dispatch CLI v3.7 (auto, mode, init, gate)
+[06:00] PASSED orch-002: Restaurar dispatch commit/verify/rules + enforcement git hook
+[06:00] PASSED orch-003: Disciplina do agente Karpathy + success_criteria + scope lite
+[06:00] PASSED orch-004: Agnosticismo LLM + export rules + historico limpo
+# Sprint v3.8.4 - code review 2026-06-02 (4 stories) - fechado em 2026-06-04
+[12:48] PASSED fix-sec-001: Whitelist SSH em vps_exec (2 camadas: blocklist + whitelist)
+[12:48] PASSED fix-rules-002: Adicionar escopo release a whitelist de commit-convention
+[12:58] PASSED docs-extras-003: Remove devorq self-patch (nao implementado)
+[12:58] PASSED docs-spec-004: Alinhar declaracao 7 -> 10 gates com implementacao real
+[15:07] PASSED release-v3.8.4: Version sync para 3.8.4 (CHANGELOG, README, SPEC)
+[19:21] PASSED merge-v3.8.4: merge(code-review) integracao do sprint code-review-2026-06-02
+# Sprint v3.8.4 - close cycle (sessao Mavis+Nando 2026-06-04T21:35Z)
+[21:35] PASSED close-v3.8.4: 5 licoes validadas+aprovadas + PRD orfao arquivado + bin version sync (3.8.3->3.8.4)
+# Sprint v3.8.5 - dogfooding (iniciado 2026-06-04)
+[21:50] PASSED setup-v3.8.5: GATE-0.5 (5 foundation docs) + GATE-1 (SPEC) + version drift corrigido
+[22:07] PASSED story-004: scripts/sync-version.sh detecta/corrige drift automaticamente

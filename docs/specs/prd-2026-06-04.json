@@ -87,7 +87,7 @@
       "title": "scripts/sync-version.sh: detectar e corrigir drift de versao",
       "type": "tooling",
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "estimated_minutes": 45,
       "files_allowed": [
         "scripts/sync-version.sh",
@@ -113,7 +113,7 @@
       "title": "Close v3.8.4 cycle: commit licoes + progress.txt + working dir limpo",
       "type": "chore",
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "estimated_minutes": 20,
       "files_allowed": [
         "progress.txt",
