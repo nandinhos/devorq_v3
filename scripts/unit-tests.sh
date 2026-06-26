@@ -1254,6 +1254,20 @@ test_check_story_fail_closed() {
     rm -rf "$proj"
 }
 
+test_no_cjk_glyphs() {
+    unit::info "Test: sem glifos CJK/mojibake no codigo de runtime (DQ-021)"
+    ((TESTS_RUN++)) || true
+    local hits
+    hits=$(grep -rlP '[\x{3000}-\x{9fff}\x{ff00}-\x{ffef}]' \
+              "$DEVORQ_ROOT"/lib "$DEVORQ_ROOT"/bin "$DEVORQ_ROOT"/scripts \
+              --include='*.sh' 2>/dev/null || true)
+    if [ -z "$hits" ]; then
+        unit::pass "Nenhum glifo CJK no codigo .sh de runtime"
+    else
+        unit::fail "Glifos CJK encontrados em: $(echo "$hits" | tr '\n' ' ')"
+    fi
+}
+
 # ============================================================
 # SUMMARY
 # ============================================================
@@ -1320,6 +1334,7 @@ main() {
     test_auto_mark_pass
     test_no_cmd_shadowing
     test_check_story_fail_closed
+    test_no_cjk_glyphs
 
     teardown_test_env
 

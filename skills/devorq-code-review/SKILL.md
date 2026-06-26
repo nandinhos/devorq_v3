@@ -120,7 +120,7 @@ Or if PR: gh pr diff --name-only + summary
 
 **Objetivo:** Análise profunda em 5 dimensões, cada agente focado em uma.
 
-Todos os 5 agentes rodam **em paralelo** via `delegate_task` (até 3 simultâneos se limite configurado,无所谓— agent调度).
+Todos os agentes rodam **em paralelo** via `delegate_task` (até 3 simultâneos — respeitando o teto de concorrência do projeto).
 
 **Agente 1 — SPEC/CLAUDE.md Compliance:**
 ```

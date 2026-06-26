@@ -263,7 +263,7 @@ Falhas sao logadas em `lessons.json` mas nao param o loop.
 
 ### 4. Stories "by design" vs "SKIPPED"
 - **By design** = codigo JA esta correto, comentarios indicam intencao deliberada. Marcar `passes: true`.
-- **SKIPPED** =技术上 possivel mas requer analise manual profunda (ex: ARCH-01 Enums com dois conjuntos). Marcar `passes: false, notes: "SKIPPED: reason"`.
+- **SKIPPED** = tecnicamente possivel mas requer analise manual profunda (ex: ARCH-01 Enums com dois conjuntos). Marcar `passes: false, notes: "SKIPPED: reason"`.
 ```python
 # Exemplo: SEC-03 hierarquia — comentarios JA indicam design intencional
 story['passes'] = True  # JA implementado corretamente

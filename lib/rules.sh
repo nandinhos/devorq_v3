@@ -11,7 +11,7 @@
 #   - grill: Regras de sparring estruturado
 #   - visual-verification: Gate de verificação visual
 #
-#用法:
+# Uso:
 #   devorq rules list                    Lista regras disponíveis
 #   devorq rules check <rule>           Valida se regra está sendo seguida
 #   devorq rules apply <rule>           Aplica regra ao projeto atual

@@ -34,7 +34,7 @@
 | Condição | Gotcha | Solução |
 |----------|--------|---------|
 | Usando `RelationManager` | RELATION: `RelationManager` precisa de método `$formSchema` ou `$tableColumns` definido | Verificar se o relacionamento no Model está com `$this->belongsToMany()->withPivot()` |
-|自定义 Actions usando `Action::make()` | ACTION: Actions Filament v4 usam `getMountUrl()` diferente de v5 | Documentar qual versão está em uso |
+| Actions customizadas usando `Action::make()` | ACTION: Actions Filament v4 usam `getMountUrl()` diferente de v5 | Documentar qual versão está em uso |
 | Plugin Spatie/Laravel-Permission | PERMISSION: `$roles` no resource precisa de `canAccessRecord()` customizado | Implementar `canAccessRecord` no Resource: `return auth()->user()->hasRole('admin');` |
 | Form com `Tabs` | TABS: ordem dos campos importa dentro de tabs — cada tab é independente | Agrupa lógica, não repete campos entre tabs |
 | Table com `Filters` | FILTER: filtrosglobais vs filtros de coluna — filtros de coluna são mais performáticos | Preferir `Filters::filter()` de coluna quando possível |

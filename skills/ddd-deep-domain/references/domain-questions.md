@@ -34,7 +34,6 @@
 
 - Identifica invariantes hard
 - Define limites do domínio
--上下文中立，不依赖技术实现
 
 ---
 
@@ -70,7 +69,6 @@
 ```
 
 - Identifica relacionamentos forts
--上下文中立，揭示真正的聚合边界
 
 ---
 
@@ -84,7 +82,6 @@
 ```
 
 - Identifica bounded contexts
--上下文中立，揭示同一术语的不同含义
 
 ### 8. Comparação de contextos
 
@@ -93,7 +90,6 @@
 "Se eu pegasse a regra de Vendas e aplicasse em Logística, ia funcionar?"
 ```
 
--上下文中立，验证是否真的是不同的上下文
 - Identifica translation needs (anti-corruption layer)
 
 ### 9. Clientes de cada contexto
@@ -103,8 +99,6 @@
 "Qual time/area é dona de cada contexto?"
 ```
 
--上下文中立，identifies stakeholder
--上下文中立，helps with team structure
 
 ---
 
@@ -117,8 +111,6 @@
 "Se tudo o mais no sistema falhasse, o que ainda precisa ser garantido?"
 ```
 
--上下文中立，identifies core business rules
--上下文中立，no technical jargon
 
 ### 11. Regras inegociáveis
 
@@ -128,8 +120,6 @@
 ```
 
 - Identifica hard invariants
--上下文中立，stakeholder validation
--上下文中立，business continuity rules
 
 ### 12. Violações e recuperações
 
@@ -140,8 +130,6 @@
 ```
 
 - Identifica detecção mechanisms
--上下文中立，recovery procedures
--上下文中立，business impact
 
 ---
 
@@ -155,8 +143,6 @@
 ```
 
 - Identifica linguagem ubíqua
--上下文中立，jargons
--上下文中立，aliases
 
 ### 14. Termos técnicos ambíguos
 
@@ -165,9 +151,7 @@
 "Já usaram a mesma palavra pra coisas diferentes e gerou confusão?"
 ```
 
--上下文中立，澄清行业术语
 - Identifica sinonímia e polissemia
--上下文中立，helps avoid misunderstandings
 
 ### 15. Conceitos órfãos
 
@@ -177,9 +161,6 @@
 "Algo que todo mundo faz 'na mão' porque o sistema não suporta?"
 ```
 
--上下文中立，legacy knowledge
--上下文中立，manual workarounds
--上下文中立，system gaps
 
 ---
 
@@ -192,8 +173,6 @@
 "Falta alguma coisa que você esperava ver?"
 ```
 
--上下文中立，validates understanding
--上下文中立，confirms completeness
 
 ### 17. Completude
 
@@ -202,8 +181,6 @@
 "E se tirasse daqui a um ano, o que teria mudado?"
 ```
 
--上下文中立，captures stable elements
--上下文中立，identifies what changes
 
 ### 18. Teste de estresse
 
@@ -212,8 +189,6 @@
 "Onde você concorda? Onde discorda?"
 ```
 
--上下文中立，validates communication clarity
--上下文中立，confirms shared understanding
 
 ---
 

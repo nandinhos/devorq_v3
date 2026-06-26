@@ -224,7 +224,7 @@ validate_with_context7() {
         devorq::debug::log ""
         devorq::debug::log "Bibliotecas disponíveis no Context7:"
         devorq::debug::log "  - /laravel/framework (Laravel core)"
-        devorq::debug::log "  - /laravel/，吹风机 (Breeze)"
+        devorq::debug::log "  - /laravel/breeze (Breeze)"
         devorq::debug::log "  - /livewire/livewire (Livewire)"
         devorq::debug::log "  - /tailwindcss/tailwindcss (Tailwind)"
     fi

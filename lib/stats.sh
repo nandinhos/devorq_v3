@@ -122,7 +122,7 @@ stats::patterns() {
     lesson_count=${lesson_count:-0}
 
     if [ "$lesson_count" -lt 3 ]; then
-        echo "  Menos de 3 lições — padrões需要在 mais dados"
+        echo "  Menos de 3 lições — padrões precisam de mais dados"
         return 0
     fi
 

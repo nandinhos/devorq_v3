@@ -90,7 +90,7 @@ ctx_stats() {
     echo "=== CONTEXT STATS ==="
     echo "Chars: $chars"
     echo "Tokens (estimado): ~$tokens"
-    echo "Limite suggested: 120k tokens (剩 ~$((120000 - tokens)) disponível)"
+    echo "Limite sugerido: 120k tokens (restam ~$((120000 - tokens)) disponível)"
 
     if command -v jq &>/dev/null; then
         local sections
