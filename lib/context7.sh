@@ -453,8 +453,11 @@ _install_cli() {
     if command -v ctx7 &>/dev/null; then
         echo "  ✓ ctx7 já está instalado"
     else
-        echo "  → npm install -g ctx7"
-        if npm install -g ctx7 2>&1; then
+        # Permite fixar a versao (supply-chain): DEVORQ_CTX7_VERSION pin o pacote
+        # global em vez de instalar sempre o latest (DQ-015).
+        local ctx7_pkg="ctx7@${DEVORQ_CTX7_VERSION:-latest}"
+        echo "  → npm install -g ${ctx7_pkg}"
+        if npm install -g "${ctx7_pkg}" 2>&1; then
             echo "  ✓ ctx7 instalado via npm"
         else
             echo "  ✗ npm install falhou"

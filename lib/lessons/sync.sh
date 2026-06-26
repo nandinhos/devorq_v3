@@ -23,7 +23,7 @@ lessons::sync_vps() {
     local vps_host="${DEVORQ_VPS_HOST:-}"
     local vps_port="${DEVORQ_VPS_PORT:-22}"
     local vps_user="${DEVORQ_VPS_USER:-}"
-    local mux_sock="${DEVORQ_MUX_SOCK:-/tmp/devorq-ssh-mux}"
+    local mux_sock="${DEVORQ_MUX_SOCK:-/tmp/devorq-ssh-mux-$(id -u)}"
     [ -z "$vps_host" ] && return 0
 
     [ ! -f "$file" ] && echo "[ERROR] Arquivo não encontrado: $file" && return 1

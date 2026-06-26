@@ -56,7 +56,7 @@ VPS_USER = os.environ.get("DEVORQ_VPS_USER", "")
 PG_DB = os.environ.get("DEVORQ_PG_DB", "hermes_study")
 PG_USER = os.environ.get("DEVORQ_PG_USER", "hermes_study")
 PG_CONTAINER = os.environ.get("DEVORQ_PG_CONTAINER", "hermesstudy_postgres")
-MUX_SOCK = os.environ.get("DEVORQ_MUX_SOCK", "/tmp/devorq-ssh-mux")
+MUX_SOCK = os.environ.get("DEVORQ_MUX_SOCK", f"/tmp/devorq-ssh-mux-{os.getuid()}")
 
 
 def ssh_cmd(cmd, timeout=30, input_data=None):
@@ -75,7 +75,7 @@ def ssh_cmd(cmd, timeout=30, input_data=None):
         "-o", f"UserKnownHostsFile={known_hosts}",
         "-o", "ControlMaster=auto",
         "-o", f"ControlPath={MUX_SOCK}",
-        "-o", "ControlPersist=600",
+        "-o", "ControlPersist=60",
         "-o", "ConnectTimeout=10",
         "-p", VPS_PORT,
         f"{VPS_USER}@{VPS_HOST}",

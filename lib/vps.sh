@@ -45,7 +45,8 @@ VPS_USER="${DEVORQ_VPS_USER:-}"
 PG_DB="${DEVORQ_PG_DB:-hermes_study}"
 PG_USER="${DEVORQ_PG_USER:-hermes_study}"
 
-MUX_SOCK="${DEVORQ_MUX_SOCK:-/tmp/devorq-ssh-mux}"
+# Socket de mux por-usuario (evita colisao/hijack em /tmp compartilhado). DQ-015
+MUX_SOCK="${DEVORQ_MUX_SOCK:-/tmp/devorq-ssh-mux-$(id -u)}"
 
 # ============================================================
 # Sanitization helpers
@@ -120,7 +121,7 @@ devorq::vps_check() {
     result=$(ssh \
              -o "ControlMaster=auto" \
              -o "ControlPath=${MUX_SOCK}" \
-             -o "ControlPersist=600" \
+             -o "ControlPersist=60" \
              -o "StrictHostKeyChecking=yes" \
              -o "UserKnownHostsFile=${HOME}/.ssh/known_hosts" \
              -o "ConnectTimeout=5" \
@@ -219,7 +220,7 @@ devorq::vps_exec() {
     ssh \
         -o "ControlMaster=auto" \
         -o "ControlPath=${MUX_SOCK}" \
-        -o "ControlPersist=600" \
+        -o "ControlPersist=60" \
         -o "StrictHostKeyChecking=yes" \
         -o "UserKnownHostsFile=${HOME}/.ssh/known_hosts" \
         -o "ConnectTimeout=10" \
