@@ -39,6 +39,17 @@ print(re.sub(dangerous, ' ', text))
 
 # ============================================================
 
+# Escapa uma string para uso seguro dentro de um literal JSON (fallback sem jq).
+lessons::_json_escape() {
+    local s="$1"
+    s="${s//\\/\\\\}"      # barra invertida (primeiro)
+    s="${s//\"/\\\"}"      # aspa dupla
+    s="${s//$'\n'/\\n}"    # newline
+    s="${s//$'\r'/\\r}"    # carriage return
+    s="${s//$'\t'/\\t}"    # tab
+    printf '%s' "$s"
+}
+
 lessons::capture() {
     # Validação de inputs
     if [[ -z "${1:-}" ]]; then
@@ -57,8 +68,14 @@ lessons::capture() {
 
     local ts
     ts=$(date +%Y%m%d_%H%M%S)
-    local id="lesson_${ts}_$$"
+    # ID com entropia ($RANDOM) + checagem de unicidade — evita colisao/overwrite
+    # quando varias licoes sao capturadas no mesmo segundo e processo (DQ-030).
+    local id="lesson_${ts}_$$_${RANDOM}"
     local file="${dir}/${id}.json"
+    while [ -e "$file" ]; do
+        id="lesson_${ts}_$$_${RANDOM}"
+        file="${dir}/${id}.json"
+    done
 
     # Determinar stack do contexto
     local stack="${DEVORQ_STACK:-unknown}"
@@ -86,16 +103,17 @@ lessons::capture() {
                 applied: false
             }' > "$file"
     else
-        # Fallback: printf manual (sem dependência de jq)
+        # Fallback sem jq: escapa cada campo para gerar JSON valido mesmo com
+        # aspas/barras/newlines no conteudo (antes interpolava cru -> JSON quebrado, DQ-030)
         printf '%s\n' \
             "{" \
-            "  \"id\": \"${id}\"," \
-            "  \"title\": \"${title}\"," \
-            "  \"problem\": \"${problem}\"," \
-            "  \"solution\": \"${solution}\"," \
-            "  \"stack\": \"${stack}\"," \
+            "  \"id\": \"$(lessons::_json_escape "$id")\"," \
+            "  \"title\": \"$(lessons::_json_escape "$title")\"," \
+            "  \"problem\": \"$(lessons::_json_escape "$problem")\"," \
+            "  \"solution\": \"$(lessons::_json_escape "$solution")\"," \
+            "  \"stack\": \"$(lessons::_json_escape "$stack")\"," \
             "  \"tags\": [], " \
-            "  \"timestamp\": \"${ts}\"," \
+            "  \"timestamp\": \"$(lessons::_json_escape "$ts")\"," \
             "  \"validated\": false," \
             "  \"applied\": false" \
             "}" > "$file"
