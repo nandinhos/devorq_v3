@@ -4,6 +4,29 @@
 # Formato: escopo(fase): descrição (detalhamento)
 # Sem emojis, sem co-autoria, em português do Brasil
 
+# Guard de segredos (DQ-014): antes do 'git add -A' cego, bloqueia se arquivos
+# sensiveis (.env, *.pem/key, id_rsa, etc.) estao prestes a ser versionados.
+# Override consciente via DEVORQ_ALLOW_SECRETS=1.
+devorq::commit::guard_secrets() {
+    local project_root="$1"
+    local sensitive
+    sensitive=$(git -C "$project_root" status --porcelain --untracked-files=all 2>/dev/null \
+        | sed 's/^...//' \
+        | grep -iE '(^|/)(\.env(\.[a-z0-9_-]+)?$|id_rsa$|id_dsa$|id_ed25519$|[^/]*\.(pem|key|p12|pfx|kdbx)$)' \
+        | grep -ivE '\.env\.(example|sample|template|dist)$' \
+        || true)
+    [ -z "$sensitive" ] && return 0
+
+    devorq::warn "Arquivos sensiveis nas mudancas (NAO versione segredos):"
+    echo "$sensitive" | sed 's/^/    /' >&2
+    if [ "${DEVORQ_ALLOW_SECRETS:-0}" = "1" ]; then
+        devorq::warn "DEVORQ_ALLOW_SECRETS=1 — prosseguindo mesmo assim"
+        return 0
+    fi
+    devorq::warn "Commit abortado. Adicione ao .gitignore ou use DEVORQ_ALLOW_SECRETS=1."
+    return 1
+}
+
 devorq::commit::usage() {
     cat <<'USAGE_EOF'
 Uso: devorq commit [--story <id>] [--scope <scope>] [--phase <phase>] [--message <msg>]
@@ -273,7 +296,7 @@ devorq::commit::interactive() {
     # 7. Executar git add + commit
     devorq::info "Executando commit..."
 
-    if git -C "$project_root" add -A; then
+    if devorq::commit::guard_secrets "$project_root" && git -C "$project_root" add -A; then
         if git -C "$project_root" commit -m "$final_message"; then
             devorq::success "Commit: $final_message"
 
@@ -329,7 +352,7 @@ devorq::commit::direct() {
         return 0
     fi
 
-    if git -C "$project_root" add -A; then
+    if devorq::commit::guard_secrets "$project_root" && git -C "$project_root" add -A; then
         if git -C "$project_root" commit -m "$message"; then
             devorq::success "Commit OK"
 
@@ -381,6 +404,7 @@ devorq::commit::from_story() {
     confirm="${confirm:-Y}"
 
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        devorq::commit::guard_secrets "$project_root" || return 1
         git -C "$project_root" add -A
         git -C "$project_root" commit -m "$message" && \
             devorq::success "Commit OK" || \
