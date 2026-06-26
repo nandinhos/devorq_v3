@@ -21,7 +21,17 @@ set -euo pipefail
 # BOOTSTRAP
 # ============================================================
 
-readonly DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+# Resolve symlinks para que a instalacao via symlink (ln -s devorq) resolva
+# DEVORQ_ROOT para o repo real, e nao para o diretorio do symlink (DQ-009).
+# Loop portavel (readlink sem -f funciona em GNU e BSD/macOS).
+__devorq_src="${BASH_SOURCE[0]}"
+while [[ -L "$__devorq_src" ]]; do
+    __devorq_dir="$(cd -P "$(dirname "$__devorq_src")" && pwd)"
+    __devorq_src="$(readlink "$__devorq_src")"
+    [[ "$__devorq_src" != /* ]] && __devorq_src="${__devorq_dir}/${__devorq_src}"
+done
+readonly DEVORQ_ROOT="${DEVORQ_ROOT:-$(cd -P "$(dirname "$__devorq_src")/.." && pwd)}"
+unset __devorq_src __devorq_dir
 readonly DEVORQ_LIB="${DEVORQ_ROOT}/lib"
 readonly DEVORQ_BIN="${DEVORQ_ROOT}/bin"
 readonly DEVORQ_VERSION="3.8.5"
@@ -161,7 +171,7 @@ main() {
         info)        devorq::cmd_info "$@" ;;
 
         # Built-in (sem dispatcher dedicado)
-        version)     echo "DEVORQ v${DEVORQ_VERSION}" ;;
+        version|--version|-v|-V)  echo "DEVORQ v${DEVORQ_VERSION}" ;;
         verify)      devorq::cmd_verify "$@" ;;
 
         help|--help|-h) devorq::help ;;

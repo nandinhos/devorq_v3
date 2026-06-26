@@ -88,10 +88,12 @@ EOFS
 }
 
 # ============================================================
-# test
+# structure check (checagem de sintaxe/estrutura)
+# Renomeado de devorq::cmd_test para eliminar shadowing com
+# lib/commands/test.sh (que roda a suite real). Ver DQ-001.
 # ============================================================
 
-devorq::cmd_test() {
+devorq::cmd_structure_check() {
     devorq::info "Testando estrutura..."
     local errors=0
 

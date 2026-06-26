@@ -90,10 +90,10 @@ devorq::cmd_build() {
     source "${DEVORQ_LIB}/commands/test.sh"
     source "${DEVORQ_LIB}/commands/workflow.sh"
 
-    # Etapa 1: teste de estrutura
-    devorq::info "── Etapa 1: devorq test ──"
-    if ! devorq::cmd_test; then
-        devorq::warn "devorq test falhou"
+    # Etapa 1: checagem de estrutura (sintaxe) — função renomeada (DQ-001)
+    devorq::info "── Etapa 1: checagem de estrutura ──"
+    if ! devorq::cmd_structure_check; then
+        devorq::warn "checagem de estrutura falhou"
     fi
     echo ""
 

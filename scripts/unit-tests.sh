@@ -1201,6 +1201,28 @@ test_auto_mark_pass() {
     rm -rf "$proj"
 }
 
+test_no_cmd_shadowing() {
+    unit::info "Test: nenhuma devorq::cmd_* definida em >1 arquivo carregado (DQ-001)"
+    ((TESTS_RUN++)) || true
+
+    # Guard estatico: nos arquivos efetivamente carregados em runtime (core libs,
+    # commands de topo e dispatchers — exclui as arvores orfas cli/ e lessons/),
+    # nenhuma funcao devorq::cmd_* pode ter definicao duplicada. Duplicata =>
+    # vencedor depende da ordem de source (shadowing). Ex.: cmd_test (DQ-001).
+    local dups
+    dups=$(grep -rhoE '^devorq::cmd_[a-z0-9_]+\(\)' \
+              "$DEVORQ_ROOT"/lib/*.sh \
+              "$DEVORQ_ROOT"/lib/commands/*.sh \
+              "$DEVORQ_ROOT"/lib/dispatchers/*.sh 2>/dev/null \
+            | sort | uniq -d)
+
+    if [ -z "$dups" ]; then
+        unit::pass "Sem definicoes duplicadas de devorq::cmd_* no caminho carregado"
+    else
+        unit::fail "devorq::cmd_* duplicada(s) — shadowing: $(echo "$dups" | tr '\n' ' ')"
+    fi
+}
+
 # ============================================================
 # SUMMARY
 # ============================================================
@@ -1265,6 +1287,7 @@ main() {
     test_vps_pg_exec_validation
     test_workflow_init
     test_auto_mark_pass
+    test_no_cmd_shadowing
 
     teardown_test_env
 
