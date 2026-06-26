@@ -9,20 +9,30 @@ DEVORQ_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BIN="${DEVORQ_ROOT}/bin/devorq"
 FAIL=0
 
+# Apos o refactor router->dispatcher, bin/devorq sourcea lib/dispatchers/*.sh
+# (nao mais lib/commands/* direto). Verifica os modulos de comando referenciados
+# pelos DISPATCHERS — antes este check grepava bin/devorq e virava no-op. DQ-030
 check_source() {
+    local disp_dir="${DEVORQ_ROOT}/lib/dispatchers"
+    if [[ ! -d "$disp_dir" ]] || ! compgen -G "$disp_dir/*.sh" >/dev/null; then
+        echo "[FAIL] dispatchers ausentes em lib/dispatchers/"
+        FAIL=$((FAIL + 1))
+        return
+    fi
     while IFS= read -r path; do
         [[ -z "$path" ]] && continue
         local full="${DEVORQ_ROOT}/lib/commands/${path}"
         if [[ ! -f "$full" ]]; then
-            echo "[FAIL] source ausente: $path"
+            echo "[FAIL] source ausente: commands/$path (referenciado por dispatcher)"
             FAIL=$((FAIL + 1))
         else
-            echo "[OK]   $path"
+            echo "[OK]   commands/$path"
         fi
-    done < <(grep -oE 'source "\$\{DEVORQ_LIB\}/commands/[^"]+\.sh"' "$BIN" | sed 's|source "${DEVORQ_LIB}/commands/||;s|"||')
+    done < <(grep -ohE 'source "\$\{DEVORQ_LIB\}/commands/[^"]+\.sh"' "$disp_dir"/*.sh \
+                | sed 's|source "${DEVORQ_LIB}/commands/||;s|"||' | sort -u)
 }
 
-echo "=== verify-dispatch: módulos referenciados em bin/devorq ==="
+echo "=== verify-dispatch: módulos referenciados pelos dispatchers ==="
 check_source
 
 echo ""

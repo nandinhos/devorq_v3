@@ -358,6 +358,14 @@ echo ""
 # ============================================================
 
 if [ "$FAIL_COUNT" -eq 0 ]; then
+    # --strict: trata warnings como falha (antes a flag era capturada mas no-op). DQ-030
+    if [ "$STRICT" = "--strict" ] && [ "$WARN_COUNT" -gt 0 ]; then
+        echo -e "${RED}═══════════════════════════════════════════"
+        echo -e "  ✗ MODO --strict: $WARN_COUNT warning(s) tratados como falha"
+        echo -e "═══════════════════════════════════════════${NC}"
+        echo ""
+        exit 1
+    fi
     echo -e "${GREEN}═══════════════════════════════════════════"
     echo -e "  ✓ TODAS AS VALIDAÇÕES PASSARAM"
     echo -e "═══════════════════════════════════════════${NC}"
