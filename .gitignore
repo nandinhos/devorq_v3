@@ -5,7 +5,7 @@
 node_modules/
 /package.json
 /package-lock.json
-/e2e-tests/package-lock.json
+# e2e-tests/package-lock.json é versionado (necessario p/ npm ci + cache no CI — DQ-026)
 
 # Session summaries (ephemeral)
 .devorq/state/sessions/
