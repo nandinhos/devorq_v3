@@ -97,9 +97,12 @@ devorq::cmd_build() {
     fi
     echo ""
 
-    # Etapa 2: todos os gates
-    local failed=0
+    # Etapa 2: gates de codigo (1-7). GATE-0/0.5 (foundation) sao pulados de
+    # proposito no self-build; reportamos a contagem REAL — nao um "7/7" fixo
+    # que escondia o subset (DQ-028).
+    local failed=0 total=0
     for gate in 1 2 3 4 5 6 7; do
+        total=$((total + 1))
         devorq::info "── Etapa 2: Gate $gate ──"
         if ! devorq::cmd_gate "$gate"; then
             devorq::fail "Gate $gate falhou"
@@ -112,11 +115,11 @@ devorq::cmd_build() {
     echo ""
     devorq::info "═══ Resultado ═══"
     if [ $failed -eq 0 ]; then
-        devorq::success "Build OK — 7/7 gates verdes"
+        devorq::success "Build OK — ${total}/${total} gates de codigo (1-7) verdes"
         devorq::info "Sistema pronto para self-building"
         return 0
     else
-        devorq::error "$failed gate(s) falhou(aram)"
+        devorq::error "$failed de $total gate(s) de codigo falhou(aram)"
     fi
 }
 

@@ -12,6 +12,11 @@
 
 set -euo pipefail
 
+# Sequencia canonica de gates do pipeline completo (devorq flow). Fonte unica
+# consumida por cmd_flow e self-build, evitando divergencia/mensagens enganosas. DQ-028
+: "${DEVORQ_GATE_SEQUENCE:=0 0.5 1 2 3 4 5 6 7}"
+export DEVORQ_GATE_SEQUENCE
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'

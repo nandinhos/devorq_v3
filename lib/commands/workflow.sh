@@ -158,7 +158,7 @@ devorq::cmd_flow() {
         [ -n "$completed" ] && devorq::info "Retomando — gates ja concluidos: $completed"
     fi
 
-    for gate in 0 0.5 1 2 3 4 5 6 7; do
+    for gate in ${DEVORQ_GATE_SEQUENCE:-0 0.5 1 2 3 4 5 6 7}; do
         if [ "$resume" = "true" ] && printf ' %s ' "$completed" | grep -q " ${gate} "; then
             devorq::info "--- GATE ${gate} (ja concluido — pulando) ---"
             continue
