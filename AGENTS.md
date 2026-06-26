@@ -32,6 +32,35 @@ devorq rules export agents    # AGENTS.md no projeto alvo
 
 No repo DEVORQ, este arquivo é mantido manualmente. Em projetos consumidores, `export agents` gera uma cópia adaptada.
 
+## Contrato de delegação `DEVORQ_DELEGATE_FN` (modo AUTO)
+
+A camada de **regras** (`rules/`) é agnóstica. A camada de **execução de sub-agentes**
+(modo AUTO story-by-story) precisa de um primitivo para delegar a implementação de
+uma story — historicamente `delegate_task` do Hermes. Para não acoplar o DEVORQ a um
+orquestrador específico, o modo AUTO usa um **contrato de adapter**:
+
+- **`DEVORQ_DELEGATE_FN`** — nome de uma função/comando que o loop AUTO invoca como
+  `"$DEVORQ_DELEGATE_FN" "$story_json" "$project_root"`. Deve implementar a story e
+  retornar `0` em sucesso. Se **não definido**, o loop é **fail-closed**: não marca a
+  story como done (não há sub-agente para implementar) — use `DEVORQ_AUTO_SIMULATE=1`
+  só para dry-run.
+
+Adaptadores de referência (defina antes de `devorq auto`):
+
+```bash
+# Hermes (nativo)
+export DEVORQ_DELEGATE_FN=delegate_task
+
+# Claude Code / Codex / outro: envolva a chamada do seu orquestrador
+my_delegate() { # $1=story_json  $2=project_root
+    # ... invocar o agente do seu ambiente para implementar a story ...
+    : ; }
+export DEVORQ_DELEGATE_FN=my_delegate
+```
+
+Flags relacionadas: `DEVORQ_AUTO_COMMIT=1` (commit por story), `DEVORQ_AUTO_ALLOW_NO_RUNNER=1`
+(projeto sem runner de teste), `DEVORQ_AUTO_SIMULATE=1` (dry-run).
+
 ## Proibições
 
 - Sem `Co-Authored-By` em commits (hook bloqueia)

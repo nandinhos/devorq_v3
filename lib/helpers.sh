@@ -107,11 +107,12 @@ devorq::audit_log() {
     local logs_dir="${DEVORQ_LOGS_DIR:-${PWD}/.devorq/state/logs}"
     mkdir -p "$logs_dir" 2>/dev/null || return 0
     local ts; ts=$(date +%Y-%m-%dT%H:%M:%SZ)
+    local agent="${DEVORQ_AGENT:-}"   # qual agente/modelo agiu (DQ-023)
     local line
     if command -v jq &>/dev/null; then
-        line=$(jq -nc --arg r "$DEVORQ_RUN_ID" --arg t "$ts" --arg e "$event" --arg s "$status" --arg d "$detail" \
-            '{run_id:$r, ts:$t, event:$e, status:$s, detail:$d}' 2>/dev/null)
+        line=$(jq -nc --arg r "$DEVORQ_RUN_ID" --arg t "$ts" --arg e "$event" --arg s "$status" --arg d "$detail" --arg a "$agent" \
+            '{run_id:$r, ts:$t, agent:$a, event:$e, status:$s, detail:$d}' 2>/dev/null)
     fi
-    [ -z "${line:-}" ] && line="{\"run_id\":\"${DEVORQ_RUN_ID}\",\"ts\":\"${ts}\",\"event\":\"${event}\",\"status\":\"${status}\"}"
+    [ -z "${line:-}" ] && line="{\"run_id\":\"${DEVORQ_RUN_ID}\",\"ts\":\"${ts}\",\"agent\":\"${agent}\",\"event\":\"${event}\",\"status\":\"${status}\"}"
     printf '%s\n' "$line" >> "${logs_dir}/run-${DEVORQ_RUN_ID}.jsonl" 2>/dev/null || true
 }
