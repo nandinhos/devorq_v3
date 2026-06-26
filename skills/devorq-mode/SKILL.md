@@ -36,7 +36,7 @@ Usuario: "vamos implementar a feature de CPF"
     │  [3] 🚀 AUTO [N] stories                │
     └─────────────────────────────────────────┘
 [3] BRANCH:
-    AUTO  → devorq-auto skill + loop-auto.sh
+    AUTO  → delega à skill canônica devorq-auto (skills/devorq-auto/scripts/loop-auto.sh)
     CLASSIC → devorq gates 1-7 tradicionais
 ```
 
@@ -45,9 +45,11 @@ Usuario: "vamos implementar a feature de CPF"
 | Script | Descricao |
 |--------|-----------|
 | `mode-selector.sh` | Detecta modo via keywords e exibe menu |
-| `loop-auto.sh` | Loop principal AUTO (delegate_task story-by-story) |
-| `check-story.sh` | Gate de verificacao por story |
-| `prd-from-spec.sh` | Gera prd.json do SPEC.md |
+
+> A execução AUTO (loop story-by-story, `check-story.sh`, `prd-from-spec.sh`) vive
+> exclusivamente na skill canônica **devorq-auto** (`skills/devorq-auto/scripts/`).
+> O devorq-mode apenas seleciona o modo e **delega** — sem fork próprio do loop,
+> evitando implementações divergentes (DQ-003 / KI7).
 
 ## Keywords
 

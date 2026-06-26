@@ -50,3 +50,7 @@ docs/PLANO_CORRECAO*.md
 docs/REFATORACAO*.md
 .opencode/
 test_hook_*
+
+# Python bytecode
+__pycache__/
+*.pyc
