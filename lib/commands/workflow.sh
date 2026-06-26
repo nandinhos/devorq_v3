@@ -138,13 +138,30 @@ devorq::cmd_structure_check() {
 # ============================================================
 
 devorq::cmd_flow() {
-    local intent="${1:-}"
-    [ -z "$intent" ] && devorq::error "Uso: devorq flow \"<intent>\""
+    local resume=false intent=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --resume) resume=true; shift ;;
+            *) intent="$1"; shift ;;
+        esac
+    done
+    [ -z "$intent" ] && devorq::error "Uso: devorq flow [--resume] \"<intent>\""
 
     devorq::log "Intent: ${intent}"
     devorq::log "Executando gates 0 -> 0.5 -> 1-7..."
 
+    # Retomada (DQ-007): com --resume, pula gates ja persistidos em gates_completed.
+    local completed=""
+    if [ "$resume" = "true" ] && command -v jq &>/dev/null && [ -f "${PWD}/.devorq/state/context.json" ]; then
+        completed=$(jq -r '.gates_completed // [] | join(" ")' "${PWD}/.devorq/state/context.json" 2>/dev/null || echo "")
+        [ -n "$completed" ] && devorq::info "Retomando — gates ja concluidos: $completed"
+    fi
+
     for gate in 0 0.5 1 2 3 4 5 6 7; do
+        if [ "$resume" = "true" ] && printf ' %s ' "$completed" | grep -q " ${gate} "; then
+            devorq::info "--- GATE ${gate} (ja concluido — pulando) ---"
+            continue
+        fi
         devorq::info "--- GATE ${gate} ---"
         if ! devorq::cmd_gate "$gate" 2>&1; then
             devorq::error "Gate ${gate} falhou — parando flow"
@@ -188,6 +205,12 @@ devorq::cmd_gate() {
         7)   gate_7;   rv=$? ;;
         *)   devorq::fail "Gate invalido: $gate_num (aceitos: 0, 0.5, 1-7, 5.5)"; return 1 ;;
     esac
-    
+
+    # Persiste a conclusao do gate (DQ-007): sem isso, gates_completed nunca
+    # era escrito e stats/handoff/GATE-7/retomada liam estado-fantasma.
+    if [ "$rv" -eq 0 ] && declare -f ctx_mark_gate &>/dev/null; then
+        ctx_mark_gate "$gate_num" || true
+    fi
+
     return $rv
 }

@@ -235,6 +235,35 @@ ctx_set() {
 }
 
 # ============================================================
+# ctx_mark_gate — Persiste um gate concluido em gates_completed
+# (idempotente). Faz a observabilidade (stats/handoff/GATE-7) e a
+# retomada do flow refletirem a execucao real, em vez de estado-fantasma. DQ-007.
+# ============================================================
+
+ctx_mark_gate() {
+    local gate="${1:-}"
+    local ctx_file="${PWD}/.devorq/state/context.json"
+    [ -z "$gate" ] && return 0
+    command -v jq &>/dev/null || return 0
+
+    mkdir -p "$(dirname "$ctx_file")"
+    [ -f "$ctx_file" ] || echo "{}" > "$ctx_file"
+
+    local ts tmp
+    ts=$(date +%Y-%m-%dT%H:%M:%SZ)
+    tmp=$(mktemp)
+    if jq --arg g "$gate" --arg ts "$ts" '
+            .gates_completed = ((.gates_completed // []) + [$g] | unique)
+            | .last_session = $ts
+        ' "$ctx_file" > "$tmp" 2>/dev/null && [ -s "$tmp" ]; then
+        mv "$tmp" "$ctx_file"
+    else
+        rm -f "$tmp"
+        return 1
+    fi
+}
+
+# ============================================================
 # ctx_clear — Limpa contexto
 # ============================================================
 
