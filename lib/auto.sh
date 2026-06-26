@@ -235,9 +235,11 @@ devorq::auto::show_story() {
 
 devorq::auto::ensure_branch() {
     local project="$1"
-    local branch_file="$project/.devorq/auto/.last-branch"
+    # Estado de branch unificado com o loop canonico (.devorq-auto/), em vez do
+    # antigo .devorq/auto/ — os modos guided e ralph compartilham o mesmo arquivo. DQ-003
+    local branch_file="$project/.devorq-auto/.last-branch"
 
-    mkdir -p "$project/.devorq/auto"
+    mkdir -p "$project/.devorq-auto"
 
     if [[ -f "$branch_file" ]]; then
         local existing_branch

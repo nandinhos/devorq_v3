@@ -800,16 +800,30 @@ main() {
         devorq_auto::log "Running verification for: $story_id"
         if "$SKILL_DIR/scripts/check-story.sh" "$project_root"; then
             devorq_auto::success "✅ Verification PASSED — ${story_id}"
-            devorq_auto::warn "=============================================="
-            devorq_auto::warn "⚠️  COMMIT MANUAL NECESSÁRIO"
-            devorq_auto::warn "=============================================="
-            echo ""
-            echo "  Para commitar esta story, execute:"
-            echo "  devorq commit --story ${story_id}"
-            echo "  (formato: escopo(fase): descrição — ver rules/commit-convention.md)"
-            echo ""
-            # TODO: Solicitar commit manual via AskUserQuestionTool
-            # devorq_auto::git_commit "$project_root" "$story_id" "$story_title"
+
+            # Commit por story (DQ-006): com DEVORQ_AUTO_COMMIT=1 o loop commita a
+            # story verificada ANTES de marca-la done — ciclo recuperavel
+            # 'delegate -> verify -> commit -> done'. Default permanece manual.
+            if [[ "${DEVORQ_AUTO_COMMIT:-0}" == "1" ]]; then
+                if devorq_auto::git_commit "$project_root" "$story_id" "$story_title"; then
+                    devorq_auto::success "Commit por story OK"
+                else
+                    devorq_auto::warn "git_commit falhou — story NAO sera marcada done"
+                    devorq_auto::handle_failure "$project_root" "$story_json" "$story_id" "$story_title" "commit" "git_commit_failed"
+                    total_failures=$((total_failures + 1))
+                    failure_list+=("$story_id")
+                    continue
+                fi
+            else
+                devorq_auto::warn "=============================================="
+                devorq_auto::warn "⚠️  COMMIT MANUAL NECESSÁRIO (ou use DEVORQ_AUTO_COMMIT=1)"
+                devorq_auto::warn "=============================================="
+                echo ""
+                echo "  Para commitar esta story, execute:"
+                echo "  devorq commit --story ${story_id}"
+                echo "  (formato: escopo(fase): descrição — ver rules/commit-convention.md)"
+                echo ""
+            fi
 
             # Guarda contra set -e: se mark_pass falhar (prd preservado), trata
             # como falha da story e segue o lote — sem abortar o run (DQ-004/revisao).
