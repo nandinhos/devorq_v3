@@ -137,10 +137,10 @@ else
     warn "lessons::migrate — output: $migrate_result"
 fi
 
-# 3c: validate (auto-mode — auto-valida sem Context7)
+# 3c: validate em AUTO SEM Context7 — marca skipped, NAO auto-valida (DQ-013)
 validate_result=$(LESSONS_AUTO=true lessons::validate 2>&1) || true
-if echo "$validate_result" | grep -q "lição(ões) auto-validadas\|Validadas: [1-9]"; then
-    pass "lessons::validate (auto-trigger)"
+if echo "$validate_result" | grep -qiE "skipped|não-verificad|validação manual|Validadas: [1-9]|Context7 (não configurado|indisponível)"; then
+    pass "lessons::validate (skipped sem Context7 / validado com Context7)"
 else
     fail "lessons::validate — output: $validate_result"
 fi
