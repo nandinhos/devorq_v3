@@ -551,18 +551,24 @@ Backlog executado incrementalmente, **cada item com TDD/verificação e commit p
 | **DQ-007** alto | persiste `gates_completed` + `devorq flow --resume` | persistência + skip verificados |
 | **DQ-016** | fallback `sanitize_input` alinhado ao python3 | saídas idênticas |
 
-### ⬜ Restantes
+### ✅ Concluídos — lote 3 (restante do backlog)
 
-| Item | Natureza |
-|------|----------|
-| **DQ-011** — IP/usuário root hardcoded | ⚠️ **Precisa de decisão**: remover o default quebra seu sync até configurar `DEVORQ_VPS_HOST`. Sugestão: mover infra p/ config local não-versionada. |
-| **DQ-003 (profundo)** / **DQ-006** | Refactor grande: merge guided×Ralph, unificar dir de estado, commit-por-story. Maior superfície/risco. |
-| **DQ-018** | Log estruturado JSONL com `run_id` (complementa DQ-007). |
-| **DQ-014 / DQ-015** | Commit seguro (sem `git add -A` cego); hardening SSH mux + pin npm ctx7. |
-| **DQ-022 / DQ-023 / DQ-024** | Contrato adapter `DEVORQ_DELEGATE_FN`; trilha de decisão por agente; teto de concorrência (parcial em DQ-021). |
-| **DQ-028 / DQ-029** | Unificar sequência de gates; portabilidade BSD/macOS. |
-| **DQ-030 (resíduo)** | CHANGELOG `[VERSION]` (curadoria de doc), `--strict` no-op em validate-rules, `verify-dispatch.sh` obsoleto, paths de `apply_*.sh`, locking de estado. |
-| **DQ-010** | Provavelmente coberto por DQ-008 (STDIN elimina interpolação shell) — a confirmar. |
+| Item | Resumo | Verificação |
+|------|--------|-------------|
+| **DQ-011** seg. | IP/usuário root removido do código; lê infra de `~/.config/devorq/config` (0600) ou env; guards de host-vazio | grep IP vazio; config carrega; sem config → erro claro |
+| **DQ-014** seg. | guard de segredos (`.env`/`*.pem`/`id_rsa`) antes de `git add -A` cego (escape `DEVORQ_ALLOW_SECRETS=1`) | 4 casos verificados |
+| **DQ-015** seg. | mux SSH por-usuário (`-$(id -u)`), `ControlPersist` 60s, pin opt-in `DEVORQ_CTX7_VERSION` | MUX resolve por-uid |
+| **DQ-018** obs. | trilha JSONL append-only com `run_id` (+ `agent`) ligando flow→gate→verify | `test_audit_log` |
+| **DQ-003 (prof.)** / **DQ-006** | estado de branch unificado (`.devorq-auto/`); commit-por-story opt-in (`DEVORQ_AUTO_COMMIT=1`), honesto se falhar | ensure_branch + opt-in verificados |
+| **DQ-022/023/024** | `DEVORQ_DELEGATE_FN` documentado como contrato de adapter (AGENTS.md); trilha por-agente; teto de 3 alinhado | campo `agent` no JSONL |
+| **DQ-028** | fonte única `DEVORQ_GATE_SEQUENCE`; self-build reporta contagem real (não "7/7" fixo) | sequência única; msg honesta |
+| **DQ-029** portab. | `devorq::sed_inplace` portável (GNU/BSD) nos `sed -i` de dados | substituição in-place OK |
+| **DQ-030** | `validate-rules --strict` implementado; `verify-dispatch` reaponta p/ dispatchers; paths `apply_*.sh`; CHANGELOG `[VERSION]`→`[3.8.4]`; `.devorq/version` 3.8.5 | --strict falha c/ warn |
+| **DQ-010** | confirmado coberto por DQ-008: comando shell só interpola config; SQL (dado de lição) vai por STDIN — sem injeção | revisão de código |
+
+**Backlog DQ-001..DQ-030: 30/30 endereçados.** Suíte 68 → **75 unit-tests** + testes de SQL/parsing/comandos/audit. CI verde em todos os pushes.
+
+> **Resíduo menor (não-bloqueante):** locking de escrita concorrente em `.devorq/state/*.json` — risco baixo (ferramenta single-user; escritas já atômicas `tmp+mv`; ID de lição com entropia em DQ-030). Os 6/77 testes Playwright que ainda falham são uma story própria (não o install, corrigido em DQ-026).
 
 > Convenção: commits em `tipo(escopo):` **sem espaço** e **sem dígitos no escopo** (regra do hook `commit-msg` do projeto, instalado durante os test runs).
 
