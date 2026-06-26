@@ -2,7 +2,7 @@
 
 All notable changes to DEVORQ v3 are documented here.
 
-## [VERSION] — 2026-06-04
+## [3.8.4] — 2026-06-04
 
 ### Security
 - **Whitelist SSH em `devorq::vps_exec`** — defesa em 2 camadas (code review 2026-06-01, issues #3 e #9):
