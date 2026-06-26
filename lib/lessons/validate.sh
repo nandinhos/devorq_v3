@@ -32,33 +32,29 @@ lessons::validate() {
         ctx7_available=true
     fi
 
-    # Em modo AUTO sem Context7: auto-validar todas as não-validadas
+    # Em modo AUTO SEM Context7: NAO auto-validar (nao ha criterio de verificacao).
+    # Marca como skipped/nao-verificada — mantem validated=false para NAO disparar
+    # o auto-approve/auto-compile abaixo (validated_count permanece 0). DQ-013.
     if [ "${LESSONS_AUTO:-false}" = "true" ] && [ "$ctx7_available" = "false" ]; then
-        local auto_val_count=0
+        local auto_skip_count=0
         for f in "$dir"/*.json; do
             [ -f "$f" ] || continue
-            if command -v jq &>/dev/null; then
-                local already_validated
-                already_validated=$(jq -r '.validated // false' "$f" 2>/dev/null)
-                [ "$already_validated" = "true" ] && continue
-            fi
-            local ts
-            ts=$(date +%Y-%m-%dT%H:%M:%S)
-            if command -v jq &>/dev/null; then
-                jq --arg ts "$ts" '.validated = true | .validated_at = $ts' "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
-            else
-                sed 's/"validated": false/"validated": true/' "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
-            fi
-            local title
-            title=$(jq -r '.title' "$f" 2>/dev/null || echo "$(basename "$f")")
-            echo -e "  ${GREEN}[✓]${RESET} $title (auto-validada em modo AUTO)"
-            ((auto_val_count++)) || true
+            command -v jq &>/dev/null || continue
+            local already_validated already_skipped
+            already_validated=$(jq -r '.validated // false' "$f" 2>/dev/null)
+            [ "$already_validated" = "true" ] && continue
+            already_skipped=$(jq -r '.validation_status // ""' "$f" 2>/dev/null)
+            [ "$already_skipped" = "skipped_no_context7" ] && continue
+            local ts; ts=$(date +%Y-%m-%dT%H:%M:%S)
+            jq --arg ts "$ts" '.validation_status = "skipped_no_context7" | .validation_checked_at = $ts' "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+            local title; title=$(jq -r '.title' "$f" 2>/dev/null || echo "$(basename "$f")")
+            echo -e "  ${CYAN}[~]${RESET} $title (skipped — Context7 indisponível, requer validação manual)"
+            ((auto_skip_count++)) || true
         done
-        if [ "$auto_val_count" -gt 0 ]; then
+        if [ "$auto_skip_count" -gt 0 ]; then
             echo ""
-            echo -e "${CYAN}[AUTO]${RESET} $auto_val_count lição(ões) auto-validadas (Context7 indisponível)"
+            echo -e "${CYAN}[AUTO]${RESET} $auto_skip_count lição(ões) NÃO-verificadas (Context7 indisponível) — não serão auto-aprovadas nem compiladas"
         fi
-        validated_count=$auto_val_count
     fi
 
     # Carregar lib/context7.sh para usar ctx7_resolve
