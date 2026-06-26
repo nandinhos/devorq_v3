@@ -524,23 +524,47 @@ Papercuts a corrigir (todos esforço baixo/médio, alvo v3.8.6):
 
 ---
 
-## Apêndice D — Status de implementação · Fase 1 (2026-06-26)
+## Apêndice D — Status de implementação (2026-06-26)
 
-Correções aplicadas em dois lotes, cada uma com TDD e verificação contra as suites do projeto. **Fase 1** (`fix/auditoria-fase1-estabilizacao`) foi **mergeada na `main` e publicada** (`36d0d74..980f6d5`). **Batch 2** (`fix/auditoria-fase1-batch2`) traz DQ-002, DQ-008 e DQ-003. **Gate final batch2:** `unit-tests.sh` 73/0, `security-tests.sh` 26/0, `test-commands.sh` 12/0, `test_sync.py` ok, `validate-rules.sh` ✓, `shellcheck` 0 erros, `py_compile` ✓, smoke do CLI ✓.
+Backlog executado incrementalmente, **cada item com TDD/verificação e commit próprio, tudo mergeado na `main` com CI verde**. A suíte cresceu de 68 → **74 unit-tests** + novos testes de SQL/comandos/parsing. (E2E do CI: install agora ✓ via DQ-026; restam 6/77 testes Playwright pré-existentes — story própria.)
 
-| Item | Commit | Estado | Verificação |
-|------|--------|--------|-------------|
-| **DQ-004** — wipe de `prd.json` em `mark_pass` (CRÍTICO) | `ae9776e` | ✅ Feito | Hardening em **ambos** os `mark_pass` (`lib/auto.sh` + `loop-auto.sh`): valores via ambiente (sem interpolação/injeção), guarda `[[ -s ]]` + `jq empty` antes do `mv`. `test_auto_mark_pass` (RED→GREEN). |
-| **DQ-001** — shadowing de `cmd_test` + `--version` (CRÍTICO) | `92c8561` | ✅ Feito | `cmd_test` de `workflow.sh` renomeado p/ `cmd_structure_check`; `devorq test` agora roda os unit-tests. `--version`/`-v`/`-V` roteados. `test_no_cmd_shadowing` (guard estático). |
-| **DQ-009** — symlink quebra `DEVORQ_ROOT` | `92c8561` | ✅ Feito | Loop de resolução de symlink portável (GNU/BSD); instalação via `ln -s` verificada. |
-| **DQ-005** — AUTO marca *done* sem implementar (ALTO) | `49a43e8` | ✅ Feito | `delegate` SIMULATED fail-closed (escape `DEVORQ_AUTO_SIMULATE=1`); `check-story.sh` fail-closed sem runner (escape `DEVORQ_AUTO_ALLOW_NO_RUNNER=1`). `test_check_story_fail_closed`. |
-| **DQ-002** — remover árvores órfãs | `cd88d6c` | ✅ Feito | Removidas 3 árvores (~650 LOC mortas); `test-commands.sh` reescrito como smoke do código vivo (12/12), com isolamento por subshell; heredoc órfão corrigido. |
-| **DQ-008** — sync SQL inválido + exit code | `1422b42` | ✅ Feito (unit) | `pg_literal` (aspas simples); transporte por STDIN; exit fiel. `TestSqlGeneration` carrega o **módulo real**. *E2E contra Postgres do HUB não verificado (sem infra).* |
-| **DQ-003** — consolidar AUTO | `25dd808` | 🟡 Parcial | Removido o **fork obsoleto v1.0.0** do `devorq-mode` + duplicatas; SKILL.md reaponta à skill canônica. *Merge guided×Ralph + unificação do dir de estado: follow-up.* |
-| DQ-006 — commit/checkpoint por story | — | ⏸️ Adiado | Mitigado por DQ-005 (sem falso PASS). O acoplamento done↔commit pede a consolidação profunda do AUTO. |
-| DQ-007 — observabilidade real | — | ⬜ Pendente | Persistir `gates_completed` + log JSONL com `run_id`. |
+### ✅ Concluídos (mergeados, CI verde)
 
-> Observação de convenção: os commits seguem o padrão real do repositório `tipo(escopo):` (sem espaço), consistente com 100% do histórico e com o hook `commit-msg` do projeto.
+| Item | Resumo | Verificação |
+|------|--------|-------------|
+| **DQ-004** crít. | `mark_pass` não zera `prd.json` (ambos) | `test_auto_mark_pass` RED→GREEN |
+| **DQ-001** crít. | `devorq test` roda unit-tests; `--version`/`-v`/`-V` | guard estático anti-shadowing |
+| **DQ-009** | symlink resolve `DEVORQ_ROOT` (portável) | testado com `ln -s` |
+| **DQ-005** alto | AUTO fail-closed (SIMULATED + check-story) | `test_check_story_fail_closed` |
+| **DQ-002** | −650 LOC mortas; `test-commands.sh` → código vivo | 12/12 smoke isolado |
+| **DQ-008** | sync push **+ pull**: SQL aspas simples, STDIN, CSV multiline, exit fiel, grava em `captured/` | `TestSqlGeneration` + `TestSyncPullParsing` (módulo real). *Sem Postgres e2e* |
+| **DQ-003** 🟡 | removido fork obsoleto v1.0.0 do `devorq-mode` | mode-selector intacto |
+| **DQ-019** | `$captured` indefinida em `stats::patterns` | roda sob `set -u` |
+| **DQ-020** | `detect_method` glob real + `e2e-tests/` | manual/playwright/playwright |
+| **DQ-021** | zero glifos CJK + guard anti-CJK no CI | `test_no_cjk_glyphs` |
+| **DQ-025** | MCP config grava token resolvido | `Bearer <key>` real |
+| **DQ-013** alto | AUTO sem Context7 marca skipped (não auto-valida/compila) | lição `validated=false` |
+| **DQ-030** | ID de lição com entropia/unicidade; JSON escapado sem jq | 5 IDs distintos, JSON válido |
+| **DQ-027** | ShellCheck **gating** em erros + corrige SC2168/SC1072 | CI lint verde |
+| **DQ-026** | versiona lockfile do e2e-tests | E2E passa `npm ci`/setup (verificado no CI) |
+| **DQ-012** alto | validação Context7 estrita (rejeita erro/trivial) | 3 casos verificados |
+| **DQ-007** alto | persiste `gates_completed` + `devorq flow --resume` | persistência + skip verificados |
+| **DQ-016** | fallback `sanitize_input` alinhado ao python3 | saídas idênticas |
+
+### ⬜ Restantes
+
+| Item | Natureza |
+|------|----------|
+| **DQ-011** — IP/usuário root hardcoded | ⚠️ **Precisa de decisão**: remover o default quebra seu sync até configurar `DEVORQ_VPS_HOST`. Sugestão: mover infra p/ config local não-versionada. |
+| **DQ-003 (profundo)** / **DQ-006** | Refactor grande: merge guided×Ralph, unificar dir de estado, commit-por-story. Maior superfície/risco. |
+| **DQ-018** | Log estruturado JSONL com `run_id` (complementa DQ-007). |
+| **DQ-014 / DQ-015** | Commit seguro (sem `git add -A` cego); hardening SSH mux + pin npm ctx7. |
+| **DQ-022 / DQ-023 / DQ-024** | Contrato adapter `DEVORQ_DELEGATE_FN`; trilha de decisão por agente; teto de concorrência (parcial em DQ-021). |
+| **DQ-028 / DQ-029** | Unificar sequência de gates; portabilidade BSD/macOS. |
+| **DQ-030 (resíduo)** | CHANGELOG `[VERSION]` (curadoria de doc), `--strict` no-op em validate-rules, `verify-dispatch.sh` obsoleto, paths de `apply_*.sh`, locking de estado. |
+| **DQ-010** | Provavelmente coberto por DQ-008 (STDIN elimina interpolação shell) — a confirmar. |
+
+> Convenção: commits em `tipo(escopo):` **sem espaço** e **sem dígitos no escopo** (regra do hook `commit-msg` do projeto, instalado durante os test runs).
 
 ---
 
