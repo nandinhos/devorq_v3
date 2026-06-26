@@ -27,7 +27,7 @@ else
 fi
 
 # Roda o teste
-if bash "$SCRIPT_DIR/tests/test_D1_D2_hook.sh"; then
+if bash "$SCRIPT_DIR/test_D1_D2_hook.sh"; then
     echo ""
     echo "[D-1+D-2] ✅ HOOK INSTALADO + TESTES PASSARAM"
     exit 0

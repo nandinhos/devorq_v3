@@ -22,7 +22,7 @@ if python3 "$SCRIPT_DIR/apply_F02_patch.py" "$CONTEXT_SH"; then
         mv "$CONTEXT_SH.bak" "$CONTEXT_SH"
         exit 1
     fi
-    if bash "$SCRIPT_DIR/tests/test_F02_sed_injection.sh"; then
+    if bash "$SCRIPT_DIR/test_F02_sed_injection.sh"; then
         echo ""
         echo "[F-02] ✅ PATCH APLICADO + TESTES PASSARAM"
         exit 0

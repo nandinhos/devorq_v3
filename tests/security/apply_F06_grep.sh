@@ -43,7 +43,7 @@ PYEOF
 python3 -c "$HERMES_PY" "$LESSONS_SH"
 
 if [ $? -eq 0 ]; then
-    if bash "$SCRIPT_DIR/tests/test_F06_grep_injection.sh"; then
+    if bash "$SCRIPT_DIR/test_F06_grep_injection.sh"; then
         echo ""
         echo "[F-06] ✅ PATCH APLICADO + TESTES PASSARAM"
         exit 0

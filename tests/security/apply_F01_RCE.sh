@@ -60,7 +60,7 @@ python3 -c "$HERMES_PY" "$CONTEXT7_SH"
 
 if [ $? -eq 0 ]; then
     # Roda o teste
-    if bash "$SCRIPT_DIR/tests/test_F01_RCE_source.sh"; then
+    if bash "$SCRIPT_DIR/test_F01_RCE_source.sh"; then
         echo ""
         echo "[F-01] ✅ PATCH APLICADO + TESTES PASSARAM"
         exit 0

@@ -68,7 +68,7 @@ echo ""
 echo "=========================================="
 echo "RODANDO SUITE COMPLETA DE REGRESSAO"
 echo "=========================================="
-if bash "$SCRIPT_DIR/tests/test_lib.sh"; then
+if bash "$SCRIPT_DIR/test_lib.sh"; then
     echo ""
     echo "=========================================="
     echo "✅ TODOS OS 4 PATCHES APLICADOS + TESTES PASSARAM"
