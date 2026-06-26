@@ -134,7 +134,7 @@ stats::patterns() {
                 echo "    $(stats::yellow $line)"
             done
 
-        if [ $(find "$captured" -maxdepth 1 -name "*.json" -type f -exec jq -r 'if .recurrence_count > 0 then 1 else 0 end' {} \; 2>/dev/null | awk '{s+=$1} END {print s+0}' 2>/dev/null || echo 0) -eq 0 ]; then
+        if [ "$(find "$lessons_dir" -maxdepth 1 -name "*.json" -type f -exec jq -r 'if .recurrence_count > 0 then 1 else 0 end' {} \; 2>/dev/null | awk '{s+=$1} END {print s+0}' 2>/dev/null || echo 0)" -eq 0 ]; then
             echo "    Nenhum padrão detectado ainda"
         fi
     fi
