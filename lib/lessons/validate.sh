@@ -103,7 +103,14 @@ lessons::validate() {
             # Tenta validar via Context7 com stack + problem como query
             local ctx_result
             if ctx_result=$(ctx7_resolve "$stack" "$problem" 2>&1); then
-                if [ -n "$ctx_result" ] && ! echo "$ctx_result" | grep -qi "error\|warn\|sem resposta"; then
+                # Validacao estrita (DQ-012): a resposta precisa ser substancial,
+                # sem marcadores de erro (incl. envelope JSON-RPC) e — para stacks
+                # significativas — referenciar o termo da query, indicando que a
+                # lib foi de fato resolvida (antes: qualquer texto nao-vazio passava).
+                if [ -n "$ctx_result" ] \
+                   && [ "${#ctx_result}" -ge 80 ] \
+                   && ! echo "$ctx_result" | grep -qiE 'error|not found|no documentation|sem resposta|"error"|jsonrpc.*error|unauthorized|forbidden|invalid|\b404\b' \
+                   && { [ -z "$stack" ] || [ "$stack" = "unknown" ] || [ "$stack" = "general" ] || [ "$stack" = "bash" ] || echo "$ctx_result" | grep -qiF "$stack"; }; then
                     validated=true
                 fi
             fi
