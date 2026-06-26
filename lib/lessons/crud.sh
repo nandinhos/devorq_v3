@@ -32,8 +32,10 @@ text = sys.argv[1][:int(sys.argv[2])]
 print(re.sub(dangerous, ' ', text))
 " "$input" "$max_len"
     else
-        # Fallback: tr (menos preciso)
-        echo "$input" | tr -d ';' | tr -d '&' | tr -d '|' | tr -d '`' | tr -d '$' | head -c "$max_len"
+        # Fallback sem python3: MESMO conjunto perigoso do caminho python3,
+        # substituindo por espaco (antes o tr removia um subconjunto diferente,
+        # deixando ( ) { } [ ] < > ! \ passarem — inconsistente). DQ-016
+        printf '%s' "$input" | head -c "$max_len" | tr ';`$(){}[]<>!\\' ' '
     fi
 }
 
