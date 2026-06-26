@@ -381,19 +381,32 @@ devorq_auto::mark_pass() {
     local tmp
     tmp=$(mktemp)
 
-    python3 -c "
-import json, sys
-with open('$prd') as f:
+    # Valores via ambiente (nunca interpolados no source) — evita quebra/injecao
+    # quando story_id/path contem aspas, e nunca zera o prd.json (DQ-004).
+    DEVORQ_PRD="$prd" DEVORQ_STORY_ID="$story_id" DEVORQ_TMP="$tmp" python3 -c '
+import json, os
+prd = os.environ["DEVORQ_PRD"]
+story_id = os.environ["DEVORQ_STORY_ID"]
+tmp = os.environ["DEVORQ_TMP"]
+with open(prd) as f:
     data = json.load(f)
-for s in data['stories']:
-    if s['id'] == '$story_id':
-        s['passes'] = True
-        s['status'] = 'done'
+for s in data["stories"]:
+    if s.get("id") == story_id:
+        s["passes"] = True
+        s["status"] = "done"
         break
-with open('$tmp', 'w') as f:
+with open(tmp, "w") as f:
     json.dump(data, f, indent=2)
-"
-    mv "$tmp" "$prd"
+' 2>/dev/null
+
+    # So promove se nao-vazio e (havendo jq) JSON valido; senao preserva o prd.
+    if [[ -s "$tmp" ]] && { ! command -v jq >/dev/null 2>&1 || jq empty "$tmp" >/dev/null 2>&1; }; then
+        mv "$tmp" "$prd"
+    else
+        rm -f "$tmp"
+        devorq_auto::fail "mark_pass: falha ao atualizar story '$story_id'; prd.json preservado"
+        return 1
+    fi
 }
 
 devorq_auto::mark_skip() {
@@ -608,8 +621,15 @@ devorq_auto::delegate_with_retry() {
             }
             last_error="$output"
         else
-            devorq_auto::info "⏳ SIMULATED — Nao ha DEVORQ_DELEGATE_FN (rode via agent)"
-            return 0
+            # Fail-closed: sem driver de agente nada e implementado. NAO retornar
+            # sucesso (senao a story seria marcada done sem codigo). DQ-005.
+            if [[ "${DEVORQ_AUTO_SIMULATE:-0}" == "1" ]]; then
+                devorq_auto::warn "⏳ SIMULATED (DEVORQ_AUTO_SIMULATE=1) — dry-run, nada implementado"
+                return 0
+            fi
+            devorq_auto::fail "Sem DEVORQ_DELEGATE_FN: nenhum sub-agente para implementar."
+            devorq_auto::warn "Rode via agent (Hermes/Claude Code/Codex) ou DEVORQ_AUTO_SIMULATE=1 para dry-run."
+            return 1
         fi
 
         if [[ $attempt -lt $MAX_DELEGATE_RETRIES ]]; then

@@ -174,23 +174,38 @@ main() {
     echo "================================"
 
     local overall=0
+    local detected=0
 
     # Detectar stack e rodar checks
     if [[ -f "$project_root/composer.json" ]] || [[ -f "$project_root/phpinsights.php" ]]; then
+        detected=1
         devorq_auto::check_php "$project_root" || overall=1
     fi
 
     if [[ -f "$project_root/pytest.ini" ]] || [[ -f "$project_root/pyproject.toml" ]]; then
+        detected=1
         devorq_auto::check_python "$project_root" || overall=1
     fi
 
     if [[ -f "$project_root/package.json" ]]; then
+        detected=1
         devorq_auto::check_node "$project_root" || overall=1
     fi
 
     devorq_auto::check_generic "$project_root"
 
     echo "================================"
+
+    # Fail-closed (DQ-005): sem nenhum runner detectado, a verificacao nao pode
+    # confirmar a story — nao reportar 'passed'. Projetos genuinamente sem runner
+    # (docs, etc.) precisam opt-in explicito via DEVORQ_AUTO_ALLOW_NO_RUNNER=1.
+    if [[ $detected -eq 0 && "${DEVORQ_AUTO_ALLOW_NO_RUNNER:-0}" != "1" ]]; then
+        echo "[devorq-auto] ❌ Nenhum runner de teste detectado (composer/pytest/pyproject/package.json)."
+        echo "[devorq-auto]    A verificacao nao pode confirmar a story — fail-closed."
+        echo "[devorq-auto]    Projeto sem runner? defina DEVORQ_AUTO_ALLOW_NO_RUNNER=1."
+        exit 1
+    fi
+
     if [[ $overall -eq 0 ]]; then
         echo "[devorq-auto] ✅ All checks passed"
         exit 0

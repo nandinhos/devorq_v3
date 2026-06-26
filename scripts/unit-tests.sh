@@ -1223,6 +1223,37 @@ test_no_cmd_shadowing() {
     fi
 }
 
+test_check_story_fail_closed() {
+    unit::info "Test: check-story.sh fail-closed sem runner (DQ-005)"
+    local cs="$DEVORQ_ROOT/skills/devorq-auto/scripts/check-story.sh"
+    if [ ! -f "$cs" ]; then
+        unit::skip "check-story.sh not found"; ((TESTS_RUN++)) || true; return
+    fi
+
+    local proj
+    proj=$(mktemp -d)
+    mkdir -p "$proj/.devorq/state"
+    echo '{}' > "$proj/.devorq/state/context.json"
+
+    # Sem nenhum runner (composer/pytest/package.json) => deve falhar (fail-closed)
+    ((TESTS_RUN++)) || true
+    if bash "$cs" "$proj" >/dev/null 2>&1; then
+        unit::fail "check-story deveria falhar sem runner detectado (DQ-005)"
+    else
+        unit::pass "check-story fail-closed sem runner"
+    fi
+
+    # Com opt-in explicito => deve passar
+    ((TESTS_RUN++)) || true
+    if DEVORQ_AUTO_ALLOW_NO_RUNNER=1 bash "$cs" "$proj" >/dev/null 2>&1; then
+        unit::pass "check-story passa com DEVORQ_AUTO_ALLOW_NO_RUNNER=1"
+    else
+        unit::fail "check-story deveria passar com override DEVORQ_AUTO_ALLOW_NO_RUNNER (DQ-005)"
+    fi
+
+    rm -rf "$proj"
+}
+
 # ============================================================
 # SUMMARY
 # ============================================================
@@ -1288,6 +1319,7 @@ main() {
     test_workflow_init
     test_auto_mark_pass
     test_no_cmd_shadowing
+    test_check_story_fail_closed
 
     teardown_test_env
 
