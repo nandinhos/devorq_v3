@@ -1268,6 +1268,27 @@ test_no_cjk_glyphs() {
     fi
 }
 
+test_audit_log() {
+    unit::info "Test: devorq::audit_log gera JSONL com run_id (DQ-018)"
+
+    source "$LIB_DIR/helpers.sh" 2>/dev/null || true
+    if ! declare -f devorq::audit_log &>/dev/null; then
+        unit::skip "devorq::audit_log not found"; ((TESTS_RUN++)) || true; return
+    fi
+
+    local d; d=$(mktemp -d)
+    ( cd "$d" && unset DEVORQ_RUN_ID && devorq::audit_log "gate" "pass" "gate-1" && devorq::audit_log "flow" "end" "ok" )
+    local f; f=$(find "$d/.devorq/state/logs" -name 'run-*.jsonl' 2>/dev/null | head -1)
+
+    ((TESTS_RUN++)) || true
+    if [ -n "$f" ] && [ "$(jq -r .run_id "$f" 2>/dev/null | sort -u | wc -l)" -eq 1 ] && jq empty "$f" 2>/dev/null; then
+        unit::pass "audit_log: JSONL valido, run_id estavel"
+    else
+        unit::fail "audit_log: log ausente/invalido (DQ-018)"
+    fi
+    rm -rf "$d"
+}
+
 # ============================================================
 # SUMMARY
 # ============================================================
@@ -1335,6 +1356,7 @@ main() {
     test_no_cmd_shadowing
     test_check_story_fail_closed
     test_no_cjk_glyphs
+    test_audit_log
 
     teardown_test_env
 

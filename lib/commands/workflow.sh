@@ -149,6 +149,7 @@ devorq::cmd_flow() {
 
     devorq::log "Intent: ${intent}"
     devorq::log "Executando gates 0 -> 0.5 -> 1-7..."
+    declare -f devorq::audit_log &>/dev/null && devorq::audit_log "flow" "start" "$intent" || true
 
     # Retomada (DQ-007): com --resume, pula gates ja persistidos em gates_completed.
     local completed=""
@@ -169,6 +170,7 @@ devorq::cmd_flow() {
         fi
     done
 
+    declare -f devorq::audit_log &>/dev/null && devorq::audit_log "flow" "end" "completo" || true
     devorq::success "Flow completo!"
 }
 
@@ -210,6 +212,11 @@ devorq::cmd_gate() {
     # era escrito e stats/handoff/GATE-7/retomada liam estado-fantasma.
     if [ "$rv" -eq 0 ] && declare -f ctx_mark_gate &>/dev/null; then
         ctx_mark_gate "$gate_num" || true
+    fi
+
+    # Trilha de execucao estruturada (DQ-018)
+    if declare -f devorq::audit_log &>/dev/null; then
+        devorq::audit_log "gate" "$([ "$rv" -eq 0 ] && echo pass || echo fail)" "gate-${gate_num}" || true
     fi
 
     return $rv
