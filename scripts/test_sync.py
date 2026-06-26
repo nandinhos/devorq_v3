@@ -468,6 +468,45 @@ class TestExitCodes(unittest.TestCase):
 
 
 # ============================================================
+# Geração de SQL — código REAL de sync-push.py (DQ-008)
+# ============================================================
+
+def _load_real_sync_push():
+    """Carrega o módulo REAL sync-push.py (exec). O guard __main__ impede rodar main()."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sync-push.py")
+    spec = importlib.util.spec_from_file_location("sync_push_real", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestSqlGeneration(unittest.TestCase):
+    """pg_literal gera literais PostgreSQL corretos (aspas simples), nao identificadores."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load_real_sync_push()
+
+    def test_pg_literal_uses_single_quotes(self):
+        # Aspas SIMPLES = literal de string; aspas duplas seriam IDENTIFICADOR (o bug).
+        lit = self.mod.pg_literal("meu titulo")
+        self.assertEqual(lit, "'meu titulo'")
+        self.assertNotIn('"', lit)
+
+    def test_pg_literal_escapes_single_quote(self):
+        self.assertEqual(self.mod.pg_literal("O'Brien"), "'O''Brien'")
+
+    def test_pg_literal_none_is_null(self):
+        self.assertEqual(self.mod.pg_literal(None), "NULL")
+
+    def test_pg_literal_double_quote_stays_literal(self):
+        # Um titulo com aspas duplas continua um literal entre aspas simples.
+        lit = self.mod.pg_literal('a "quoted" title')
+        self.assertTrue(lit.startswith("'") and lit.endswith("'"))
+        self.assertEqual(lit, "'a \"quoted\" title'")
+
+
+# ============================================================
 # Main
 # ============================================================
 

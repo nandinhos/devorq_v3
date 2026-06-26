@@ -114,9 +114,25 @@ def sanitize_input(value, allow_special=False):
         # Remove caracteres perigosos
         return re.sub(r'[^a-zA-Z0-9._\-]', '', value)
 
+def pg_literal(value):
+    """Retorna um literal de string PostgreSQL seguro.
+
+    Usa aspas SIMPLES (literais; aspas duplas seriam identificadores) e escapa a
+    aspa simples por duplicacao. Com standard_conforming_strings=on (default no
+    PostgreSQL >= 9.1) a barra invertida e literal, entao isso basta. None -> NULL.
+    """
+    if value is None:
+        return "NULL"
+    return "'" + str(value).replace("'", "''") + "'"
+
+
 # SSH com validação de host
-def ssh_cmd(cmd, timeout=30):
-    """Executa comando no VPS via SSH mux com validação de host."""
+def ssh_cmd(cmd, timeout=30, input_data=None):
+    """Executa comando no VPS via SSH mux com validação de host.
+
+    input_data: se fornecido, e enviado ao STDIN do comando remoto (usado para
+    passar SQL ao psql sem o escaping fragil do -c "...").
+    """
     Path(MUX_SOCK).parent.mkdir(parents=True, exist_ok=True)
 
     # Verificar se host é conhecido
@@ -140,7 +156,8 @@ def ssh_cmd(cmd, timeout=30):
             full,
             capture_output=True,
             text=True,
-            timeout=timeout
+            timeout=timeout,
+            input=input_data
         )
         return result.stdout, result.stderr, result.returncode
     except subprocess.TimeoutExpired:
@@ -149,35 +166,18 @@ def ssh_cmd(cmd, timeout=30):
         return "", str(e), 1
 
 def pg_exec(sql, fetch=False):
-    """Executa SQL no PostgreSQL do HUB via docker exec.
-    
-    Usa json.dumps para escape seguro — evita SQL injection.
+    """Executa SQL no PostgreSQL do HUB via docker exec, enviando o SQL por STDIN.
+
+    O transporte por STDIN evita o escaping multicamada do -c "..." (shell +
+    json.dumps), suporta SQL multiline com seguranca e preserva os literais
+    de aspas simples gerados por pg_literal(). ON_ERROR_STOP=1 faz o psql
+    retornar codigo != 0 em erro de SQL (antes, erros passavam despercebidos).
     """
-    # Serializa o SQL com json.dumps para escape correto
-    sql_json = json.dumps(sql)
-    sql_escaped = sql_json[1:-1]
-
     cmd = (
-        f"docker exec {PG_CONTAINER} psql -U {PG_USER} -d {PG_DB} "
-        f"-c \"{sql_escaped}\""
+        f"docker exec -i {PG_CONTAINER} psql -U {PG_USER} -d {PG_DB} "
+        f"-v ON_ERROR_STOP=1 -q -t"
     )
-    out, err, code = ssh_cmd(cmd)
-
-    if code != 0 and err:
-        # Tenta com E'' string se houve erro de escaping
-        sql_e = sql.replace("'", "''")
-        cmd2 = (
-            f"docker exec {PG_CONTAINER} psql -U {PG_USER} -d {PG_DB} "
-            f"-c 'SELECT 1' 2>/dev/null"  # teste conexão
-        )
-        out2, _, _ = ssh_cmd(cmd2)
-        if out2:
-            # Fallback: usa escape com E''
-            cmd3 = (
-                f"docker exec {PG_CONTAINER} psql -U {PG_USER} -d {PG_DB} "
-                f"-c \"E'{sql_e}'\""
-            )
-            out, err, code = ssh_cmd(cmd3)
+    out, err, code = ssh_cmd(cmd, input_data=sql)
 
     if fetch:
         return out, err, code
@@ -202,11 +202,12 @@ def sync_lessons(lessons_dir, project_filter=None):
     patterns = glob.glob(os.path.join(lessons_dir, "*.json"))
     if not patterns:
         print("[WARN] Nenhuma lesson encontrada")
-        return 0
+        return 0, 0
 
     print(f"[VPS] {len(patterns)} lesson(s) encontrada(s)")
 
     synced = 0
+    failed = 0
     for path in sorted(patterns):
         try:
             lesson = load_lesson(path)
@@ -235,9 +236,9 @@ def sync_lessons(lessons_dir, project_filter=None):
         if source_file:
             content += f"\n\n## Source\n{source_file}"
 
-        # Serializa tags como PostgreSQL text[] array
+        # Serializa tags como PostgreSQL text[] array (literais com aspas simples)
         if tags:
-            tags_sql = "ARRAY[" + ", ".join(json.dumps(t) for t in tags) + "]::text[]"
+            tags_sql = "ARRAY[" + ", ".join(pg_literal(t) for t in tags) + "]::text[]"
         else:
             tags_sql = "'{}'::text[]"
 
@@ -252,12 +253,13 @@ def sync_lessons(lessons_dir, project_filter=None):
         # Verifica se lesson com mesmo title+project já existe
         check_sql = (
             f"SELECT id FROM devorq.lessons "
-            f"WHERE title = {json.dumps(title)} "
-            f"AND project = {json.dumps(project)} LIMIT 1;"
+            f"WHERE title = {pg_literal(title)} "
+            f"AND project = {pg_literal(project)} LIMIT 1;"
         )
         out, _, code = pg_exec(check_sql, fetch=True)
 
-        if code == 0 and out and "1 row" in out:
+        # Com psql -t -q, uma linha de resultado significa que ja existe.
+        if code == 0 and out and out.strip():
             print(f"[SKIP] Ja existe: {title}")
             continue
 
@@ -266,14 +268,14 @@ def sync_lessons(lessons_dir, project_filter=None):
             f"INSERT INTO devorq.lessons "
             f"(title, content, tags, stack, project, source, validated_at, metadata, created_at) "
             f"VALUES ("
-            f"{json.dumps(title)}, "
-            f"{json.dumps(content)}, "
+            f"{pg_literal(title)}, "
+            f"{pg_literal(content)}, "
             f"{tags_sql}, "
-            f"{json.dumps(stack) if stack else 'NULL'}, "
-            f"{json.dumps(project)}, "
-            f"{json.dumps(source_file) if source_file else 'NULL'}, "
+            f"{pg_literal(stack) if stack else 'NULL'}, "
+            f"{pg_literal(project)}, "
+            f"{pg_literal(source_file) if source_file else 'NULL'}, "
             f"{validated_at}, "
-            f"{json.dumps(metadata_json)}, "
+            f"{pg_literal(metadata_json)}::jsonb, "
             f"now()"
             f");"
         )
@@ -285,8 +287,9 @@ def sync_lessons(lessons_dir, project_filter=None):
             synced += 1
         else:
             print(f"[ERROR] Falhou: {title}")
+            failed += 1
 
-    return synced
+    return synced, failed
 
 
 def main():
@@ -311,9 +314,11 @@ def main():
         sys.exit(EXIT_ERROR)
 
     try:
-        synced = sync_lessons(lessons_dir, project_filter)
-        print(f"[VPS] Sync push completo: {synced} lesson(s) sincronizada(s)")
-        sys.exit(EXIT_SUCCESS)
+        synced, failed = sync_lessons(lessons_dir, project_filter)
+        print(f"[VPS] Sync push: {synced} sincronizada(s), {failed} falha(s)")
+        # Exit fiel: falha se alguma lesson falhou (antes saia SUCCESS sempre,
+        # mascarando push 100% quebrado). DQ-008.
+        sys.exit(EXIT_SUCCESS if failed == 0 else EXIT_ERROR)
     except ValueError as e:
         print(f"[ERROR] {e}", file=sys.stderr)
         sys.exit(EXIT_VALIDATION_FAILED)
