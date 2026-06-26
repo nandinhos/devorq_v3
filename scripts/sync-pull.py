@@ -30,10 +30,29 @@ EXIT_INVALID_ARGS = 2
 EXIT_NOT_FOUND = 3
 EXIT_VALIDATION_FAILED = 4
 
-# Config
-VPS_HOST = os.environ.get("DEVORQ_VPS_HOST", "187.108.197.199")
-VPS_PORT = os.environ.get("DEVORQ_VPS_PORT", "6985")
-VPS_USER = os.environ.get("DEVORQ_VPS_USER", "root")
+def load_config():
+    """Carrega config de infra de ~/.config/devorq/config (key=value, perms 0600)."""
+    config_file = Path.home() / ".config" / "devorq" / "config"
+    if not config_file.exists():
+        return
+    mode = config_file.stat().st_mode & 0o777
+    if mode & 0o077:
+        print("[WARN] Config file has insecure permissions", file=sys.stderr)
+        return
+    with open(config_file) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, _, value = line.partition('=')
+                os.environ.setdefault(key.strip(), value.strip())
+
+
+load_config()
+
+# Config de infra SEM defaults hardcoded (DQ-011): vem do config local ou do ambiente.
+VPS_HOST = os.environ.get("DEVORQ_VPS_HOST", "")
+VPS_PORT = os.environ.get("DEVORQ_VPS_PORT", "22")
+VPS_USER = os.environ.get("DEVORQ_VPS_USER", "")
 PG_DB = os.environ.get("DEVORQ_PG_DB", "hermes_study")
 PG_USER = os.environ.get("DEVORQ_PG_USER", "hermes_study")
 PG_CONTAINER = os.environ.get("DEVORQ_PG_CONTAINER", "hermesstudy_postgres")
@@ -217,6 +236,12 @@ def main():
     # (diretorio orfao que nenhum comando lia). DQ-008.
     output_dir = Path(project_root) / ".devorq" / "state" / "lessons" / "captured"
     
+    # Infra obrigatoria via config/env (DQ-011): sem default hardcoded.
+    if not VPS_HOST or not VPS_USER:
+        print("[ERROR] DEVORQ_VPS_HOST/DEVORQ_VPS_USER nao definidos.", file=sys.stderr)
+        print("        Configure ~/.config/devorq/config (chmod 600) ou exporte as variaveis.", file=sys.stderr)
+        sys.exit(EXIT_ERROR)
+
     print("[VPS] Baixando lessons <- HUB...")
     out, err, code = ssh_cmd("echo PING")
     if code != 0:

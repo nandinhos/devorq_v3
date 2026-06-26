@@ -19,10 +19,12 @@ set -euo pipefail
 
 lessons::sync_vps() {
     local file="$1"
-    local vps_host="${DEVORQ_VPS_HOST:-187.108.197.199}"
-    local vps_port="${DEVORQ_VPS_PORT:-6985}"
-    local vps_user="${DEVORQ_VPS_USER:-root}"
+    # Infra via config/env, sem default hardcoded (DQ-011). Vazio => pula o sync.
+    local vps_host="${DEVORQ_VPS_HOST:-}"
+    local vps_port="${DEVORQ_VPS_PORT:-22}"
+    local vps_user="${DEVORQ_VPS_USER:-}"
     local mux_sock="${DEVORQ_MUX_SOCK:-/tmp/devorq-ssh-mux}"
+    [ -z "$vps_host" ] && return 0
 
     [ ! -f "$file" ] && echo "[ERROR] Arquivo não encontrado: $file" && return 1
 

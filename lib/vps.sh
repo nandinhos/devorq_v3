@@ -14,9 +14,33 @@ set -euo pipefail
 [ -z "${EXIT_NOT_FOUND:-}" ] && readonly EXIT_NOT_FOUND=3
 [ -z "${EXIT_SSH_FAILED:-}" ] && readonly EXIT_SSH_FAILED=4
 
-VPS_HOST="${DEVORQ_VPS_HOST:-187.108.197.199}"
-VPS_PORT="${DEVORQ_VPS_PORT:-6985}"
-VPS_USER="${DEVORQ_VPS_USER:-root}"
+# Carrega config de infra de ~/.config/devorq/config (key=value, 0600) — apenas
+# chaves whitelisted, sem default hardcoded de IP/usuario no repo (DQ-011).
+devorq::vps::load_config() {
+    local cfg="${HOME}/.config/devorq/config"
+    [ -f "$cfg" ] || return 0
+    local mode
+    mode=$(stat -c '%a' "$cfg" 2>/dev/null || stat -f '%Lp' "$cfg" 2>/dev/null || echo "")
+    if [ -n "$mode" ] && [ "$((8#$mode & 8#077))" -ne 0 ]; then
+        echo "[WARN] ~/.config/devorq/config com permissoes inseguras (use chmod 600)" >&2
+        return 0
+    fi
+    local key val
+    while IFS='=' read -r key val; do
+        key="${key// /}"
+        case "$key" in
+            DEVORQ_VPS_HOST|DEVORQ_VPS_PORT|DEVORQ_VPS_USER|DEVORQ_PG_DB|DEVORQ_PG_USER|DEVORQ_PG_CONTAINER|DEVORQ_MUX_SOCK)
+                # if (nao '&& export') para sempre retornar 0 — senao, sob set -e,
+                # re-sourcear vps.sh com a var ja setada abortaria (regressao DQ-011).
+                if [ -z "${!key:-}" ]; then export "$key=${val// /}"; fi ;;
+        esac
+    done < "$cfg"
+}
+devorq::vps::load_config
+
+VPS_HOST="${DEVORQ_VPS_HOST:-}"
+VPS_PORT="${DEVORQ_VPS_PORT:-22}"
+VPS_USER="${DEVORQ_VPS_USER:-}"
 
 PG_DB="${DEVORQ_PG_DB:-hermes_study}"
 PG_USER="${DEVORQ_PG_USER:-hermes_study}"
@@ -74,6 +98,12 @@ devorq::validate_ssh_host() {
 # ============================================================
 
 devorq::vps_check() {
+    # Infra obrigatoria via config/env, sem default hardcoded (DQ-011).
+    if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ]; then
+        echo "[ERROR] DEVORQ_VPS_HOST/DEVORQ_VPS_USER nao definidos." >&2
+        echo "        Configure ~/.config/devorq/config (chmod 600) ou exporte as variaveis." >&2
+        return "${EXIT_INVALID_ARGS:-2}"
+    fi
     echo "[VPS] Testando ${VPS_HOST}:${VPS_PORT}..."
 
     # Validação de inputs

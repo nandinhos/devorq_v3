@@ -54,10 +54,11 @@ def load_config():
 # Carregar config
 load_config()
 
-# Config (de variáveis de ambiente ou defaults)
-VPS_HOST = os.environ.get("DEVORQ_VPS_HOST", "187.108.197.199")
-VPS_PORT = os.environ.get("DEVORQ_VPS_PORT", "6985")
-VPS_USER = os.environ.get("DEVORQ_VPS_USER", "root")
+# Config de infra SEM defaults hardcoded (DQ-011): vem de ~/.config/devorq/config
+# (carregado por load_config) ou do ambiente. Host/usuario vazios => erro em main().
+VPS_HOST = os.environ.get("DEVORQ_VPS_HOST", "")
+VPS_PORT = os.environ.get("DEVORQ_VPS_PORT", "22")
+VPS_USER = os.environ.get("DEVORQ_VPS_USER", "")
 PG_DB = os.environ.get("DEVORQ_PG_DB", "hermes_study")
 PG_USER = os.environ.get("DEVORQ_PG_USER", "hermes_study")
 PG_CONTAINER = os.environ.get("DEVORQ_PG_CONTAINER", "hermesstudy_postgres")
@@ -300,6 +301,12 @@ def main():
 
     if len(sys.argv) > 1:
         lessons_dir = sys.argv[1]
+
+    # Infra obrigatoria via config/env (DQ-011): sem default hardcoded.
+    if not VPS_HOST or not VPS_USER:
+        print("[ERROR] DEVORQ_VPS_HOST/DEVORQ_VPS_USER nao definidos.", file=sys.stderr)
+        print("        Configure ~/.config/devorq/config (chmod 600) ou exporte as variaveis.", file=sys.stderr)
+        sys.exit(EXIT_ERROR)
 
     # Validar lessons_dir
     if not os.path.isdir(lessons_dir):
