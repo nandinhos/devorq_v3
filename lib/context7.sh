@@ -486,13 +486,21 @@ _install_mcp() {
         cp "$mcp_config" "${mcp_config}.bak"
     fi
 
-    cat > "$mcp_config" << 'MCPEOF'
+    # Resolve a chave em tempo de escrita (heredoc SEM aspas no delimitador para
+    # expandir ${api_key}). Antes, << 'MCPEOF' gravava o literal ${OPENAI_API_KEY}
+    # e o MCP nunca autenticava (DQ-025).
+    local api_key="${CTX7_API_KEY:-${OPENAI_API_KEY:-}}"
+    if [ -z "$api_key" ]; then
+        echo "  [WARN] CTX7_API_KEY/OPENAI_API_KEY não definida — MCP config sem token" >&2
+    fi
+
+    cat > "$mcp_config" << MCPEOF
 {
   "mcpServers": {
     "context7": {
       "url": "https://mcp.context7.com/mcp",
       "headers": {
-        "Authorization": "Bearer ${OPENAI_API_KEY}"
+        "Authorization": "Bearer ${api_key}"
       }
     }
   }
