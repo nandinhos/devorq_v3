@@ -153,28 +153,48 @@ devorq::auto::mark_pass() {
     local prd="$1/prd.json"
     local story_id="$2"
     local tmp
-
     tmp=$(mktemp)
 
     if command -v python3 >/dev/null 2>&1; then
-        python3 -c "
-import json, sys
-with open('$prd') as f:
+        # Valores passados via ambiente (nunca interpolados no source) para
+        # evitar quebra/injeção quando story_id/path contêm aspas (DQ-004).
+        DEVORQ_PRD="$prd" DEVORQ_STORY_ID="$story_id" DEVORQ_TMP="$tmp" python3 -c '
+import json, os
+prd = os.environ["DEVORQ_PRD"]
+story_id = os.environ["DEVORQ_STORY_ID"]
+tmp = os.environ["DEVORQ_TMP"]
+with open(prd) as f:
     data = json.load(f)
-for s in data['stories']:
-    if s['id'] == '$story_id':
-        s['passes'] = True
-        s['status'] = 'done'
+for s in data["stories"]:
+    if s.get("id") == story_id:
+        s["passes"] = True
+        s["status"] = "done"
         break
-with open('$tmp', 'w') as f:
+with open(tmp, "w") as f:
     json.dump(data, f, indent=2)
-" 2>/dev/null
+' 2>/dev/null
     else
-        sed -i "s/\"id\": \"$story_id\", \"passes\": false/\"id\": \"$story_id\", \"passes\": true/g" "$prd" 2>/dev/null || true
+        # Fallback sem python3: escreve a transformação no tmp, NUNCA edita o prd in-place.
+        sed "s/\"id\": \"$story_id\", \"passes\": false/\"id\": \"$story_id\", \"passes\": true/g" "$prd" > "$tmp" 2>/dev/null || true
     fi
 
-    if [[ -f "$tmp" ]]; then
+    # Só promove se o tmp for não-vazio E (quando jq existir) JSON válido.
+    # Garante que prd.json jamais é zerado por falha de parsing/sem-python3 (DQ-004).
+    local valid=0
+    if [[ -s "$tmp" ]]; then
+        if command -v jq >/dev/null 2>&1; then
+            jq empty "$tmp" >/dev/null 2>&1 && valid=1
+        else
+            valid=1
+        fi
+    fi
+
+    if [[ "$valid" == "1" ]]; then
         mv "$tmp" "$prd"
+    else
+        rm -f "$tmp"
+        echo "[ERROR] mark_pass: falha ao atualizar story '$story_id'; prd.json preservado intacto" >&2
+        return 1
     fi
 }
 

@@ -1167,6 +1167,40 @@ test_workflow_init() {
     ((TESTS_RUN++)) || true
 }
 
+test_auto_mark_pass() {
+    unit::info "Test: devorq::auto::mark_pass nunca zera prd.json (DQ-004)"
+
+    source "$LIB_DIR/helpers.sh" 2>/dev/null || true
+    source "$LIB_DIR/auto.sh" 2>/dev/null || true
+
+    if ! declare -f devorq::auto::mark_pass &>/dev/null; then
+        unit::skip "devorq::auto::mark_pass not found"
+        ((TESTS_RUN++)) || true
+        return
+    fi
+
+    local proj
+    proj=$(mktemp -d)
+
+    # Caso normal: marca a story como done e mantém JSON válido
+    printf '%s' '{"stories":[{"id":"s1","title":"A","passes":false,"status":"todo"}]}' > "$proj/prd.json"
+    devorq::auto::mark_pass "$proj" "s1" >/dev/null 2>&1 || true
+    assert "done" "$(jq -r '.stories[0].status' "$proj/prd.json" 2>/dev/null)" "mark_pass marca status=done"
+
+    # Regressão DQ-004: story_id com aspas NÃO pode zerar o prd.json
+    printf '%s' '{"stories":[{"id":"s1","title":"A","passes":false,"status":"todo"}]}' > "$proj/prd.json"
+    devorq::auto::mark_pass "$proj" "s1') x" >/dev/null 2>&1 || true
+    local sz; sz=$(wc -c < "$proj/prd.json")
+    ((TESTS_RUN++)) || true
+    if [ "$sz" -gt 0 ] && jq empty "$proj/prd.json" 2>/dev/null; then
+        unit::pass "prd.json preservado com story_id contendo aspas (DQ-004)"
+    else
+        unit::fail "prd.json zerado/corrompido por story_id com aspas (DQ-004)"
+    fi
+
+    rm -rf "$proj"
+}
+
 # ============================================================
 # SUMMARY
 # ============================================================
@@ -1230,6 +1264,7 @@ main() {
     test_vps_validate_ssh_host
     test_vps_pg_exec_validation
     test_workflow_init
+    test_auto_mark_pass
 
     teardown_test_env
 
