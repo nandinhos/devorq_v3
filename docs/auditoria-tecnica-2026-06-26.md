@@ -526,17 +526,19 @@ Papercuts a corrigir (todos esforço baixo/médio, alvo v3.8.6):
 
 ## Apêndice D — Status de implementação · Fase 1 (2026-06-26)
 
-Correções aplicadas na branch **`fix/auditoria-fase1-estabilizacao`** (não publicada), cada uma com TDD e verificação contra as suites do projeto. **Gate de regressão final:** `unit-tests.sh` 73/73, `security-tests.sh` 26/0, `validate-rules.sh` ✓, `shellcheck` 0 erros nos 6 arquivos alterados, smoke do CLI ✓.
+Correções aplicadas em dois lotes, cada uma com TDD e verificação contra as suites do projeto. **Fase 1** (`fix/auditoria-fase1-estabilizacao`) foi **mergeada na `main` e publicada** (`36d0d74..980f6d5`). **Batch 2** (`fix/auditoria-fase1-batch2`) traz DQ-002, DQ-008 e DQ-003. **Gate final batch2:** `unit-tests.sh` 73/0, `security-tests.sh` 26/0, `test-commands.sh` 12/0, `test_sync.py` ok, `validate-rules.sh` ✓, `shellcheck` 0 erros, `py_compile` ✓, smoke do CLI ✓.
 
 | Item | Commit | Estado | Verificação |
 |------|--------|--------|-------------|
-| **DQ-004** — wipe de `prd.json` em `mark_pass` (CRÍTICO) | `ae9776e` | ✅ Feito | Hardening em **ambos** os `mark_pass` (`lib/auto.sh` + `loop-auto.sh`): valores via ambiente (sem interpolação/injeção), guarda `[[ -s ]]` + `jq empty` antes do `mv`, fallback sem python3 não edita o prd in-place. `test_auto_mark_pass` (RED→GREEN). |
-| **DQ-001** — shadowing de `cmd_test` + `--version` (CRÍTICO) | `92c8561` | ✅ Feito | `cmd_test` de `workflow.sh` renomeado p/ `cmd_structure_check`; `devorq test` agora roda os unit-tests (confirmado). `--version`/`-v`/`-V` roteados. `test_no_cmd_shadowing` (guard estático). |
+| **DQ-004** — wipe de `prd.json` em `mark_pass` (CRÍTICO) | `ae9776e` | ✅ Feito | Hardening em **ambos** os `mark_pass` (`lib/auto.sh` + `loop-auto.sh`): valores via ambiente (sem interpolação/injeção), guarda `[[ -s ]]` + `jq empty` antes do `mv`. `test_auto_mark_pass` (RED→GREEN). |
+| **DQ-001** — shadowing de `cmd_test` + `--version` (CRÍTICO) | `92c8561` | ✅ Feito | `cmd_test` de `workflow.sh` renomeado p/ `cmd_structure_check`; `devorq test` agora roda os unit-tests. `--version`/`-v`/`-V` roteados. `test_no_cmd_shadowing` (guard estático). |
 | **DQ-009** — symlink quebra `DEVORQ_ROOT` | `92c8561` | ✅ Feito | Loop de resolução de symlink portável (GNU/BSD); instalação via `ln -s` verificada. |
-| **DQ-005** — AUTO marca *done* sem implementar (ALTO) | `49a43e8` | ✅ Feito | `delegate` SIMULATED agora é fail-closed (escape `DEVORQ_AUTO_SIMULATE=1`); `check-story.sh` fail-closed sem runner (escape `DEVORQ_AUTO_ALLOW_NO_RUNNER=1`). `test_check_story_fail_closed`. |
-| DQ-002 — remover árvores órfãs | — | ⏸️ Adiado | Requer repontar `scripts/test-commands.sh` (fora do CI) ao código vivo; deferido para esforço focado e evitar rabbit-hole. |
-| DQ-006 — commit/checkpoint por story | — | ⏸️ Adiado | Mitigado em parte por DQ-005 (sem falso PASS). O acoplamento done↔commit pede a consolidação do AUTO (DQ-003), de maior superfície. |
-| DQ-003 / DQ-007 / DQ-008 | — | ⬜ Pendente | Refactors maiores (consolidar AUTO; persistir `gates_completed`; reescrever SQL do sync — este precisa de Postgres para verificação end-to-end). |
+| **DQ-005** — AUTO marca *done* sem implementar (ALTO) | `49a43e8` | ✅ Feito | `delegate` SIMULATED fail-closed (escape `DEVORQ_AUTO_SIMULATE=1`); `check-story.sh` fail-closed sem runner (escape `DEVORQ_AUTO_ALLOW_NO_RUNNER=1`). `test_check_story_fail_closed`. |
+| **DQ-002** — remover árvores órfãs | `cd88d6c` | ✅ Feito | Removidas 3 árvores (~650 LOC mortas); `test-commands.sh` reescrito como smoke do código vivo (12/12), com isolamento por subshell; heredoc órfão corrigido. |
+| **DQ-008** — sync SQL inválido + exit code | `1422b42` | ✅ Feito (unit) | `pg_literal` (aspas simples); transporte por STDIN; exit fiel. `TestSqlGeneration` carrega o **módulo real**. *E2E contra Postgres do HUB não verificado (sem infra).* |
+| **DQ-003** — consolidar AUTO | `25dd808` | 🟡 Parcial | Removido o **fork obsoleto v1.0.0** do `devorq-mode` + duplicatas; SKILL.md reaponta à skill canônica. *Merge guided×Ralph + unificação do dir de estado: follow-up.* |
+| DQ-006 — commit/checkpoint por story | — | ⏸️ Adiado | Mitigado por DQ-005 (sem falso PASS). O acoplamento done↔commit pede a consolidação profunda do AUTO. |
+| DQ-007 — observabilidade real | — | ⬜ Pendente | Persistir `gates_completed` + log JSONL com `run_id`. |
 
 > Observação de convenção: os commits seguem o padrão real do repositório `tipo(escopo):` (sem espaço), consistente com 100% do histórico e com o hook `commit-msg` do projeto.
 
