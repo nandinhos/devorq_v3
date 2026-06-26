@@ -113,15 +113,17 @@ describe('DEVORQ CLI - Inicialização', () => {
     expect(output).toMatch(/Bootstrap de regras concluído/);
   });
 
-  test('devorq test deve verificar estrutura', () => {
+  test('devorq test deve rodar a suite de unit-tests (DQ-001)', () => {
+    // Apos DQ-001, "devorq test" roda scripts/unit-tests.sh (nao mais a
+    // checagem de estrutura). Continua saindo 0 quando os testes passam.
     const projectDir = `${SANDBOX}/test-project`;
     fs.mkdirSync(projectDir, { recursive: true });
     runCommand('devorq init', projectDir);
-    
+
     const result = runCommand('devorq test', projectDir);
-    
+
     console.log('Test output:', result.stdout);
-    
+
     expect(result.exitCode).toBe(0);
   });
 });

@@ -438,7 +438,12 @@ devorq::auto::run_continue() {
             devorq::commit::from_story "$project_root" "$story_id"
         fi
 
-        devorq::auto::mark_pass "$project_root" "$story_id"
+        # Guarda contra set -e: se mark_pass falhar (prd preservado), nao
+        # claim "completa" — propaga o erro (DQ-004/revisao).
+        if ! devorq::auto::mark_pass "$project_root" "$story_id"; then
+            devorq::auto::fail "Falha ao atualizar prd.json para $story_id (preservado)"
+            return 1
+        fi
         devorq::auto::success "Story completa: $story_id"
 
         local done total pending

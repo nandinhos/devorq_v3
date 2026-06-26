@@ -810,7 +810,15 @@ main() {
             echo ""
             # TODO: Solicitar commit manual via AskUserQuestionTool
             # devorq_auto::git_commit "$project_root" "$story_id" "$story_title"
-            devorq_auto::mark_pass "$project_root" "$story_id"
+
+            # Guarda contra set -e: se mark_pass falhar (prd preservado), trata
+            # como falha da story e segue o lote — sem abortar o run (DQ-004/revisao).
+            if ! devorq_auto::mark_pass "$project_root" "$story_id"; then
+                devorq_auto::handle_failure "$project_root" "$story_json" "$story_id" "$story_title" "mark_pass" "prd_update_failed"
+                total_failures=$((total_failures + 1))
+                failure_list+=("$story_id")
+                continue
+            fi
             devorq_auto::append_progress "$project_root" "$story_id" "$story_title" "PASSED"
             devorq_auto::lessons_capture "$project_root" "$story_id" "$story_title" "success" ""
             devorq_auto::log "PASSED (pending manual commit): $story_id"
