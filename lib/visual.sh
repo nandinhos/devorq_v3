@@ -105,9 +105,11 @@ devorq::verify::run() {
 devorq::verify::detect_method() {
     local project_root="${DEVORQ_PROJECT_ROOT:-$PWD}"
 
-    # Playwright: existe playwright.config.* e playwright_tests/
-    if [[ -f "$project_root/playwright.config.*" ]] || \
-       [[ -d "$project_root/playwright_tests" ]]; then
+    # Playwright: existe playwright.config.{ts,js,mjs} OU dir de testes e2e.
+    # compgen -G expande o glob de verdade ([[ -f "...*" ]] testava nome literal).
+    if compgen -G "${project_root}/playwright.config.*" >/dev/null 2>&1 \
+       || [[ -d "$project_root/playwright_tests" ]] \
+       || [[ -d "$project_root/e2e-tests" ]]; then
         echo "playwright"
         return
     fi
