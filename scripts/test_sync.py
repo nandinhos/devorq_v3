@@ -19,6 +19,8 @@ import os
 import json
 import tempfile
 import re
+import csv
+import io
 from pathlib import Path
 
 # Adicionar scripts ao path
@@ -504,6 +506,56 @@ class TestSqlGeneration(unittest.TestCase):
         lit = self.mod.pg_literal('a "quoted" title')
         self.assertTrue(lit.startswith("'") and lit.endswith("'"))
         self.assertEqual(lit, "'a \"quoted\" title'")
+
+
+def _load_real_sync_pull():
+    """Carrega o módulo REAL sync-pull.py (exec). Guard __main__ impede rodar main()."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sync-pull.py")
+    spec = importlib.util.spec_from_file_location("sync_pull_real", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestSyncPullParsing(unittest.TestCase):
+    """sync-pull parseia CSV robusto: content multiline e tags preservados (DQ-008)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load_real_sync_pull()
+
+    def test_parse_pg_array(self):
+        self.assertEqual(self.mod._parse_pg_array("{php,laravel}"), ["php", "laravel"])
+        self.assertEqual(self.mod._parse_pg_array("{}"), [])
+        self.assertEqual(self.mod._parse_pg_array(""), [])
+
+    def test_row_to_lesson_preserves_multiline_and_tags(self):
+        # Linha como o COPY CSV produziria: content com newlines, tags array.
+        content = "## Problem\nlinha A\nlinha B\n\n## Solution\nfaca X\ne Y"
+        row = ["lesson_1", "Titulo", content, "{php,laravel}", "php",
+               "proj", '{"applied": true}', "2026-06-26"]
+        lesson = self.mod._row_to_lesson(row)
+        self.assertEqual(lesson["id"], "lesson_1")
+        self.assertEqual(lesson["tags"], ["php", "laravel"])
+        self.assertIn("linha A", lesson["problem"])
+        self.assertIn("linha B", lesson["problem"])
+        self.assertIn("faca X", lesson["solution"])
+        self.assertTrue(lesson["applied"])
+
+    def test_csv_roundtrip_multiline(self):
+        # Simula a saida CSV do psql COPY para uma lesson com newline no content,
+        # e confirma que o csv.reader nao quebra a linha no meio do content.
+        content = "## Problem\nmulti\nline\n\n## Solution\nok"
+        buf = io.StringIO()
+        csv.writer(buf).writerow(
+            ["lid", "t", content, "{a,b}", "php", "p", "{}", "2026-06-26"]
+        )
+        rows = list(csv.reader(io.StringIO(buf.getvalue())))
+        self.assertEqual(len(rows), 1)             # 1 lesson, nao 4 linhas quebradas
+        lesson = self.mod._row_to_lesson(rows[0])
+        self.assertIn("multi", lesson["problem"])
+        self.assertIn("line", lesson["problem"])
+        self.assertEqual(lesson["tags"], ["a", "b"])
 
 
 # ============================================================

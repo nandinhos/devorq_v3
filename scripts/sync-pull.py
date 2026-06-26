@@ -19,6 +19,8 @@ import json
 import os
 import sys
 import re
+import csv
+import io
 from pathlib import Path
 
 # Exit codes
@@ -38,12 +40,16 @@ PG_CONTAINER = os.environ.get("DEVORQ_PG_CONTAINER", "hermesstudy_postgres")
 MUX_SOCK = os.environ.get("DEVORQ_MUX_SOCK", "/tmp/devorq-ssh-mux")
 
 
-def ssh_cmd(cmd, timeout=30):
-    """Executa comando no VPS via SSH mux com validação de host."""
+def ssh_cmd(cmd, timeout=30, input_data=None):
+    """Executa comando no VPS via SSH mux com validação de host.
+
+    input_data: se fornecido, e enviado ao STDIN do comando remoto (usado para
+    passar SQL ao psql sem o escaping fragil do -c "...").
+    """
     Path(MUX_SOCK).parent.mkdir(parents=True, exist_ok=True)
-    
+
     known_hosts = Path.home() / ".ssh" / "known_hosts"
-    
+
     full = [
         "ssh",
         "-o", "StrictHostKeyChecking=yes",
@@ -56,9 +62,9 @@ def ssh_cmd(cmd, timeout=30):
         f"{VPS_USER}@{VPS_HOST}",
         cmd
     ]
-    
+
     try:
-        result = subprocess.run(full, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(full, capture_output=True, text=True, timeout=timeout, input=input_data)
         return result.stdout, result.stderr, result.returncode
     except subprocess.TimeoutExpired:
         return "", "Timeout", 1
@@ -66,17 +72,68 @@ def ssh_cmd(cmd, timeout=30):
         return "", str(e), 1
 
 
-def pg_query(sql):
-    """Executa SQL SELECT e retorna resultado como texto."""
-    escaped = json.dumps(sql)
-    sql_cli = escaped[1:-1]
+def pg_literal(value):
+    """Literal de string PostgreSQL seguro (aspas SIMPLES, escape por duplicacao)."""
+    if value is None:
+        return "NULL"
+    return "'" + str(value).replace("'", "''") + "'"
 
+
+def pg_query_csv(select_sql):
+    """Roda um SELECT e retorna as linhas em CSV via COPY ... TO STDOUT.
+
+    O formato CSV (parseado com o modulo csv) preserva content multiline, pipes
+    e aspas — ao contrario do split('\\n')/split('|') anterior, que corrompia
+    lessons com newline no content e descartava colunas. SQL enviado por STDIN.
+    """
+    copy_sql = f"COPY ({select_sql.rstrip(';').strip()}) TO STDOUT WITH (FORMAT csv)"
     cmd = (
-        f"docker exec {PG_CONTAINER} psql -U {PG_USER} -d {PG_DB} "
-        f"-t -c \"{sql_cli}\""
+        f"docker exec -i {PG_CONTAINER} psql -U {PG_USER} -d {PG_DB} "
+        f"-v ON_ERROR_STOP=1 -q"
     )
-    out, err, code = ssh_cmd(cmd)
+    out, err, code = ssh_cmd(cmd, input_data=copy_sql)
     return out, err, code
+
+
+def _parse_pg_array(raw):
+    """Parseia um text[] do PostgreSQL ('{a,b,\"c d\"}') para lista Python."""
+    if not raw:
+        return []
+    raw = raw.strip()
+    if raw in ("{}", ""):
+        return []
+    inner = raw.lstrip("{").rstrip("}")
+    if not inner:
+        return []
+    try:
+        return [t.strip() for t in next(csv.reader(io.StringIO(inner)))]
+    except StopIteration:
+        return []
+
+
+def _row_to_lesson(row):
+    """Converte uma linha CSV (id,title,content,tags,stack,project,metadata,created_at)
+    em dict de lesson, preservando content multiline e tags."""
+    lesson_id, title, content, tags_raw, stack, project, metadata_json = row[:7]
+    try:
+        metadata = json.loads(metadata_json) if metadata_json else {}
+    except (ValueError, TypeError):
+        metadata = {}
+    problem, solution = parse_content_to_problem_solution(content)
+    return {
+        "id": lesson_id,
+        "title": title,
+        "problem": problem,
+        "solution": solution,
+        "stack": stack or "general",
+        "tags": _parse_pg_array(tags_raw),
+        "project": project,
+        "source": "",
+        "validated": bool(metadata.get("applied", False)),
+        "applied": bool(metadata.get("applied", False)),
+        "recurrence_count": metadata.get("recurrence_count", 0),
+        "metadata": metadata,
+    }
 
 
 def parse_content_to_problem_solution(content):
@@ -102,56 +159,28 @@ def parse_content_to_problem_solution(content):
 
 
 def download_lessons(project_filter=None):
-    """Baixa lessons do HUB."""
-    if project_filter:
-        where = f"WHERE project = {json.dumps(project_filter)}"
-    else:
-        where = ""
-    
-    sql = f"SELECT id, title, content, tags, stack, project, metadata, created_at FROM devorq.lessons {where} ORDER BY created_at DESC LIMIT 100;"
-    
-    out, err, code = pg_query(sql)
-    
+    """Baixa lessons do HUB (CSV robusto a content multiline)."""
+    where = f"WHERE project = {pg_literal(project_filter)}" if project_filter else ""
+    select_sql = (
+        "SELECT id, title, content, tags, stack, project, metadata, created_at "
+        f"FROM devorq.lessons {where} ORDER BY created_at DESC LIMIT 100"
+    )
+
+    out, err, code = pg_query_csv(select_sql)
+
     if code != 0:
         raise ValueError(f"Query failed: {err}")
-    
-    if not out:
+
+    if not out.strip():
         print("[WARN] Nenhuma lesson encontrada")
         return []
-    
+
     lessons = []
-    for line in out.strip().split('\n'):
-        if '|' not in line:
+    for row in csv.reader(io.StringIO(out)):
+        if len(row) < 7:
             continue
-        
-        parts = [p.strip() for p in line.split('|')]
-        if len(parts) < 7:
-            continue
-        
-        lesson_id, title, content, tags_str, stack, project, metadata_json = parts[:7]
-        
-        try:
-            metadata = json.loads(metadata_json) if metadata_json else {}
-        except:
-            metadata = {}
-        
-        problem, solution = parse_content_to_problem_solution(content)
-        
-        lessons.append({
-            "id": lesson_id,
-            "title": title,
-            "problem": problem,
-            "solution": solution,
-            "stack": stack or "general",
-            "tags": [],
-            "project": project,
-            "source": "",
-            "validated": metadata.get("applied", False),
-            "applied": metadata.get("applied", False),
-            "recurrence_count": metadata.get("recurrence_count", 0),
-            "metadata": metadata
-        })
-    
+        lessons.append(_row_to_lesson(row))
+
     return lessons
 
 
@@ -184,7 +213,9 @@ def main():
             sys.exit(EXIT_INVALID_ARGS)
 
     project_root = os.environ.get("DEVORQ_PROJECT_ROOT", os.getcwd())
-    output_dir = Path(project_root) / ".devorq" / "state" / "lessons" / "downloaded"
+    # Grava em captured/ (lido pelo sistema vivo de licoes), nao em downloaded/
+    # (diretorio orfao que nenhum comando lia). DQ-008.
+    output_dir = Path(project_root) / ".devorq" / "state" / "lessons" / "captured"
     
     print("[VPS] Baixando lessons <- HUB...")
     out, err, code = ssh_cmd("echo PING")
