@@ -12,6 +12,17 @@ EXIT_NOT_FOUND=3
 EXIT_VALIDATION_FAILED=4
 EXIT_PERMISSION_DENIED=5
 
+# Edicao in-place portavel de sed (GNU e BSD/macOS divergem na flag -i). DQ-029.
+# Uso: devorq::sed_inplace '<expr>' <arquivo>
+devorq::sed_inplace() {
+    local expr="$1" file="$2"
+    if sed --version >/dev/null 2>&1; then
+        sed -i -e "$expr" "$file"      # GNU sed
+    else
+        sed -i '' -e "$expr" "$file"   # BSD/macOS sed (exige sufixo de backup vazio)
+    fi
+}
+
 # Sanitize input - remove dangerous characters
 sanitize_input() {
     local input="${1:-}"

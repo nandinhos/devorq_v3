@@ -298,9 +298,9 @@ EOF
 ```
 EOF
 
-    # Substitui placeholders
-    sed -i "s|FILL_ME|$output|" "$output"
-    sed -i "s|FILL_ME|$ts|" "$output"
+    # Substitui placeholders (sed in-place portavel — DQ-029)
+    devorq::sed_inplace "s|FILL_ME|$output|" "$output"
+    devorq::sed_inplace "s|FILL_ME|$ts|" "$output"
 }
 
 # ============================================================

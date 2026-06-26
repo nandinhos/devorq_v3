@@ -57,9 +57,9 @@ lessons::approve() {
             '.approved = true | .approved_at = $ts | .skill_path = $skill_path | .approved_by = "user" | .skill_name = $skill_name' \
             "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
     else
-        # Fallback sed para campos approved
-        sed -i \
-            -e "s/\"validated\": true/\"validated\": true, \"approved\": true, \"approved_at\": \"$ts\", \"approved_by\": \"user\", \"skill_path\": \"$skill_path\"/" \
+        # Fallback sed para campos approved (portavel — DQ-029)
+        devorq::sed_inplace \
+            "s/\"validated\": true/\"validated\": true, \"approved\": true, \"approved_at\": \"$ts\", \"approved_by\": \"user\", \"skill_path\": \"$skill_path\"/" \
             "$file"
     fi
 

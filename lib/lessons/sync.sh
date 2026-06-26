@@ -309,8 +309,8 @@ lessons::_update_skill_index() {
     if [ -f "$index_file" ]; then
         # Não duplicar se já existir
         if ! grep -q "^| ${skill_name} |" "$index_file" 2>/dev/null; then
-            # Remover linha separadora antes de adicionar
-            sed -i '/^|---/d' "$index_file"
+            # Remover linha separadora antes de adicionar (portavel — DQ-029)
+            devorq::sed_inplace '/^|---/d' "$index_file"
             echo "$entry" >> "$index_file"
             echo "|---" >> "$index_file"
             # Ordenar
