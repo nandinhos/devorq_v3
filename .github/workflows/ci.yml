@@ -43,11 +43,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Run shellcheck
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck (gating em erros)
         run: |
-          which shellcheck && bash -c 'shellcheck --version' || echo "shellcheck not installed — skipping"
-          if which shellcheck >/dev/null 2>&1; then
-            shellcheck bin/devorq lib/*.sh scripts/*.sh skills/*/scripts/*.sh 2>&1 || true
-          else
-            echo "ShellCheck not available — skipping lint"
-          fi
+          shellcheck --version
+          # GATE real (sem '|| true'): bloqueia em ERROS de shellcheck.
+          # Warnings sao baseline conhecido e nao bloqueiam (--severity=error).
+          # Cobertura ampla: bin + todo lib/scripts/skills (antes so lib/*.sh de topo).
+          shellcheck -x --severity=error \
+            bin/devorq \
+            $(find lib scripts skills -name '*.sh' -type f)

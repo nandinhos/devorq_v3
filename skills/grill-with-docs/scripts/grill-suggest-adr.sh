@@ -148,7 +148,7 @@ fi
 
 print_evaluation
 
-local conditions_met
+# 'local' invalido fora de funcao (escopo de script top-level) — SC2168 (DQ-027)
 conditions_met=$(count_conditions)
 
 echo -e "  ${BOLD}Condições atendidas: $conditions_met/3${RESET}"

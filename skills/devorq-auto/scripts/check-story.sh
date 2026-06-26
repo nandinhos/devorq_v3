@@ -139,7 +139,7 @@ devorq_auto::check_generic() {
     if [[ -f "$bash_dir/.devorq/state/context.json" ]]; then
         if command -v shellcheck >/dev/null 2>&1; then
             devorq_auto::info "Running shellcheck on *.sh..."
-            # shellcheck não bloqueia — só avisa
+            # nota: aqui o lint so avisa, nao bloqueia a story
             shellcheck "$bash_dir"/*.sh 2>/dev/null || true
         fi
     fi
