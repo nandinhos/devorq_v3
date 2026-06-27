@@ -13,6 +13,26 @@
 
 Após `devorq init`, cópias ficam em `.devorq/rules/`.
 
+### Formato de commit — o hook `commit-msg` BLOQUEIA (inegociável)
+
+O hook `.git/hooks/commit-msg` valida a 1ª linha com esta regex literal:
+
+```
+^[a-z]+\([a-z]+\):
+```
+
+Ou seja: **`tipo(escopo): descrição`** com `tipo` e `escopo` **somente minúsculas — sem espaço, sem dígitos, sem hífen** dentro deles.
+
+- ✅ `fix(gates): corrige contagem honesta no self-build (DQ-028)`
+- ✅ `feat(agents): contrato DEVORQ_DELEGATE_FN documentado`
+- ❌ `fix (gates): ...` (espaço antes do parêntese)
+- ❌ `fix(DQ-030): ...` (maiúsculas + dígitos + hífen no escopo)
+- ❌ qualquer linha com `Co-Authored-By:` (bloqueada também)
+
+> IDs como `(DQ-030)` vão no **fim da descrição**, nunca no escopo.
+> Mensagens em **português do Brasil**. Esta é a fonte da verdade — o `CLAUDE.md`
+> global (commit *com* espaço) NÃO se aplica aqui; o hook é quem manda.
+
 ## Fluxo recomendado
 
 1. `devorq init` — bootstrap de regras + hook commit-msg
