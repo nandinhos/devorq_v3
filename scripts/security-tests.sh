@@ -383,7 +383,7 @@ main() {
 
     # Executar testes
     test_input_sanitize || systematic_debug "input_sanitize" "Caracteres perigosos não bloqueados"
-    ((TESTS_RUN+=6)) || true
+    ((TESTS_RUN+=15)) || true
 
     test_path_traversal || systematic_debug "path_traversal" "Path traversal não prevenido"
     ((TESTS_RUN+=6)) || true
