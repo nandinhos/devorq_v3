@@ -5,10 +5,25 @@ on:
     branches: [main, dev, master]
   pull_request:
     branches: [main, dev, master]
+  merge_group:
   workflow_dispatch:
 
-# Nao bloqueia PRs ainda — workflow separado do ci.yml para
-# observabilidade. Promocao a required check em v3.8.7+ (story-001).
+# E2E workflow — roda Playwright em todo push e PR contra main/dev/master.
+#
+# Status atual (v3.8.5):
+#   - Ja bloqueia PRs via exit code (Playwright retorna !=0 em falha).
+#   - NAO e required check ainda — branch protection em GitHub Settings
+#     precisa listar "E2E / Playwright E2E" explicitamente. Passo
+#     manual (admin-only) — ver docs/CI-GATING.md.
+#
+# v3.8.7+: promocao a required check (story-001 do handoff).
+#
+# Concurrency: cancela runs antigos do mesmo PR/branch para economizar
+# minutos de CI quando o dev faz force-push.
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   playwright:
     name: Playwright E2E
