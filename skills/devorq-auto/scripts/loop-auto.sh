@@ -119,7 +119,7 @@ devorq_auto::lessons_init() {
   "stats": { "total": 0, "delegate_failed": 0, "verification_failed": 0, "complex_detected": 0 }
 }
 LESSONSEOF
-        python3 -c "import json; d=json.load(open('$LESSONS_FILE')); d['project']='$(basename "$project")'; d['created']='$(date -Iseconds)'; json.dump(d,open('$LESSONS_FILE','w'),indent=2)"
+        python3 -c "import json,sys; d=json.load(open(sys.argv[1])); d['project']=sys.argv[2]; d['created']=sys.argv[3]; json.dump(d,open(sys.argv[1],'w'),indent=2)" "$LESSONS_FILE" "$(basename "$project")" "$(date -Iseconds)"
     fi
 }
 
@@ -136,33 +136,34 @@ devorq_auto::lessons_capture() {
     tmp=$(mktemp)
 
     python3 -c "
-import json
+import json, sys
 from datetime import datetime
 
-with open('$LESSONS_FILE') as f:
+with open(sys.argv[5]) as f:
     data = json.load(f)
 
 lesson = {
-    'story_id': '$story_id',
-    'story_title': '$story_title',
-    'type': '$failure_type',
-    'details': '$details',
+    'story_id': sys.argv[1],
+    'story_title': sys.argv[2],
+    'type': sys.argv[3],
+    'details': sys.argv[4],
     'timestamp': datetime.now().isoformat()
 }
 
 data['lessons'].append(lesson)
 data['stats']['total'] += 1
 
-if '$failure_type' == 'delegate':
+ftype = sys.argv[3]
+if ftype == 'delegate':
     data['stats']['delegate_failed'] += 1
-elif '$failure_type' == 'verification':
+elif ftype == 'verification':
     data['stats']['verification_failed'] += 1
-elif '$failure_type' == 'complex':
+elif ftype == 'complex':
     data['stats']['complex_detected'] += 1
 
-with open('$tmp', 'w') as f:
+with open(sys.argv[6], 'w') as f:
     json.dump(data, f, indent=2)
-"
+" "$story_id" "$story_title" "$failure_type" "$details" "$LESSONS_FILE" "$tmp"
     mv "$tmp" "$LESSONS_FILE"
 }
 
@@ -173,17 +174,18 @@ devorq_auto::lessons_suggest() {
     [[ ! -f "$LESSONS_FILE" ]] && return 0
 
     python3 -c "
-import json
-with open('$LESSONS_FILE') as f:
+import json, sys
+with open(sys.argv[1]) as f:
     data = json.load(f)
 
-similar = [l for l in data['lessons'] if l['type'] in ('delegate', 'complex') and l['story_title'].lower() in '$story_title'.lower()]
+target = sys.argv[2].lower()
+similar = [l for l in data['lessons'] if l['type'] in ('delegate', 'complex') and l['story_title'].lower() in target]
 if similar:
     print()
     print('📚 Licao anterior relevante:')
     for l in similar[-2:]:
         print('  -> ' + l['story_id'] + ': ' + str(l.get('details', '')))
-" 2>/dev/null || true
+" "$LESSONS_FILE" "$story_title" 2>/dev/null || true
 }
 
 #-----------------------------------------------------------
@@ -202,13 +204,20 @@ devorq_auto::failures_generate() {
     done=$(devorq_auto::completed_count "$project")
     local progress_line="Progresso: ${done}/${total} done, ${pending} pending"
 
+    PROJECT_ROOT="$project" \
+    LESSONS_FILE="$LESSONS_FILE" \
+    PROGRESS_LINE="$progress_line" \
+    FAILURES_MD="$failures_md" \
     python3 << PYEOF
-import json
+import json, sys, os
 from datetime import datetime
 
-project_name = '$(basename "$project")'
+project_name = os.path.basename(os.environ['PROJECT_ROOT'])
+lessons_path = os.environ['LESSONS_FILE']
+progress_line = os.environ['PROGRESS_LINE']
+failures_md = os.environ['FAILURES_MD']
 
-with open('$LESSONS_FILE') as f:
+with open(lessons_path) as f:
     data = json.load(f)
 
 failed = [l for l in data['lessons'] if l['type'] in ('delegate', 'verification', 'complex')]
@@ -246,9 +255,9 @@ for l in failed:
 
 lines.append('---')
 lines.append(f'Total: {len(failed)} failures | Stats: delegate={data["stats"]["delegate_failed"]}, verification={data["stats"]["verification_failed"]}, complex={data["stats"]["complex_detected"]}')
-lines.append("""$progress_line""")
+lines.append(progress_line)
 
-with open('$failures_md', 'w') as f:
+with open(failures_md, 'w') as f:
     f.write('\n'.join(lines))
 PYEOF
 }
@@ -272,11 +281,15 @@ devorq_auto::pending_save() {
     json_tmp=$(mktemp)
     echo "$story_json" > "$json_tmp"
 
+    JSON_TMP="$json_tmp" \
+    PENDING_FILE="$pending_file" \
+    FAILURE_TYPE="$failure_type" \
+    DETAILS="$details" \
     python3 << PYEOF
-import json
+import json, os
 from datetime import datetime
 
-with open('$json_tmp') as f:
+with open(os.environ['JSON_TMP']) as f:
     story = json.load(f)
 
 pending = {
@@ -286,13 +299,13 @@ pending = {
     'acceptanceCriteria': story.get('acceptanceCriteria') or story.get('acceptance_criteria') or [],
     'priority': story['priority'],
     'failure': {
-        'type': '$failure_type',
-        'details': '$details',
+        'type': os.environ['FAILURE_TYPE'],
+        'details': os.environ['DETAILS'],
         'timestamp': datetime.now().isoformat()
     }
 }
 
-with open('$pending_file', 'w') as f:
+with open(os.environ['PENDING_FILE'], 'w') as f:
     json.dump(pending, f, indent=2)
 PYEOF
 
@@ -418,18 +431,20 @@ devorq_auto::mark_skip() {
 
     python3 -c "
 import json, sys
-with open('$prd') as f:
+with open(sys.argv[1]) as f:
     data = json.load(f)
+target_id = sys.argv[2]
+target_reason = sys.argv[3]
 for s in data['stories']:
-    if s['id'] == '$story_id':
+    if s['id'] == target_id:
         s['passes'] = True
         s['status'] = 'skipped'
         s['skipped'] = True
-        s['skip_reason'] = '$reason'
+        s['skip_reason'] = target_reason
         break
-with open('$tmp', 'w') as f:
+with open(sys.argv[4], 'w') as f:
     json.dump(data, f, indent=2)
-"
+" "$prd" "$story_id" "$reason" "$tmp"
     mv "$tmp" "$prd"
 }
 
@@ -566,13 +581,13 @@ devorq_auto::show_status() {
 
     python3 -c "
 import json
-with open('$project/prd.json') as f:
+with open(sys.argv[1] + '/prd.json') as f:
     for s in sorted(json.load(f)['stories'], key=lambda x: x.get('priority', 0)):
         done = bool(s.get('passes')) or s.get('status') in ('done', 'complete', 'skipped')
         icon = '✅' if done and not s.get('skipped') else ('⏭️ ' if s.get('skipped') else '🔴')
         skipped = f' (SKIP: {s[\"skip_reason\"]})' if s.get('skipped') else ''
         print(f'  [{s.get(\"priority\", \"?\")}] \"{s.get(\"title\", \"\")}\" [{icon}]{skipped}')
-"
+" "$project"
 }
 
 #-----------------------------------------------------------
