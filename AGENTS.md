@@ -71,11 +71,28 @@ Adaptadores de referência (defina antes de `devorq auto`):
 # Hermes (nativo)
 export DEVORQ_DELEGATE_FN=delegate_task
 
+# opencode CLI (nativo, ships-with-devorq) — DQ-022
+export DEVORQ_DELEGATE_FN="$DEVORQ_ROOT/scripts/adapters/opencode-delegate.sh"
+# env vars opcionais:
+#   OPENCODE_MODEL   (default: minimax/MiniMax-M3)
+#   OPENCODE_EFFORT  variant: max|high|medium|minimal (default: max)
+#   OPENCODE_AGENT   (default: build)
+#   OPENCODE_TIMEOUT segundos (default: 1800)
+#   OPENCODE_DRY_RUN se 1, imprime o que faria e retorna 0 sem invocar
+
 # Claude Code / Codex / outro: envolva a chamada do seu orquestrador
 my_delegate() { # $1=story_json  $2=project_root
     # ... invocar o agente do seu ambiente para implementar a story ...
     : ; }
 export DEVORQ_DELEGATE_FN=my_delegate
+```
+
+### Teste do adapter opencode
+
+```bash
+bash scripts/adapters/test-opencode-delegate.sh
+# -> roda loop-auto.sh em /tmp com prd.json de 1 story, OPENCODE_DRY_RUN=1,
+#    verifica: story marcada done, journal criado, sem efeito colateral.
 ```
 
 Flags relacionadas: `DEVORQ_AUTO_COMMIT=1` (commit por story), `DEVORQ_AUTO_ALLOW_NO_RUNNER=1`
