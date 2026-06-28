@@ -110,11 +110,16 @@ _devorq_lessons_approve() {
     local lesson_id=""
     local skill_name=""
     local batch_mode="false"
+    local force_mode="false"
 
     while [ $# -gt 0 ]; do
         case "$1" in
             --all)
                 batch_mode="true"
+                shift
+                ;;
+            --force)
+                force_mode="true"
                 shift
                 ;;
             --skill=*)
@@ -125,8 +130,8 @@ _devorq_lessons_approve() {
                 shift
                 ;;
             -h|--help)
-                echo "Uso: devorq lessons approve <id> [--skill=<name>] [--all] [--auto]"
-                echo "     devorq lessons approve --all [--skill=<name>] [--auto]"
+                echo "Uso: devorq lessons approve <id> [--skill=<name>] [--all] [--auto] [--force]"
+                echo "     devorq lessons approve --all [--skill=<name>] [--auto] [--force]"
                 return 0
                 ;;
             -*)
@@ -149,26 +154,32 @@ _devorq_lessons_approve() {
         for f in "$dir"/*.json; do
             [ -f "$f" ] || continue
 
-            if command -v jq &>/dev/null; then
-                local validated approved
-                validated=$(jq -r '.validated // false' "$f" 2>/dev/null)
+            if [ "$force_mode" = "true" ]; then
+                local approved
                 approved=$(jq -r '.approved // false' "$f" 2>/dev/null)
-                [ "$validated" != "true" ] && continue
                 [ "$approved" = "true" ] && continue
+            else
+                if command -v jq &>/dev/null; then
+                    local validated approved
+                    validated=$(jq -r '.validated // false' "$f" 2>/dev/null)
+                    approved=$(jq -r '.approved // false' "$f" 2>/dev/null)
+                    [ "$validated" != "true" ] && continue
+                    [ "$approved" = "true" ] && continue
+                fi
             fi
 
             local id
             id=$(basename "$f" .json)
-            if lessons::approve "$id" "$skill_name" &>/dev/null; then
+            if lessons::approve "$id" "$skill_name" "false" "$force_mode" &>/dev/null; then
                 ((count++)) || true
             fi
         done
         devorq::success "Aprovadas: $count licoes"
     else
         if [ -z "$lesson_id" ]; then
-            devorq::error "Uso: devorq lessons approve <id> [--skill=<name>] [--all]"
+            devorq::error "Uso: devorq lessons approve <id> [--skill=<name>] [--all] [--force]"
         fi
-        lessons::approve "$lesson_id" "$skill_name"
+        lessons::approve "$lesson_id" "$skill_name" "false" "$force_mode"
     fi
 }
 

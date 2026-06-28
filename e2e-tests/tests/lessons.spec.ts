@@ -267,12 +267,15 @@ describe('Lessons - Compilação', () => {
     if (files.length > 0) {
       const lessonId = path.basename(files[0], '.json');
 
-      // Validar com --auto (marca validated sem Context7)
+      // validate --auto SEM Context7: por design (DQ-013) marca a licao como
+      // 'skipped_no_context7' (NAO como validated), para nao disparar auto-approve
+      // em fluxo real. Aqui estamos testando SOMENTE o pipeline de compile, entao
+      // usamos --force no approve para bypassar a checagem de validated e seguir
+      // para compile.
       const validateResult = runCommand(`devorq lessons validate --auto`, projectDir);
-      expect(validateResult.stdout).toMatch(/auto-validada|Validadas:/i);
+      expect(validateResult.stdout).toMatch(/Validadas:|indispon/i);
 
-      // Aprovar lição antes de compilar
-      const approveResult = runCommand(`devorq lessons approve ${lessonId}`, projectDir);
+      const approveResult = runCommand(`devorq lessons approve --force ${lessonId}`, projectDir);
       expect(`${approveResult.stdout}\n${approveResult.stderr}`).toMatch(/Aprovada|aprovada/i);
 
       const result = runCommand(`devorq lessons compile ${lessonId}`, projectDir);

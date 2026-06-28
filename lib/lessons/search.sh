@@ -11,12 +11,14 @@ set -euo pipefail
 #   $1 = lesson id (sem .json)
 #   $2 = skill name opcional (inferred se vazio)
 #   $3 = auto mode (true/false)
+#   $4 = force mode (true/false) — bypassa checagem de validated
 # ============================================================
 
 lessons::approve() {
     local id="${1:-}"
     local skill_name="${2:-}"
     local auto="${3:-false}"
+    local force="${4:-false}"
     local dir="${DEVORQ_LESSONS_DIR}/captured"
     local file="${dir}/${id}.json"
 
@@ -24,8 +26,6 @@ lessons::approve() {
     [ ! -f "$file" ] && echo "[ERROR] Lição não encontrada: $id" && return 1
 
     # Verificar se foi validada (modo auto interno ou --force bypassam)
-    local force=false
-    [[ "${2:-}" == "--force" || "${3:-}" == "--force" ]] && force=true
     if [[ "$auto" != "true" && "$force" != "true" ]] && command -v jq &>/dev/null; then
         local validated
         validated=$(jq -r '.validated // false' "$file")

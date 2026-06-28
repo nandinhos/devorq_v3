@@ -38,6 +38,13 @@ const e2eEnv = {
   PATH: process.env.PATH ?? '',
   DEVORQ_ROOT,
   DEVORQ_DIR: DEVORQ_ROOT,
+  // Habilita dry-run do loop-auto.sh em testes: o loop e fail-closed sem
+  // DEVORQ_DELEGATE_FN (DQ-005) e check-story.sh e fail-closed sem runner
+  // (DQ-005). Como o cenario do teste e parse de argumento posicional
+  // (nao execucao real), sem isto o teste cai no menu interativo e quebra
+  // em /dev/stdin (sem tty).
+  DEVORQ_AUTO_SIMULATE: '1',
+  DEVORQ_AUTO_ALLOW_NO_RUNNER: '1',
 };
 
 function copyValidFoundation(stateDir: string) {
